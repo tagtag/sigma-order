@@ -1,0 +1,470 @@
+{
+ "dir": "/user1/scl9/tag/LLM/order-intervention/results_pll",
+ "cells": {
+  "bert-base-uncased|Fable5": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "Fable5",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.02421689847620522,
+    "median_causal": 0.032779865927677815,
+    "median_noncausal": 0.00836606388203582,
+    "rank_biserial": 0.33820000000000006,
+    "p": 3.618980809156781e-05
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 4.2645787983405885,
+    "median_causal": 4.034439728273983,
+    "median_noncausal": 4.56588658945901,
+    "rank_biserial": -0.3762,
+    "p": 4.331794777285146e-06
+   }
+  },
+  "bert-base-uncased|GPT54": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "GPT54",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.021782096355192123,
+    "median_causal": 0.05210835687045394,
+    "median_noncausal": 0.003354501471948371,
+    "rank_biserial": 0.35240000000000005,
+    "p": 1.6771929751350863e-05
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.2139662662750395,
+    "median_causal": 3.2231054089926734,
+    "median_noncausal": 3.211305243628366,
+    "rank_biserial": 0.05160000000000009,
+    "p": 0.5292360397745484
+   }
+  },
+  "bert-base-uncased|GPT56": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "GPT56",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.02132639229429799,
+    "median_causal": 0.03393570910102506,
+    "median_noncausal": -0.0004014407887178309,
+    "rank_biserial": 0.31919999999999993,
+    "p": 9.681959104609738e-05
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.3681161161054645,
+    "median_causal": 2.9479683240254717,
+    "median_noncausal": 3.8911363541542947,
+    "rank_biserial": -0.5506,
+    "p": 1.750771545773595e-11
+   }
+  },
+  "bert-base-uncased|Gemini31": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "Gemini31",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.010289157138151282,
+    "median_causal": 0.028341636513218735,
+    "median_noncausal": -0.0030021071434020996,
+    "rank_biserial": 0.20300000000000007,
+    "p": 0.01318185390361583
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 4.000535786151886,
+    "median_causal": 4.044574975967407,
+    "median_noncausal": 3.910774177975125,
+    "rank_biserial": 0.07679999999999998,
+    "p": 0.34873816884418196
+   }
+  },
+  "bert-base-uncased|Opus46": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "Opus46",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.023505748846592046,
+    "median_causal": 0.06085910219134706,
+    "median_noncausal": -0.00012002277189804463,
+    "rank_biserial": 0.5835999999999999,
+    "p": 1.0140443873984302e-12
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 4.9151521335948605,
+    "median_causal": 4.476914529877949,
+    "median_noncausal": 5.322421744548337,
+    "rank_biserial": -0.55,
+    "p": 1.8411218220189475e-11
+   }
+  },
+  "bert-large-uncased|Fable5": {
+   "model": "bert-large-uncased",
+   "kind": "masked",
+   "corpus": "Fable5",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.043321541745690306,
+    "median_causal": 0.07221031906013202,
+    "median_noncausal": 0.007877360449896918,
+    "rank_biserial": 0.42399999999999993,
+    "p": 2.2336231893054153e-07
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 4.411557693303604,
+    "median_causal": 3.9665973442731106,
+    "median_noncausal": 4.800852574194538,
+    "rank_biserial": -0.519,
+    "p": 2.3070288998665625e-10
+   }
+  },
+  "bert-large-uncased|GPT54": {
+   "model": "bert-large-uncased",
+   "kind": "masked",
+   "corpus": "GPT54",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.03020650999886649,
+    "median_causal": 0.09085287648468769,
+    "median_noncausal": 0.00451822841868681,
+    "rank_biserial": 0.5127999999999999,
+    "p": 3.761235597026445e-10
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.6050888557744223,
+    "median_causal": 3.4008437524110207,
+    "median_noncausal": 3.664287971727776,
+    "rank_biserial": -0.07779999999999998,
+    "p": 0.34249012982545535
+   }
+  },
+  "bert-large-uncased|GPT56": {
+   "model": "bert-large-uncased",
+   "kind": "masked",
+   "corpus": "GPT56",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.02624369992150201,
+    "median_causal": 0.054309381021035684,
+    "median_noncausal": 0.01052095473758758,
+    "rank_biserial": 0.24259999999999993,
+    "p": 0.0030504375910020798
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.600972715546103,
+    "median_causal": 3.0786600393407486,
+    "median_noncausal": 4.182448618752616,
+    "rank_biserial": -0.6632,
+    "p": 5.448422670593781e-16
+   }
+  },
+  "bert-large-uncased|Gemini31": {
+   "model": "bert-large-uncased",
+   "kind": "masked",
+   "corpus": "Gemini31",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.02429096000950511,
+    "median_causal": 0.0712963342666626,
+    "median_noncausal": 0.00955963134765625,
+    "rank_biserial": 0.29699999999999993,
+    "p": 0.0002864993829446438
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 4.155676901340485,
+    "median_causal": 4.088802953561148,
+    "median_noncausal": 4.234549347198371,
+    "rank_biserial": -0.05579999999999996,
+    "p": 0.49619817279997736
+   }
+  },
+  "bert-large-uncased|Opus46": {
+   "model": "bert-large-uncased",
+   "kind": "masked",
+   "corpus": "Opus46",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.0487030824025472,
+    "median_causal": 0.09689275841963918,
+    "median_noncausal": 0.011516436091009176,
+    "rank_biserial": 0.5152000000000001,
+    "p": 3.114925527307023e-10
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 5.097329439435686,
+    "median_causal": 4.512069350794742,
+    "median_noncausal": 5.598067399200524,
+    "rank_biserial": -0.6508,
+    "p": 1.8716643353594205e-15
+   }
+  },
+  "gpt2|Fable5": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "Fable5",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.34693614170642395,
+    "median_causal": 0.3740296411995936,
+    "median_noncausal": 0.3276576965526101,
+    "rank_biserial": 0.14179999999999993,
+    "p": 0.08342661456157661
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.187362099809256,
+    "median_causal": 3.105824970063709,
+    "median_noncausal": 3.2944220003650577,
+    "rank_biserial": -0.2138,
+    "p": 0.00903409987925682
+   }
+  },
+  "gpt2|GPT54": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "GPT54",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.4215579948989041,
+    "median_causal": 0.42333224066372577,
+    "median_noncausal": 0.4140849431355794,
+    "rank_biserial": -0.006800000000000028,
+    "p": 0.9347631898776791
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.0195148073393723,
+    "median_causal": 2.9960874499696675,
+    "median_noncausal": 3.0382093702043806,
+    "rank_biserial": 0.049800000000000066,
+    "p": 0.5437300445104135
+   }
+  },
+  "gpt2|GPT56": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "GPT56",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.34681804596431676,
+    "median_causal": 0.32553220135825023,
+    "median_noncausal": 0.3735002459901752,
+    "rank_biserial": -0.1632,
+    "p": 0.04630705838048061
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 2.821254483559974,
+    "median_causal": 2.5679103844079845,
+    "median_noncausal": 3.0124222043960813,
+    "rank_biserial": -0.5222,
+    "p": 1.7886973770728047e-10
+   }
+  },
+  "gpt2|Gemini31": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "Gemini31",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.3676184415817261,
+    "median_causal": 0.38824971516927087,
+    "median_noncausal": 0.34323203563690186,
+    "rank_biserial": 0.20720000000000005,
+    "p": 0.011402053442170518
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.001587457680292,
+    "median_causal": 3.058583981850568,
+    "median_noncausal": 2.911344051361084,
+    "rank_biserial": 0.07800000000000007,
+    "p": 0.3412491638242302
+   }
+  },
+  "gpt2|Opus46": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "Opus46",
+   "n": 200,
+   "shards": [
+    "0/1"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.3181764853872904,
+    "median_causal": 0.3807492241947581,
+    "median_noncausal": 0.2641564972546636,
+    "rank_biserial": 0.5226,
+    "p": 1.7325137420147556e-10
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 3.4674430326981978,
+    "median_causal": 3.3643061749408814,
+    "median_noncausal": 3.59015906586939,
+    "rank_biserial": -0.27859999999999996,
+    "p": 0.0006679214472064402
+   }
+  }
+ },
+ "matched_pair": {
+  "masked": "bert-base-uncased",
+  "causal": "gpt2",
+  "by_corpus": {
+   "Fable5": {
+    "sigma_masked": 0.02421689847620522,
+    "sigma_causal": 0.34693614170642395,
+    "ratio": 0.0698021784559346,
+    "r_masked": 0.33820000000000006,
+    "r_causal": 0.14179999999999993,
+    "p_masked": 3.618980809156781e-05,
+    "p_causal": 0.08342661456157661
+   },
+   "GPT54": {
+    "sigma_masked": 0.021782096355192123,
+    "sigma_causal": 0.4215579948989041,
+    "ratio": 0.05167046199756167,
+    "r_masked": 0.35240000000000005,
+    "r_causal": -0.006800000000000028,
+    "p_masked": 1.6771929751350863e-05,
+    "p_causal": 0.9347631898776791
+   },
+   "GPT56": {
+    "sigma_masked": 0.02132639229429799,
+    "sigma_causal": 0.34681804596431676,
+    "ratio": 0.061491587714245434,
+    "r_masked": 0.31919999999999993,
+    "r_causal": -0.1632,
+    "p_masked": 9.681959104609738e-05,
+    "p_causal": 0.04630705838048061
+   },
+   "Gemini31": {
+    "sigma_masked": 0.010289157138151282,
+    "sigma_causal": 0.3676184415817261,
+    "ratio": 0.027988686024239828,
+    "r_masked": 0.20300000000000007,
+    "r_causal": 0.20720000000000005,
+    "p_masked": 0.01318185390361583,
+    "p_causal": 0.011402053442170518
+   },
+   "Opus46": {
+    "sigma_masked": 0.023505748846592046,
+    "sigma_causal": 0.3181764853872904,
+    "ratio": 0.073876448845616,
+    "r_masked": 0.5835999999999999,
+    "r_causal": 0.5226,
+    "p_masked": 1.0140443873984302e-12,
+    "p_causal": 1.7325137420147556e-10
+   }
+  },
+  "summary": {
+   "n_corpora": 5,
+   "median_r_masked": 0.33820000000000006,
+   "median_r_causal": 0.14179999999999993,
+   "median_sigma_masked": 0.021782096355192123,
+   "median_sigma_causal": 0.34693614170642395,
+   "corpora_masked_separates": 5,
+   "corpora_causal_separates": 2
+  }
+ }
+}

@@ -1,0 +1,580 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Generate every table AND every number quoted in the prose, as LaTeX.
+
+Nothing numeric in this paper is typed by hand.  Tables are written as
+\\input-able fragments, and each figure quoted in the running text becomes a
+macro in macros.tex, so the sentence reads
+
+    causality accounts for \\CausalShareOpus of the effect
+
+and cannot drift from the measurement.  Rerunning the measurement and this
+script updates the prose.
+
+Outputs (into --outdir):
+    macros.tex        \\newcommand for each quoted figure
+    tab_blkord.tex    within-text permutation test, the decisive table
+    tab_pll.tex       evaluator comparison, sigma and effect size
+    tab_capacity.tex  toy-system capacity sweep
+
+    python3 make_tables.py --pll ../order-intervention/results_pll \\
+        --blkord ../order-intervention/results_blkord \\
+        --toy ../bert-affinity --outdir tables
+"""
+
+import argparse
+import glob
+import json
+import os
+import sys
+from collections import defaultdict
+
+import numpy as np
+from scipy.stats import mannwhitneyu, wilcoxon
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+CORPUS_ORDER = ["Opus46", "GPT54", "GPT56", "Gemini31", "Fable5"]
+# ordered by parameter count: the capacity series is what the paper reads
+EVAL_ORDER = ["bert-base-uncased", "gpt2", "bert-large-uncased",
+              "Qwen/Qwen3-4B-Base", "GSAI-ML/LLaDA-8B-Base"]
+# LaTeX control sequences may contain letters only, so every evaluator gets a
+# letter-only tag and the prose references \Authored<Tag>, \Share<Tag> etc.
+TAG = {
+    "bert-base-uncased": "BertBase",
+    "bert-large-uncased": "BertLarge",
+    "gpt2": "GPTtwo",
+    "Qwen/Qwen3-4B-Base": "Qwen",
+    "GSAI-ML/LLaDA-8B-Base": "LLaDA",
+}
+
+PARAMS = {"bert-base-uncased": 110, "gpt2": 117,
+          "bert-large-uncased": 340, "GSAI-ML/LLaDA-8B-Base": 8000,
+          "Qwen/Qwen3-4B-Base": 4000}
+MACROS = {}
+
+
+def mac(name, value):
+    MACROS[name] = value
+
+
+def tex_sci(x, nd=2):
+    """Scientific notation as math-mode CONTENT, no $ delimiters.
+
+    The earlier ad-hoc .replace() chains produced things like
+    $3.99\\times10^{-20$}$ -- the exponent brace was closed by the appended
+    "}" while the "e-" had already eaten part of the number.  Splitting the
+    mantissa and exponent explicitly is the only way this stays right for
+    every magnitude and sign.
+    """
+    if x == 0:
+        return "0"
+    m, e = f"{x:.{nd}e}".split("e")
+    return f"{m}\\times10^{{{int(e)}}}"
+
+
+def tex_p_bare(p):
+    """A p-value as math-mode CONTENT, with no $ delimiters.
+
+    Macro values go in the prose inside $...$, so a value carrying its own $
+    would close the math and raise "Missing $ inserted".
+    """
+    if p is None or (isinstance(p, float) and np.isnan(p)):
+        return "\\mathrm{n/a}"
+    # at 1e-4 the three-decimal branch printed 0.000, which reads as zero
+    if p < 1e-3:
+        m, e = f"{p:.0e}".split("e")
+        return f"{m}\\times10^{{{int(e)}}}"
+    return f"{p:.3f}"
+
+
+def tex_p(p):
+    """A p-value for a plain (non-math) table column: delimiters included."""
+    if p is None or (isinstance(p, float) and np.isnan(p)):
+        return "--"
+    return f"${tex_p_bare(p)}$"
+
+
+def load_cells(dirpath, prefix):
+    bucket, kinds = defaultdict(dict), {}
+    if not dirpath or not os.path.isdir(dirpath):
+        return bucket, kinds
+    for f in sorted(glob.glob(os.path.join(dirpath, f"{prefix}_*.json"))):
+        if os.path.basename(f).startswith(f"{prefix}_comparison"):
+            continue
+        try:
+            d = json.load(open(f))
+        except Exception:
+            continue
+        if "records" not in d or "model" not in d:
+            continue
+        corpus = d["corpus"].replace("fixed_text_", "").replace(".json", "")
+        kinds[d["model"]] = d["kind"]
+        for r in d["records"]:
+            bucket[(d["model"], corpus)][(r["category"], r["index"])] = r
+    return bucket, kinds
+
+
+def order_c(names):
+    return [c for c in CORPUS_ORDER if c in names] + \
+           sorted(n for n in names if n not in CORPUS_ORDER)
+
+
+def order_m(names):
+    return [m for m in EVAL_ORDER if m in names] + \
+           sorted(n for n in names if n not in EVAL_ORDER)
+
+
+def params_str(model):
+    """Parameter count as it should read in a table cell."""
+    p = PARAMS.get(model)
+    if not p:
+        return "?"
+    return f"{p}M" if p < 1000 else f"{p // 1000}B"
+
+
+def rb(a, b):
+    if len(a) < 2 or len(b) < 2:
+        return np.nan, np.nan
+    st = mannwhitneyu(a, b, alternative="two-sided", method="asymptotic")
+    return 2.0 * st.statistic / (len(a) * len(b)) - 1.0, float(st.pvalue)
+
+
+# -------------------------------------------------------------- blkord
+def table_blkord(blk, kinds, outdir):
+    if not blk:
+        return
+    models = order_m({m for m, _ in blk})
+    corpora = order_c({c for _, c in blk})
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{llrrrrr}",
+        r"\toprule",
+        r"evaluator & corpus & $n$ & causal & non-causal & $r$ & $p$ \\",
+        r"\midrule",
+    ]
+    shares = {}
+    for model in models:
+        first = True
+        for corpus in corpora:
+            recs = blk.get((model, corpus))
+            if not recs:
+                continue
+            pc = np.array([r["percentile_written"] for k, r in recs.items()
+                           if k[0] == "causal"], float)
+            pn = np.array([r["percentile_written"] for k, r in recs.items()
+                           if k[0] == "noncausal"], float)
+            if len(pc) < 2 or len(pn) < 2:
+                continue
+            r_rb, p = rb(pc, pn)
+            mc, mn = float(np.median(pc)), float(np.median(pn))
+            # how much of the distance from the 0.50 null is attributable to
+            # causality, over and above the coherence of an arbitrary but
+            # authored order
+            coh = mn - 0.5
+            shares[(model, corpus)] = (mc - mn) / coh if coh else np.nan
+            name = (f"{model.split('/')[-1]} ({params_str(model)}, "
+                    f"{kinds.get(model, '?')})") if first else ""
+            first = False
+            lines.append(f"{name} & {corpus} & {len(pc)+len(pn)} & "
+                         f"{mc:.3f} & {mn:.3f} & {r_rb:+.3f} & {tex_p(p)} \\\\")
+        if not first:
+            lines.append(r"\addlinespace")
+    if lines[-1] == r"\addlinespace":
+        lines.pop()
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_blkord.tex"), "w").write("\n".join(lines) + "\n")
+
+    # prose numbers
+    allpc, allpn = [], []
+    for (model, corpus), recs in blk.items():
+        allpc += [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
+        allpn += [r["percentile_written"] for k, r in recs.items() if k[0] == "noncausal"]
+    if allpc:
+        mac("MedPctCausal", f"{np.median(allpc):.3f}")
+        mac("MedPctNoncausal", f"{np.median(allpn):.3f}")
+        d = np.array(allpc) - 0.5
+        if (d != 0).sum() >= 10:
+            mac("PctVsNullP", tex_p_bare(float(wilcoxon(d, alternative="two-sided").pvalue)))
+    # separation counts and median effect size per evaluator, for the prose
+    for model, tag in (("bert-base-uncased", "Masked"), ("gpt2", "Causal")):
+        rs, nsep, ntot, pmin = [], 0, 0, 1.0
+        for corpus in corpora:
+            recs = blk.get((model, corpus))
+            if not recs:
+                continue
+            pc = np.array([r["percentile_written"] for k, r in recs.items()
+                           if k[0] == "causal"], float)
+            pn = np.array([r["percentile_written"] for k, r in recs.items()
+                           if k[0] == "noncausal"], float)
+            if len(pc) < 2 or len(pn) < 2:
+                continue
+            r_rb, _ = rb(pc, pn)
+            rs.append(r_rb); ntot += 1
+            if abs(r_rb) > 0.2:
+                nsep += 1
+            d = pc - 0.5
+            if (d != 0).sum() >= 10:
+                pmin = min(pmin, float(wilcoxon(d, alternative="two-sided").pvalue))
+        if rs:
+            mac(f"BlkR{tag}", f"{np.median(rs):+.3f}")
+            mac(f"BlkNSep{tag}", str(nsep))
+            mac(f"BlkNTot{tag}", str(ntot))
+            mac(f"BlkPMax{tag}", tex_p_bare(pmin))
+        # the median position of each group, per evaluator
+        pcs, pns = [], []
+        for corpus in corpora:
+            recs = blk.get((model, corpus))
+            if not recs:
+                continue
+            a = [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
+            b = [r["percentile_written"] for k, r in recs.items() if k[0] == "noncausal"]
+            if a and b:
+                pcs.append(np.median(a)); pns.append(np.median(b))
+        if pcs:
+            mac(f"BlkPctC{tag}", f"{np.median(pcs):.3f}")
+            mac(f"BlkPctN{tag}", f"{np.median(pns):.3f}")
+
+    if shares:
+        v = np.array([s for s in shares.values() if np.isfinite(s)])
+        if len(v):
+            mac("CausalShareMedian", f"{100*np.median(v):.0f}")
+            mac("CausalShareMin", f"{100*v.min():+.0f}")
+            mac("CausalShareMax", f"{100*v.max():+.0f}")
+            mac("NBlkordCells", str(len(shares)))
+            mac("CausalShareNPos", str(int((v > 0.05).sum())))
+            mac("CausalShareNTot", str(len(v)))
+    print(f"  tab_blkord.tex  ({len(shares)} cells)")
+
+
+# -------------------------------------------------------------- pll
+def table_pll(pll, kinds, outdir):
+    if not pll:
+        return
+    models = order_m({m for m, _ in pll})
+    corpora = order_c({c for _, c in pll})
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{llrrrr}",
+        r"\toprule",
+        r"evaluator & corpus & $n$ & median $\sigma_{\mathrm{block}}$ & $r$ & $p$ \\",
+        r"\midrule",
+    ]
+    cap = {}
+    for model in models:
+        first = True
+        for corpus in corpora:
+            recs = pll.get((model, corpus))
+            if not recs:
+                continue
+            allv = np.array([r["sigma_block_per_T"] for r in recs.values()], float)
+            a = np.array([r["sigma_block_per_T"] for k, r in recs.items()
+                          if k[0] == "causal"], float)
+            b = np.array([r["sigma_block_per_T"] for k, r in recs.items()
+                          if k[0] == "noncausal"], float)
+            r_rb, p = rb(a, b)
+            cap[(model, corpus)] = float(np.median(allv))
+            name = (f"{model.split('/')[-1]} ({params_str(model)}, "
+                    f"{kinds.get(model, '?')})") if first else ""
+            first = False
+            lines.append(f"{name} & {corpus} & {len(allv)} & "
+                         f"{np.median(allv):.4f} & {r_rb:+.3f} & {tex_p(p)} \\\\")
+        if not first:
+            lines.append(r"\addlinespace")
+    if lines[-1] == r"\addlinespace":
+        lines.pop()
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_pll.tex"), "w").write("\n".join(lines) + "\n")
+
+    # capacity ratios, bert-base -> bert-large
+    ratios = []
+    for corpus in corpora:
+        b = cap.get(("bert-base-uncased", corpus))
+        l = cap.get(("bert-large-uncased", corpus))
+        if b and l:
+            ratios.append(l / b)
+    if ratios:
+        mac("CapRatioMedian", f"{np.median(ratios):.2f}")
+        mac("CapRatioMin", f"{min(ratios):.2f}")
+        mac("CapRatioMax", f"{max(ratios):.2f}")
+        mac("CapNCorpora", str(len(ratios)))
+        mac("CapNUp", str(int(sum(r > 1 for r in ratios))))
+
+    # the scale-matched pair, plus the larger masked model
+    for tag, model in (("Masked", "bert-base-uncased"), ("Causal", "gpt2"),
+                       ("MaskedLarge", "bert-large-uncased")):
+        s = [cap[(model, c)] for c in corpora if (model, c) in cap]
+        rr = []
+        for c in corpora:
+            recs = pll.get((model, c))
+            if not recs:
+                continue
+            a = [r["sigma_block_per_T"] for k, r in recs.items() if k[0] == "causal"]
+            bb = [r["sigma_block_per_T"] for k, r in recs.items() if k[0] == "noncausal"]
+            v, _ = rb(np.array(a), np.array(bb))
+            if np.isfinite(v):
+                rr.append(v)
+        if s:
+            mac(f"Sigma{tag}", f"{np.median(s):.4f}")
+        if rr:
+            mac(f"R{tag}", f"{np.median(rr):+.3f}")
+            mac(f"NSep{tag}", str(int(sum(abs(v) > 0.2 for v in rr))))
+            mac(f"NTot{tag}", str(len(rr)))
+    print(f"  tab_pll.tex  ({len(cap)} cells)")
+
+
+# -------------------------------------------------------------- toy
+def table_capacity(toy_dir, outdir):
+    p = os.path.join(toy_dir or "", "capacity_results.json")
+    if not os.path.isfile(p):
+        return
+    d = json.load(open(p))
+    rows = d.get("rows", [])
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{lrrrrr}",
+        r"\toprule",
+        r"model & $d$ & params & loss & $\sigma$ & $\mathrm{rms}|A|$ \\",
+        r"\midrule",
+    ]
+    for r in rows:
+        sig = r["sigma"]
+        sig_s = f"${tex_sci(sig)}$" if sig < 1e-6 else f"{sig:.4f}"
+        lines.append(f"{r['kind']} & {r['d']} & {r['params']} & "
+                     f"{r['final_loss']:.4f} & {sig_s} & "
+                     f"{r['affinity_rms']:.4f} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_capacity.tex"), "w").write("\n".join(lines) + "\n")
+
+    mlm = [r for r in rows if r.get("kind") == "MLM"]
+    ar = [r for r in rows if r.get("kind") == "AR"]
+    if mlm:
+        mac("ToySigmaMin", tex_sci(min(r["sigma"] for r in mlm)))
+        mac("ToySigmaMax", tex_sci(max(r["sigma"] for r in mlm)))
+        mac("ToyCapRatio", f"{max(r['sigma'] for r in mlm)/min(r['sigma'] for r in mlm):.1f}")
+        mac("ToyNCap", str(len(mlm)))
+        mac("ToyDMin", str(min(r["d"] for r in mlm)))
+        mac("ToyDMax", str(max(r["d"] for r in mlm)))
+    if ar:
+        mac("ToySigmaAR", tex_sci(ar[0]["sigma"], 1))
+        mac("ToyRmsAR", f"{ar[0]['affinity_rms']:.4f}")
+    mac("ToyL", str(d.get("L", "?")))
+    mac("ToyV", str(d.get("V", "?")))
+    mac("ToyStates", str(d.get("V", 0) ** d.get("L", 0)))
+    mac("ToyN", f"{d.get('N', 0):,}".replace(",", "{,}"))
+    print(f"  tab_capacity.tex  ({len(rows)} rows)")
+
+
+def table_saturation(blk, kinds, outdir):
+    """How much room the measure has left.
+
+    Once the written order IS the single most forward-costly arrangement, no
+    normalisation can express a further increase: that ceiling is in the
+    phenomenon, not in the statistic.  The fraction of texts sitting at it
+    therefore bounds how far this protocol can be pushed.
+    """
+    if not blk:
+        return
+    models = order_m({m for m, _ in blk})
+    corpora = order_c({c for _, c in blk})
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{llrrr}",
+        r"\toprule",
+        r"evaluator & direction & params & causal & non-causal \\",
+        r"\midrule",
+    ]
+    n_rows = 0
+    for model in models:
+        fc, fn = [], []
+        for corpus in corpora:
+            recs = blk.get((model, corpus), {})
+            c = [r["is_strict_max"] for k, r in recs.items() if k[0] == "causal"]
+            n = [r["is_strict_max"] for k, r in recs.items() if k[0] == "noncausal"]
+            if c:
+                fc.append(float(np.mean(c)))
+            if n:
+                fn.append(float(np.mean(n)))
+        if not fc:
+            continue
+        p = PARAMS.get(model)
+        ps = "--" if not p else (f"{p}M" if p < 1000 else f"{p//1000}B")
+        lines.append(f"{model.split('/')[-1]} & {kinds.get(model, '?')} & {ps} & "
+                     f"{100*np.median(fc):.0f}\\% & "
+                     f"{100*np.median(fn):.0f}\\%" + r" \\")
+        n_rows += 1
+        t = TAG.get(model)
+        if t:
+            mac(f"Ceil{t}", f"{100*np.median(fc):.0f}")
+            mac(f"CeilN{t}", f"{100*np.median(fn):.0f}")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_saturation.tex"), "w").write(
+        "\n".join(lines) + "\n")
+    print(f"  tab_saturation.tex  ({n_rows} evaluators)")
+
+
+def table_decomposition(blk, kinds, outdir):
+    """Split the within-text distance from the 0.50 null into two components.
+
+    The non-causal texts have an arbitrary sentence order that a writer
+    nevertheless chose, so their distance from the null measures what ANY
+    authored order earns.  Whatever the causal texts have beyond that is the
+    part only causal order earns.  Doing this per evaluator is what separates
+    a property of the text from a property of the evaluator.
+    """
+    if not blk:
+        return
+    models = order_m({m for m, _ in blk})
+    corpora = order_c({c for _, c in blk})
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{llrrrrrr}",
+        r"\toprule",
+        r" & & \multicolumn{3}{c}{midrank} & \multicolumn{3}{c}{$z$} \\",
+        r"\cmidrule(lr){3-5}\cmidrule(lr){6-8}",
+        r"evaluator & direction & authored & causal & share"
+        r" & authored & causal & share \\",
+        r"\midrule",
+    ]
+    got = {}
+    for model in models:
+        a_, c_, az_, cz_ = [], [], [], []
+        for corpus in corpora:
+            recs = blk.get((model, corpus), {})
+            pc = [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
+            pn = [r["percentile_written"] for k, r in recs.items() if k[0] == "noncausal"]
+            if not pc or not pn:
+                continue
+            a_.append(float(np.median(pn)) - 0.5)
+            c_.append(float(np.median(pc)) - float(np.median(pn)))
+            # z has no ceiling and its null is 0 for the same antisymmetry
+            # reason, so it is the check on the midrank split
+            zc1 = [r["z_written"] for k, r in recs.items()
+                   if k[0] == "causal" and np.isfinite(r.get("z_written", np.nan))]
+            zn1 = [r["z_written"] for k, r in recs.items()
+                   if k[0] == "noncausal" and np.isfinite(r.get("z_written", np.nan))]
+            if zc1 and zn1:
+                az_.append(float(np.median(zn1)))
+                cz_.append(float(np.median(zc1)) - float(np.median(zn1)))
+        if not a_:
+            continue
+        auth, caus = float(np.median(a_)), float(np.median(c_))
+        tot = auth + caus
+        share = caus / tot if tot else float("nan")
+        got[model] = (auth, caus, share)
+        zc, zn = cz_, az_
+        if zc and zn:
+            az = float(np.median(zn))
+            cz = float(np.median(zc))
+            tz = az + cz
+            sz = cz / tz if tz else float("nan")
+            zcols = (f"${az:+.3f}$ & ${cz:+.3f}$ & "
+                     + (f"{100*sz:.0f}\\%" if np.isfinite(sz) else "--"))
+        else:
+            zcols = "-- & -- & --"
+        lines.append(f"{model.split('/')[-1]} & {kinds.get(model, '?')} & "
+                     f"${auth:+.3f}$ & ${caus:+.3f}$ & "
+                     + (f"{100*share:.0f}\\%" if np.isfinite(share) else "--")
+                     + " & " + zcols + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_decomposition.tex"), "w").write(
+        "\n".join(lines) + "\n")
+
+    for model, tag in (("bert-base-uncased", "Masked"), ("gpt2", "Causal")):
+        if model in got:
+            auth, caus, share = got[model]
+            mac(f"Authored{tag}", f"{auth:+.3f}")
+            mac(f"CausalComp{tag}", f"{caus:+.3f}")
+            if np.isfinite(share):
+                mac(f"CausalShare{tag}", f"{100*share:.0f}")
+    # and one set per evaluator, for the capacity series in the prose
+    for model, (auth, caus, share) in got.items():
+        t = TAG.get(model)
+        if not t:
+            continue
+        mac(f"Authored{t}", f"{auth:+.3f}")
+        mac(f"Causal{t}", f"{caus:+.3f}")
+        if np.isfinite(share):
+            mac(f"Share{t}", f"{100*share:.0f}")
+        p = PARAMS.get(model)
+        if p:
+            # used both inside $...$ (abstract) and in a tabular cell (text
+            # mode), so it has to be mode-agnostic
+            unit = "M" if p < 1000 else "B"
+            val = p if p < 1000 else p // 1000
+            mac(f"Params{t}",
+                f"\\ensuremath{{{val}\\,\\mathrm{{{unit}}}}}")
+    print(f"  tab_decomposition.tex  ({len(got)} evaluators)")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--pll", default="../order-intervention/results_pll")
+    ap.add_argument("--blkord", default="../order-intervention/results_blkord")
+    ap.add_argument("--toy", default="../bert-affinity")
+    ap.add_argument("--outdir", default="tables")
+    args = ap.parse_args()
+
+    os.makedirs(args.outdir, exist_ok=True)
+    pll, kp = load_cells(args.pll, "pll")
+    blk, kb = load_cells(args.blkord, "blkord")
+    kinds = {**kp, **kb}
+    print(f"# pll cells: {len(pll)}   blkord cells: {len(blk)}")
+
+    table_blkord(blk, kinds, args.outdir)
+    table_decomposition(blk, kinds, args.outdir)
+    table_saturation(blk, kinds, args.outdir)
+    table_pll(pll, kinds, args.outdir)
+    table_capacity(args.toy, args.outdir)
+
+    # Every macro the prose may reference is defined even when its measurement
+    # is not in yet, so the document always compiles; a missing number shows up
+    # as a visible TODO instead of an undefined-control-sequence error.
+    expected = ["MedPctCausal", "MedPctNoncausal", "PctVsNullP",
+                "CausalShareMedian", "CausalShareMin", "CausalShareMax",
+                "NBlkordCells", "CapRatioMedian", "CapRatioMin", "CapRatioMax",
+                "CapNCorpora", "CapNUp", "SigmaMasked", "SigmaCausal",
+                "AuthoredMasked", "CausalCompMasked", "CausalShareMasked",
+                "AuthoredCausal", "CausalCompCausal", "CausalShareCausal",
+                "BlkRMasked", "BlkNSepMasked", "BlkNTotMasked", "BlkPMaxMasked",
+                "BlkPctCMasked", "BlkPctNMasked",
+                "BlkRCausal", "BlkNSepCausal", "BlkNTotCausal", "BlkPMaxCausal",
+                "BlkPctCCausal", "BlkPctNCausal",
+                "NSepMasked", "NTotMasked", "NSepCausal", "NTotCausal",
+                "RMaskedLarge", "SigmaMaskedLarge", "NSepMaskedLarge",
+                "NTotMaskedLarge",
+                "ToyNCap", "ToyDMin", "ToyDMax",
+                # per-evaluator, for the capacity series in the prose
+                "AuthoredBertBase", "CausalBertBase", "ShareBertBase",
+                "ParamsBertBase", "CeilBertBase", "CeilNBertBase",
+                "AuthoredBertLarge", "CausalBertLarge", "ShareBertLarge",
+                "ParamsBertLarge", "CeilBertLarge", "CeilNBertLarge",
+                "AuthoredLLaDA", "CausalLLaDA", "ShareLLaDA",
+                "ParamsLLaDA", "CeilLLaDA", "CeilNLLaDA",
+                "AuthoredGPTtwo", "CausalGPTtwo", "ShareGPTtwo",
+                "ParamsGPTtwo", "CeilGPTtwo", "CeilNGPTtwo",
+                "AuthoredQwen", "CausalQwen", "ShareQwen",
+                "ParamsQwen", "CeilQwen", "CeilNQwen",
+                "RMasked", "RCausal", "ToySigmaMin", "ToySigmaMax",
+                "ToyCapRatio", "ToySigmaAR", "ToyRmsAR", "ToyL", "ToyV",
+                "ToyStates", "ToyN"]
+    out = [r"% generated by make_tables.py -- do not edit"]
+    missing = []
+    for k in expected:
+        if k in MACROS:
+            out.append(f"\\newcommand{{\\{k}}}{{{MACROS[k]}}}")
+        else:
+            missing.append(k)
+            out.append(f"\\newcommand{{\\{k}}}{{\\textbf{{[TODO:{k}]}}}}")
+    for k, v in MACROS.items():
+        if k not in expected:
+            out.append(f"\\newcommand{{\\{k}}}{{{v}}}")
+    open(os.path.join(args.outdir, "macros.tex"), "w").write("\n".join(out) + "\n")
+    print(f"  macros.tex  ({len(MACROS)} defined"
+          + (f", {len(missing)} still TODO: {', '.join(missing)}" if missing else "")
+          + ")")
+
+
+if __name__ == "__main__":
+    main()

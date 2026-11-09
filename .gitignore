@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+# LaTeX build artefacts; the PDF is rebuilt by paper/build_paper.sh
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+paper/main.pdf
+paper/build.log
+paper/arxiv_submission/
+paper/arxiv_submission.tar.gz
+# screen copies of the figures; the PDFs are the ones the paper uses
+paper/figures/*.png
+# fetched, not ours
+Paper2026/
+hf/
+*.tar.gz

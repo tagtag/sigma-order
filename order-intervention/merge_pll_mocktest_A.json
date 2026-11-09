@@ -1,0 +1,150 @@
+{
+ "dir": "/tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_pll_A",
+ "cells": {
+  "bert-base-uncased|GPT54": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "GPT54",
+   "n": 200,
+   "shards": [
+    "0/2",
+    "1/2"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.008024754038793205,
+    "median_causal": 0.032251695720233314,
+    "median_noncausal": -0.009553707730089133,
+    "rank_biserial": 0.133,
+    "p": 0.10445438971690355
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 1.5678900168728032,
+    "median_causal": 1.5968766767664335,
+    "median_noncausal": 1.505955854059303,
+    "rank_biserial": 0.2098,
+    "p": 0.010410331144079325
+   }
+  },
+  "bert-base-uncased|Opus46": {
+   "model": "bert-base-uncased",
+   "kind": "masked",
+   "corpus": "Opus46",
+   "n": 200,
+   "shards": [
+    "0/2",
+    "1/2"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.006477277023989592,
+    "median_causal": 0.008535109599615596,
+    "median_noncausal": -0.01671446708793984,
+    "rank_biserial": 0.030200000000000005,
+    "p": 0.7130745482880949
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 1.5278952996921114,
+    "median_causal": 1.5709758707612587,
+    "median_noncausal": 1.498417511608951,
+    "rank_biserial": 0.15959999999999996,
+    "p": 0.051342896925715684
+   }
+  },
+  "gpt2|GPT54": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "GPT54",
+   "n": 200,
+   "shards": [
+    "0/2",
+    "1/2"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.22056732751183195,
+    "median_causal": 0.3971995531151501,
+    "median_noncausal": 0.02913860947036702,
+    "rank_biserial": 0.9117999999999999,
+    "p": 8.176578277775121e-29
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 2.3961602292959263,
+    "median_causal": 3.3357775304145143,
+    "median_noncausal": 1.512380675964828,
+    "rank_biserial": 1.0,
+    "p": 2.562143669163401e-34
+   }
+  },
+  "gpt2|Opus46": {
+   "model": "gpt2",
+   "kind": "causal",
+   "corpus": "Opus46",
+   "n": 200,
+   "shards": [
+    "0/2",
+    "1/2"
+   ],
+   "block": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 0.20484958660363595,
+    "median_causal": 0.38778285003272794,
+    "median_noncausal": 0.002764534622984813,
+    "rank_biserial": 0.9112,
+    "p": 8.877675745769951e-29
+   },
+   "token": {
+    "n_causal": 100,
+    "n_noncausal": 100,
+    "median_all": 2.5355958806444674,
+    "median_causal": 3.3896151429460546,
+    "median_noncausal": 1.5029603155439086,
+    "rank_biserial": 1.0,
+    "p": 2.562143669163401e-34
+   }
+  }
+ },
+ "matched_pair": {
+  "masked": "bert-base-uncased",
+  "causal": "gpt2",
+  "by_corpus": {
+   "GPT54": {
+    "sigma_masked": 0.008024754038793205,
+    "sigma_causal": 0.22056732751183195,
+    "ratio": 0.036382333364231974,
+    "r_masked": 0.133,
+    "r_causal": 0.9117999999999999,
+    "p_masked": 0.10445438971690355,
+    "p_causal": 8.176578277775121e-29
+   },
+   "Opus46": {
+    "sigma_masked": 0.006477277023989592,
+    "sigma_causal": 0.20484958660363595,
+    "ratio": 0.03161967339735224,
+    "r_masked": 0.030200000000000005,
+    "r_causal": 0.9112,
+    "p_masked": 0.7130745482880949,
+    "p_causal": 8.877675745769951e-29
+   }
+  },
+  "summary": {
+   "n_corpora": 2,
+   "median_r_masked": 0.0816,
+   "median_r_causal": 0.9115,
+   "median_sigma_masked": 0.007251015531391398,
+   "median_sigma_causal": 0.21270845705773395,
+   "corpora_masked_separates": 0,
+   "corpora_causal_separates": 2
+  }
+ }
+}

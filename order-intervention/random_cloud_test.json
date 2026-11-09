@@ -1,0 +1,127 @@
+{
+ "B": 10000,
+ "seed": 0,
+ "column": "sigma_block_per_T",
+ "corpora": {
+  "GPT54": {
+   "n_random": 10,
+   "random_orders": [
+    "random:1",
+    "random:2",
+    "random:3",
+    "random:4",
+    "random:5",
+    "random:6",
+    "random:7",
+    "random:8",
+    "random:9",
+    "random:10"
+   ],
+   "random_r": [
+    0.29079999999999995,
+    0.48160000000000003,
+    0.37240000000000006,
+    0.3046,
+    0.3006,
+    0.2791999999999999,
+    0.32000000000000006,
+    0.2882,
+    0.3036000000000001,
+    0.2704
+   ],
+   "cloud_mean": 0.32114,
+   "cloud_sd": 0.06299778126604497,
+   "cloud_spread": 0.21120000000000005,
+   "structured": {
+    "l2r": {
+     "r": 0.41159999999999997,
+     "z_vs_cloud": 1.4359235862288506,
+     "rank_in_cloud": 10,
+     "cloud_size_with_self": 11,
+     "p_rank": 0.36363636363636365,
+     "diff_vs_cloud_mean": 0.09045999999999998,
+     "ci95": [
+      -0.06547000000000001,
+      0.2398864999999999
+     ],
+     "outside_cloud_range": false,
+     "ci_excludes_zero": false
+    },
+    "r2l": {
+     "r": 0.6152,
+     "z_vs_cloud": 4.6677834376128216,
+     "rank_in_cloud": 11,
+     "cloud_size_with_self": 11,
+     "p_rank": 0.18181818181818182,
+     "diff_vs_cloud_mean": 0.29406,
+     "ci95": [
+      0.16285850000000002,
+      0.4166010000000001
+     ],
+     "outside_cloud_range": true,
+     "ci_excludes_zero": true
+    }
+   }
+  },
+  "Opus46": {
+   "n_random": 10,
+   "random_orders": [
+    "random:1",
+    "random:2",
+    "random:3",
+    "random:4",
+    "random:5",
+    "random:6",
+    "random:7",
+    "random:8",
+    "random:9",
+    "random:10"
+   ],
+   "random_r": [
+    0.5346,
+    0.4336,
+    0.36539999999999995,
+    0.44399999999999995,
+    0.4032,
+    0.34240000000000004,
+    0.552,
+    0.389,
+    0.4558,
+    0.3628
+   ],
+   "cloud_mean": 0.42828,
+   "cloud_sd": 0.07104941629285604,
+   "cloud_spread": 0.2096,
+   "structured": {
+    "l2r": {
+     "r": 0.7081999999999999,
+     "z_vs_cloud": 3.939793099020093,
+     "rank_in_cloud": 11,
+     "cloud_size_with_self": 11,
+     "p_rank": 0.18181818181818182,
+     "diff_vs_cloud_mean": 0.27991999999999995,
+     "ci95": [
+      0.16469499999999995,
+      0.39040300000000017
+     ],
+     "outside_cloud_range": true,
+     "ci_excludes_zero": true
+    },
+    "r2l": {
+     "r": 0.599,
+     "z_vs_cloud": 2.4028346594195136,
+     "rank_in_cloud": 11,
+     "cloud_size_with_self": 11,
+     "p_rank": 0.18181818181818182,
+     "diff_vs_cloud_mean": 0.17071999999999998,
+     "ci95": [
+      0.047027999999999924,
+      0.2885849999999999
+     ],
+     "outside_cloud_range": true,
+     "ci_excludes_zero": true
+    }
+   }
+  }
+ }
+}

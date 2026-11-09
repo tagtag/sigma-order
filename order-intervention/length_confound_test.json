@@ -1,0 +1,96 @@
+{
+ "order": "l2r",
+ "B": 5000,
+ "corpora": {
+  "Fable5": {
+   "r_raw": 0.29279999999999995,
+   "ci_raw": [
+    0.14239500000000008,
+    0.4396049999999999
+   ],
+   "r_residual": 0.3258000000000001,
+   "ci_residual": [
+    0.17799499999999993,
+    0.4722049999999999
+   ],
+   "r_matched": 0.37947406866325784,
+   "n_matched_pairs": 74,
+   "slope_sigma_on_T": -0.005507544884839184,
+   "median_T_causal": 38.0,
+   "median_T_noncausal": 37.0,
+   "residual_ci_excludes_zero": true
+  },
+  "GPT54": {
+   "r_raw": 0.41159999999999997,
+   "ci_raw": [
+    0.26419,
+    0.5488
+   ],
+   "r_residual": 0.41300000000000003,
+   "ci_residual": [
+    0.2651950000000001,
+    0.5492099999999998
+   ],
+   "r_matched": 0.39958448753462594,
+   "n_matched_pairs": 76,
+   "slope_sigma_on_T": -0.005963938218106364,
+   "median_T_causal": 30.0,
+   "median_T_noncausal": 31.0,
+   "residual_ci_excludes_zero": true
+  },
+  "GPT56": {
+   "r_raw": 0.19300000000000006,
+   "ci_raw": [
+    0.0331949999999999,
+    0.3446149999999998
+   ],
+   "r_residual": 0.2105999999999999,
+   "ci_residual": [
+    0.05058999999999998,
+    0.36181499999999966
+   ],
+   "r_matched": 0.2774234693877551,
+   "n_matched_pairs": 56,
+   "slope_sigma_on_T": -0.001277527066939011,
+   "median_T_causal": 37.0,
+   "median_T_noncausal": 35.0,
+   "residual_ci_excludes_zero": true
+  },
+  "Gemini31": {
+   "r_raw": 0.4583999999999999,
+   "ci_raw": [
+    0.31820000000000004,
+    0.5910049999999999
+   ],
+   "r_residual": 0.4847999999999999,
+   "ci_residual": [
+    0.347,
+    0.6154049999999999
+   ],
+   "r_matched": 0.4894222222222222,
+   "n_matched_pairs": 75,
+   "slope_sigma_on_T": -0.019726764415295864,
+   "median_T_causal": 33.0,
+   "median_T_noncausal": 32.0,
+   "residual_ci_excludes_zero": true
+  },
+  "Opus46": {
+   "r_raw": 0.7081999999999999,
+   "ci_raw": [
+    0.6015949999999999,
+    0.8074049999999998
+   ],
+   "r_residual": 0.4603999999999999,
+   "ci_residual": [
+    0.3196000000000001,
+    0.5962149999999998
+   ],
+   "r_matched": 0.6030286641427798,
+   "n_matched_pairs": 43,
+   "slope_sigma_on_T": -0.01723603216654153,
+   "median_T_causal": 40.0,
+   "median_T_noncausal": 45.0,
+   "residual_ci_excludes_zero": true
+  }
+ }
+}
