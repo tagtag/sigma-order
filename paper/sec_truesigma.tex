@@ -53,10 +53,19 @@ Eq.~\eqref{eq:aoar} says.
 
 Two consequences follow immediately.
 
-An autoregressive evaluator cannot be placed here at all.  It has a joint, so
-Eq.~\eqref{eq:fbzero} applies and its $\sigma$ is zero by construction; and
-the backward term asks for $p_\theta(x_1 \mid x_2 \ldots x_L)$, which
-conditions on the future and which causal attention cannot supply.  The
+An autoregressive evaluator has nothing to report here.  It has a joint, so
+Eq.~\eqref{eq:fbzero} applies and its $\sigma$ is zero by construction.  The
+backward term asks for $p_\theta(x_1 \mid x_2 \ldots x_L)$.  Causal attention
+cannot emit that conditional: position $1$ attends to nothing after it.  It
+can be recovered from the joint by Bayes --- score the $V$ sequences that
+differ only at position $1$ and normalise, which is what
+Section~\ref{sec:toy} does in a system small enough to afford $V$ forward
+passes per position --- but a conditional recovered that way is a function of
+the same joint, and that is precisely the hypothesis of
+Eq.~\eqref{eq:fbzero}.  The recovery therefore reproduces the zero instead of
+escaping it.  The absence is not of a number but of an independent one: a
+masked model's backward term is new information because its conditionals
+descend from no joint, and an autoregressive model's is not.  The
 quantity Sagawa names is, for the evaluators Sagawa uses, simultaneously
 trivial and unevaluable.  That explains the substitution of $\Delta$ for
 $\sigma$; it does not license it.
@@ -65,8 +74,12 @@ A masked evaluator can be placed here, and is the only kind that can.  It
 supplies every conditional Eq.~\eqref{eq:aoar} asks for, in any order, and
 its conditionals come from no joint, so Eq.~\eqref{eq:fbzero} does not bind
 it.  Section~\ref{sec:toy} measured that incompatibility directly, as a
-Kolmogorov cycle affinity on a system small enough to enumerate.  Here it is
-read off real text.
+Kolmogorov cycle affinity on a system small enough to enumerate, and
+Table~\ref{tab:bayesroute} reads $\sigma$ itself on those same models: both
+quantities are non-zero for every one of them, and their sizes do not track
+each other.  Here $\sigma$ is read off real text, where the first of those
+two facts is what the identity predicts and the second is a warning against
+reading its magnitude as an amount.
 
 \subsection{Where the authored order sits}
 \label{sec:fbrank}

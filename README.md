@@ -196,6 +196,48 @@ of `sigma` carries no property of the text; what the measurement adds is that
 the range it *does* carry — the evaluator's incompatibility — is large enough
 to dominate everything else.
 
+### Does the number belong to the model, or to how its rates were built?
+
+`sigma_EP` needs `p(x_k | x_-k)`. A masked model emits it; an autoregressive
+model has no head that does, so for that class it is recovered from the
+joint. The capacity table therefore uses two different constructions on its
+two kinds of row. That is forced -- one class has no second option -- but it
+leaves the question open, so `bayes_route_control.py` gives one masked model
+both routes at every width.
+
+| d | params | sigma_EP emitted | sigma_EP recovered | J(emitted \|\| recovered) | mean\|sigma\| |
+|---|---|---|---|---|---|
+|  32 |  13317 | 0.0074 | 4.2e-19 | 0.19-0.20 | 0.2261 |
+|  64 | 101189 | 0.0063 | 5.0e-19 | 0.12-0.26 | 0.2169 |
+|  96 | 337349 | 0.0144 | 5.3e-19 | 0.20-0.36 | 0.2130 |
+| 128 | 597253 | 0.0253 | 3.0e-19 | 0.22-0.55 | 0.2508 |
+| 160 | 930885 | 0.0259 | 2.2e-19 | 0.21-0.46 | 0.2169 |
+
+The `emitted` column reproduces `capacity_results.json` exactly -- same seed,
+same draw, same training call -- so this is one model read two ways, not two
+models.
+
+Three joints were tried: `exp(PLL)` normalised over the 4096 states, and the
+any-order chain rule left to right and right to left. **Every one returns
+zero.** That zero is not evidence about the model: the identity makes any
+joint-derived set of conditionals reversible. It is what makes the asymmetry
+harmless -- the two routes coincide exactly when a joint exists, so the
+difference in construction can only show up where the property under test
+fails.
+
+What the control does measure is `J`, the distance between the emitted
+conditionals and the recovered ones. It depends on **which** joint was
+recovered from. There is no canonical one, so "normalise it and the problem
+goes away" names a different model rather than repairing this one.
+
+The last column is `sigma` -- the quantity the paper measures on real text --
+read on the same models, since the two chain-rule joints are its two terms.
+Both quantities are non-zero at every width. **Their sizes do not track each
+other**: `sigma_EP` rises with capacity (rho = +0.90, p = 0.037) and
+mean`|sigma|` does not (rho = +0.10, p = 0.873); against each other,
+rho = +0.30, p = 0.624. Two different functionals of one failure, and
+neither magnitude is the amount of it.
+
 ### The mask rate BERT was trained at
 
 `BERT` is trained at a single masking rate, 0.15, while the chain rule sweeps
@@ -322,6 +364,17 @@ bert-affinity/
   cycle_affinity.py         Kolmogorov cycle affinities: the incompatibility,
                             enumerated, that instrument 2 reads off real text
   capacity_sweep.py         the capacity sweep in that system
+  bayes_route_control.py    the control that separates the model from the
+                            route: one masked model per width, with its
+                            Glauber rates built from the conditionals it
+                            emits and from conditionals recovered out of
+                            three different joints.  Reproduces the
+                            capacity sweep's sigma_EP bit for bit, so the
+                            comparison is within one model.  Carries its own
+                            assertions; ~15 min on CPU, not part of the
+                            self-test set because it trains
+  bayes_route_control.json  its measured values
+  bayes_route_control.log   its output
   identity_check.py         a Jeffreys-divergence identity, verified numerically
   reproduce_sagawa_stats.py independent reproduction of the published statistics
   compare_repro.py          checks that reproduction against the shipped values

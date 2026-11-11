@@ -1,0 +1,52 @@
+Some weights of the model checkpoint at bert-large-uncased were not used when initializing BertForMaskedLM: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'cls.seq_relationship.bias', 'cls.seq_relationship.weight']
+- This IS expected if you are initializing BertForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+# model=bert-large-uncased (masked)  corpus=fixed_text_GPT56.json  max_perms=24  shard=0/1
+#   causal 10/100  (10s)
+#   causal 20/100  (18s)
+#   causal 30/100  (26s)
+#   causal 40/100  (34s)
+#   causal 50/100  (41s)
+#   causal 60/100  (48s)
+#   causal 70/100  (56s)
+#   causal 80/100  (64s)
+#   causal 90/100  (72s)
+#   causal 100/100  (80s)
+# done causal: 100 texts
+#   noncausal 10/100  (87s)
+#   noncausal 20/100  (94s)
+#   noncausal 30/100  (101s)
+#   noncausal 40/100  (108s)
+#   noncausal 50/100  (115s)
+#   noncausal 60/100  (122s)
+#   noncausal 70/100  (130s)
+#   noncausal 80/100  (137s)
+#   noncausal 90/100  (144s)
+#   noncausal 100/100  (151s)
+# done noncausal: 100 texts
+
+============================================================================================
+Written block order among all block orders: bert-large-uncased (masked), fixed_text_GPT56.json
+  200/200 texts enumerated exactly
+  percentile: 0.50 = indistinguishable from an arbitrary order, 1.00 = the most forward-costly of them all
+============================================================================================
+group          n   med pct  mean pct    med z  strict max  med sigma   med max
+causal       100    0.6458    0.6413    0.493       15.0%    0.05196   0.16248
+noncausal    100    0.5625    0.5679    0.140        6.0%    0.00950   0.11398
+
+measure                med causal  med noncaus        r           p
+percentile_written         0.6458       0.5625   0.1614   4.835e-02
+z_written                  0.4930       0.1397   0.1718   3.594e-02
+sigma_written              0.0520       0.0095   0.2416   3.174e-03
+
+============================================================================================
+Reading
+============================================================================================
+  The written order ranks EQUALLY HIGH in both groups.
+  With every between-set confound removed, what sigma
+  responds to is the text being in its written order, not
+  its causal structure.  The causal/non-causal effect size
+  is then not evidence that entropy production measures
+  causality.
+
+# wrote results_blkord_gpu/blkord_bert-large-uncased__GPT56__0-1.json  (151s)

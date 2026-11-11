@@ -1,0 +1,48 @@
+Loading checkpoint shards:   0%|          | 0/6 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 6/6 [00:00<00:00, 381.35it/s]
+# model=GSAI-ML/LLaDA-8B-Base (masked)  corpus=fixed_text_Fable5.json  max_perms=24  shard=0/1
+#   causal 10/100  (38s)
+#   causal 20/100  (73s)
+#   causal 30/100  (106s)
+#   causal 40/100  (139s)
+#   causal 50/100  (173s)
+#   causal 60/100  (204s)
+#   causal 70/100  (240s)
+#   causal 80/100  (275s)
+#   causal 90/100  (309s)
+#   causal 100/100  (345s)
+# done causal: 100 texts
+#   noncausal 10/100  (374s)
+#   noncausal 20/100  (404s)
+#   noncausal 30/100  (437s)
+#   noncausal 40/100  (466s)
+#   noncausal 50/100  (495s)
+#   noncausal 60/100  (531s)
+#   noncausal 70/100  (563s)
+#   noncausal 80/100  (595s)
+#   noncausal 90/100  (627s)
+#   noncausal 100/100  (661s)
+# done noncausal: 100 texts
+
+============================================================================================
+Written block order among all block orders: GSAI-ML/LLaDA-8B-Base (masked), fixed_text_Fable5.json
+  200/200 texts enumerated exactly
+  percentile: 0.50 = indistinguishable from an arbitrary order, 1.00 = the most forward-costly of them all
+============================================================================================
+group          n   med pct  mean pct    med z  strict max  med sigma   med max
+causal       100    0.9375    0.9079    1.478       33.0%    0.56019   0.61491
+noncausal    100    0.8542    0.8738    1.354       17.0%    0.54382   0.62026
+
+measure                med causal  med noncaus        r           p
+percentile_written         0.9375       0.8542   0.2749   6.386e-04
+z_written                  1.4776       1.3535   0.3270   6.504e-05
+sigma_written              0.5602       0.5438  -0.0146   8.594e-01
+
+============================================================================================
+Reading
+============================================================================================
+  The written order ranks HIGHER among arbitrary block
+  orders for causal texts than for non-causal ones.  Within
+  a text, with length and vocabulary held fixed, sigma
+  responds to causal order specifically.
+
+# wrote results_blkord_gpu/blkord_GSAI-ML_LLaDA-8B-Base__Fable5__0-1.json  (661s)

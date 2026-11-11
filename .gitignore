@@ -4,9 +4,14 @@ __pycache__/
 *.aux
 *.fdb_latexmk
 *.fls
-*.log
 *.out
 *.synctex.gz
+# LaTeX logs only.  This was *.log, which also excluded every measurement
+# log in order-intervention/ and bert-affinity/ -- the files the README
+# names beside each script as the record of what it printed.  They were
+# copied into the tree and then ignored, so check_readme.py found them and
+# a reader who cloned the repository did not.
+paper/*.log
 paper/main.pdf
 # the preview of the arXiv build, kept by make_arxiv.sh for checking
 paper/arxiv_main.pdf

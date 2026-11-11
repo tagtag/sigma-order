@@ -85,9 +85,14 @@ __pycache__/
 *.aux
 *.fdb_latexmk
 *.fls
-*.log
 *.out
 *.synctex.gz
+# LaTeX logs only.  This was *.log, which also excluded every measurement
+# log in order-intervention/ and bert-affinity/ -- the files the README
+# names beside each script as the record of what it printed.  They were
+# copied into the tree and then ignored, so check_readme.py found them and
+# a reader who cloned the repository did not.
+paper/*.log
 paper/main.pdf
 # the preview of the arXiv build, kept by make_arxiv.sh for checking
 paper/arxiv_main.pdf
@@ -141,17 +146,41 @@ done
 
 echo
 echo "=== 3. the self-tests still pass from the copy ==="
+# Same python resolution as build_paper.sh.  A bare login shell on the
+# cluster has neither scipy nor torch, and `module load` does not survive a
+# logout, so running this script from a fresh shell failed four self-tests
+# at their import lines -- and this step printed "FAIL" and nothing else, so
+# the report looked like a broken repository rather than a missing module.
+: "${PY:=python3}"
+: "${MODULE:=pytorch/2.4.1}"
+if ! $PY -c 'import numpy, scipy' >/dev/null 2>&1 && [ "$MODULE" != none ]; then
+    [ -f /etc/profile.d/modules.sh ] && . /etc/profile.d/modules.sh
+    module load "$MODULE" >/dev/null 2>&1 || true
+fi
+$PY -c 'import numpy, scipy' >/dev/null 2>&1 \
+    && echo "  python: $($PY -c 'import sys; print(sys.executable)')" \
+    || echo "  WARNING: $PY has no scipy; self-tests that need it will fail"
+
 ok=1
 # Every self-test in the copy, found rather than listed: a hand-written
 # list goes stale silently, and this one did -- it named three while the
 # repository had grown to eight.
+#
+# -I so the copy is tested as it will be unpacked, with nothing imported
+# from a stray file beside it.  The output is kept: a check that reports a
+# failure without reporting its cause sends the reader to guess, and the
+# cause here is usually one line long.
 for t in $(cd "$REPO" && find . -name '*_selftest.py' | sed 's|^\./||' | sort); do
     [ -f "$REPO/$t" ] || continue
-    if ( cd "$REPO/$(dirname "$t")" && python3 -I "$(basename "$t")" >/dev/null 2>&1 ); then
+    log=$(mktemp)
+    if ( cd "$REPO/$(dirname "$t")" && $PY -I "$(basename "$t")" >"$log" 2>&1 ); then
         echo "  pass  $t"
     else
-        echo "  FAIL  $t"; ok=0
+        echo "  FAIL  $t"
+        tail -4 "$log" | sed 's/^/          /'
+        ok=0
     fi
+    rm -f "$log"
 done
 [ "$ok" = 1 ] || { echo "  a self-test fails from the copy -- do not publish yet"; exit 1; }
 

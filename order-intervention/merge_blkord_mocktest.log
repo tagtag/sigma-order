@@ -1,0 +1,31 @@
+============================================================================================================
+Position of the WRITTEN sentence order among all orders of the same text
+  0.50 = indistinguishable from an arbitrary order;  1.00 = the most forward-costly of them all
+  r compares that position between causal and non-causal texts
+============================================================================================================
+evaluator                dir    corpus     n  pct causal  pct noncaus  p vs 0.5 (C)        r          p
+bert-base-uncased     masked     GPT54   200      0.8958       0.8542      3.01e-18   0.1380   8.86e-02
+bert-base-uncased     masked    Opus46   200      0.8542       0.8542      3.03e-18   0.0122   8.81e-01
+gpt2                  causal     GPT54   200      0.8750       0.8542      2.92e-18   0.1227   1.29e-01
+gpt2                  causal    Opus46   200      0.8958       0.8542      2.82e-18   0.1297   1.09e-01
+
+============================================================================================================
+Reading
+============================================================================================================
+  bert-base-uncased (masked), 2 corpora
+    written order sits at 0.875 (causal) and 0.854 (non-causal) of the permutation range
+    causal vs non-causal |r| > 0.2 in 0/2 corpora  (median r = +0.075)
+    -> the written order is special in BOTH groups and
+       equally so.  With every between-set confound removed,
+       sigma responds to the text being in its written
+       order, not to causal structure.
+
+  gpt2 (causal), 2 corpora
+    written order sits at 0.885 (causal) and 0.854 (non-causal) of the permutation range
+    causal vs non-causal |r| > 0.2 in 0/2 corpora  (median r = +0.126)
+    -> the written order is special in BOTH groups and
+       equally so.  With every between-set confound removed,
+       sigma responds to the text being in its written
+       order, not to causal structure.
+
+# wrote /tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_blk/blkord_comparison.json

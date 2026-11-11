@@ -381,3 +381,76 @@ def check_displacement_macros():
 
 
 check_displacement_macros()
+
+
+# ------------------------------------------------------- the route control
+def check_bayes_route_table():
+    """The control table must report the worst recovered route, not the best.
+
+    Its point is that no route through a joint produces the reading, so the
+    column that stands for "recovered" has to be the largest |sigma_EP| of
+    the three joints tried.  Taking the smallest would make the claim by
+    choosing the evidence.  The correlation macros are emitted only when
+    there are enough widths to rank.
+    """
+    import json, os, shutil, sys, tempfile
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import make_tables as M
+
+    def row(d, head, joints, mean_abs):
+        return {"d": d, "nlayer": 3, "params": 100 * d,
+                "final_loss": 1.1, "head": {"sigma": head,
+                                            "affinity_rms": 0.5},
+                "joint_routes": [{"route": n, "sigma": s,
+                                  "affinity_rms": 1e-16,
+                                  "jeffreys_vs_head": j}
+                                 for n, s, j in joints],
+                "sigma_l2r_r2l": {"median": 0.1, "min": -1.0, "max": 1.0,
+                                  "mean_abs": mean_abs}}
+
+    d = tempfile.mkdtemp()
+    out = tempfile.mkdtemp()
+    try:
+        rows = [row(32, 0.0074, [("pll", 1e-19, 0.19), ("l2r", -4e-19, 0.20),
+                                 ("r2l", 2e-19, 0.195)], 0.2261),
+                row(96, 0.0144, [("pll", 2e-19, 0.20), ("l2r", -1e-19, 0.36),
+                                 ("r2l", 3e-19, 0.30)], 0.2130),
+                row(160, 0.0259, [("pll", 1e-19, 0.21), ("l2r", 3e-19, 0.46),
+                                  ("r2l", -2e-19, 0.30)], 0.2169)]
+        json.dump({"rows": rows},
+                  open(os.path.join(d, "bayes_route_control.json"), "w"))
+        M.MACROS.clear()
+        M.table_bayes_route(d, out)
+        tab = open(os.path.join(out, "tab_bayesroute.tex")).read()
+        g = M.MACROS
+
+        body = [l for l in tab.splitlines() if l.endswith(r"\\")
+                and "multicolumn" not in l and "params" not in l]
+        assert len(body) == 3, f"expected 3 widths, got {len(body)}"
+        # the worst of the three joints at d=32 is 4e-19, not 1e-19
+        assert "4" in body[0].split("&")[4], \
+            f"the recovered column is not the largest of the three: {body[0]}"
+        # and the macro quotes the worst over the whole sweep
+        assert "4" in g["CtrlSigmaJointMax"], g["CtrlSigmaJointMax"]
+        assert g["CtrlJeffreysMin"] == "0.21", g["CtrlJeffreysMin"]
+        assert g["CtrlJeffreysMax"] == "0.46", g["CtrlJeffreysMax"]
+        assert g["CtrlSigmaHead"] == "0.0259", g["CtrlSigmaHead"]
+        assert g["CtrlNWidths"] == "3"
+        # sigma_EP rises with width here and the sigma mean does not
+        assert float(g["CtrlRhoEP"]) > 0.9, g["CtrlRhoEP"]
+        assert float(g["CtrlRhoSig"]) < 0.5, g["CtrlRhoSig"]
+
+        # two widths cannot be ranked: no correlation macros at all
+        json.dump({"rows": rows[:2]},
+                  open(os.path.join(d, "bayes_route_control.json"), "w"))
+        M.MACROS.clear()
+        M.table_bayes_route(d, out)
+        assert "CtrlRhoEP" not in M.MACROS, \
+            "a two-point rank correlation was reported"
+        print("  route control: the recovered column is the worst route")
+    finally:
+        shutil.rmtree(d)
+        shutil.rmtree(out)
+
+
+check_bayes_route_table()

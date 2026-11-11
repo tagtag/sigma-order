@@ -1,0 +1,29 @@
+====================================================================================================
+The random cloud: effect size across random unmasking orders
+====================================================================================================
+corpus         n   mean r      sd   spread     min     max
+GPT54         10   0.3211  0.0630   0.2112  0.2704  0.4816
+Opus46        10   0.4283  0.0710   0.2096  0.3424  0.5520
+
+====================================================================================================
+Structured orders against that cloud
+  'outside' = r beyond the cloud's observed range
+  CI is the paired bootstrap of (structured r) - (cloud mean r)
+====================================================================================================
+corpus      order         r       z   rank   p_rank     diff   CI low  CI high  outside   CI>0
+GPT54       l2r      0.4116    1.44  10/11   0.3636   0.0905  -0.0655   0.2399    False  False
+GPT54       r2l      0.6152    4.67  11/11   0.1818   0.2941   0.1629   0.4166     True   True
+Opus46      l2r      0.7082    3.94  11/11   0.1818   0.2799   0.1647   0.3904     True   True
+Opus46      r2l      0.5990    2.40  11/11   0.1818   0.1707   0.0470   0.2886     True   True
+
+====================================================================================================
+Reading
+====================================================================================================
+  GPT54        a structured order sits apart from the cloud: the order carries information
+  Opus46       a structured order sits apart from the cloud: the order carries information
+
+  With ten seeds the finest two-sided rank p is 2/11 = 0.18, so no
+  single corpus settles this on rank alone; the bootstrap CI and
+  agreement across corpora are what carry the weight.
+
+# wrote random_cloud_test.json

@@ -1,0 +1,54 @@
+A new version of the following files was downloaded from https://huggingface.co/GSAI-ML/LLaDA-8B-Base:
+- configuration_llada.py
+. Make sure to double-check they do not contain any added malicious code. To avoid downloading new versions of the code file, you can pin a revision.
+A new version of the following files was downloaded from https://huggingface.co/GSAI-ML/LLaDA-8B-Base:
+- modeling_llada.py
+. Make sure to double-check they do not contain any added malicious code. To avoid downloading new versions of the code file, you can pin a revision.
+Loading checkpoint shards:   0%|          | 0/6 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 6/6 [00:00<00:00, 363.60it/s]
+# model=GSAI-ML/LLaDA-8B-Base (masked)  corpus=fixed_text_Opus46.json  max_perms=24  shard=0/1
+#   causal 10/100  (65s)
+#   causal 20/100  (96s)
+#   causal 30/100  (129s)
+#   causal 40/100  (161s)
+#   causal 50/100  (197s)
+#   causal 60/100  (235s)
+#   causal 70/100  (272s)
+#   causal 80/100  (309s)
+#   causal 90/100  (346s)
+#   causal 100/100  (388s)
+# done causal: 100 texts
+#   noncausal 10/100  (423s)
+#   noncausal 20/100  (461s)
+#   noncausal 30/100  (502s)
+#   noncausal 40/100  (544s)
+#   noncausal 50/100  (586s)
+#   noncausal 60/100  (630s)
+#   noncausal 70/100  (673s)
+#   noncausal 80/100  (719s)
+#   noncausal 90/100  (766s)
+#   noncausal 100/100  (818s)
+# done noncausal: 100 texts
+
+============================================================================================
+Written block order among all block orders: GSAI-ML/LLaDA-8B-Base (masked), fixed_text_Opus46.json
+  200/200 texts enumerated exactly
+  percentile: 0.50 = indistinguishable from an arbitrary order, 1.00 = the most forward-costly of them all
+============================================================================================
+group          n   med pct  mean pct    med z  strict max  med sigma   med max
+causal       100    0.9375    0.9379    1.580       48.0%    0.54643   0.57534
+noncausal    100    0.8542    0.8650    1.323       16.0%    0.39046   0.46743
+
+measure                med causal  med noncaus        r           p
+percentile_written         0.9375       0.8542   0.5370   1.738e-11
+z_written                  1.5800       1.3230   0.6162   5.198e-14
+sigma_written              0.5464       0.3905   0.5274   1.179e-10
+
+============================================================================================
+Reading
+============================================================================================
+  The written order ranks HIGHER among arbitrary block
+  orders for causal texts than for non-causal ones.  Within
+  a text, with length and vocabulary held fixed, sigma
+  responds to causal order specifically.
+
+# wrote results_blkord_gpu/blkord_GSAI-ML_LLaDA-8B-Base__Opus46__0-1.json  (818s)

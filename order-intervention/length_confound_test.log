@@ -1,0 +1,23 @@
+========================================================================================================
+Length confound, order = l2r
+  raw        : effect size as measured
+  residual   : after removing the pooled linear trend of sigma on T
+  matched    : on the exact-T matched subsample
+========================================================================================================
+corpus        r_raw           CI_raw  r_resid         CI_resid  r_match n_pair    slope
+Fable5       0.2928    [0.142,0.440]   0.3258    [0.178,0.472]   0.3795     74 -0.00551
+GPT54        0.4116    [0.264,0.549]   0.4130    [0.265,0.549]   0.3996     76 -0.00596
+GPT56        0.1930    [0.033,0.345]   0.2106    [0.051,0.362]   0.2774     56 -0.00128
+Gemini31     0.4584    [0.318,0.591]   0.4848    [0.347,0.615]   0.4894     75 -0.01973
+Opus46       0.7082    [0.602,0.807]   0.4604    [0.320,0.596]   0.6030     43 -0.01724
+
+========================================================================================================
+Reading
+========================================================================================================
+  Fable5      residual keeps 111.3% of the raw effect   -> survives
+  GPT54       residual keeps 100.3% of the raw effect   -> survives
+  GPT56       residual keeps 109.1% of the raw effect   -> survives
+  Gemini31    residual keeps 105.8% of the raw effect   -> survives
+  Opus46      residual keeps  65.0% of the raw effect   -> survives
+
+# wrote length_confound_test.json

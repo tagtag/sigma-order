@@ -1,0 +1,83 @@
+# scenario A: wrote 12 files to /tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_pll_A
+# each (model, corpus) cell must merge to exactly 200 texts despite the duplicate shard
+# expected verdict to contain: 'the entropy production largely DISAPPEARS'
+========================================================================================================
+Block reversal: does the entropy production survive a direction-neutral evaluator?
+  med sigma = median over all texts;  r = causal vs non-causal effect size
+========================================================================================================
+evaluator                     params      dir              GPT54             Opus46
+                                                   med sigma / r      med sigma / r
+bert-base-uncased               110M   masked     0.0080 / 0.133     0.0065 / 0.030
+gpt2                            117M   causal     0.2206 / 0.912     0.2048 / 0.911
+
+========================================================================================================
+Token reversal (destroys grammar; shown for completeness, not for the causal claim)
+========================================================================================================
+bert-base-uncased                      masked     1.5679 / 0.210     1.5279 / 0.160
+gpt2                                   causal     2.3962 / 1.000     2.5356 / 1.000
+
+========================================================================================================
+Scale-matched pair: bert-base-uncased (masked) vs gpt2 (causal)
+  A difference here is directionality, not capacity.
+========================================================================================================
+corpus         sigma masked   sigma causal    ratio   r masked   r causal
+GPT54               0.00802        0.22057    0.036     0.1330     0.9118
+Opus46              0.00648        0.20485    0.032     0.0302     0.9112
+
+========================================================================================================
+Reading
+========================================================================================================
+  median sigma_block : masked +0.00725   causal +0.21271
+  median r           : masked +0.0816   causal +0.9115
+  corpora with |r|>0.2: masked 0/2   causal 2/2
+
+  The entropy production largely DISAPPEARS under a
+  direction-neutral evaluator of the same size.  What the
+  autoregressive measurement reported was then mostly a
+  property of its own factorisation, not of the text.
+
+# wrote /tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_pll_A/pll_comparison.json
+
+################ SCENARIO B ################
+
+# scenario B: wrote 12 files to /tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_pll_B
+# each (model, corpus) cell must merge to exactly 200 texts despite the duplicate shard
+# expected verdict to contain: 'the separation survives a direction-neutral evaluator'
+========================================================================================================
+Block reversal: does the entropy production survive a direction-neutral evaluator?
+  med sigma = median over all texts;  r = causal vs non-causal effect size
+========================================================================================================
+evaluator                     params      dir              GPT54             Opus46
+                                                   med sigma / r      med sigma / r
+bert-base-uncased               110M   masked     0.1643 / 0.805     0.1838 / 0.782
+gpt2                            117M   causal     0.2194 / 0.895     0.2110 / 0.934
+
+========================================================================================================
+Token reversal (destroys grammar; shown for completeness, not for the causal claim)
+========================================================================================================
+bert-base-uncased                      masked     2.6784 / 1.000     2.5800 / 1.000
+gpt2                                   causal     2.6216 / 1.000     2.5161 / 1.000
+
+========================================================================================================
+Scale-matched pair: bert-base-uncased (masked) vs gpt2 (causal)
+  A difference here is directionality, not capacity.
+========================================================================================================
+corpus         sigma masked   sigma causal    ratio   r masked   r causal
+GPT54               0.16429        0.21939    0.749     0.8050     0.8952
+Opus46              0.18382        0.21100    0.871     0.7822     0.9338
+
+========================================================================================================
+Reading
+========================================================================================================
+  median sigma_block : masked +0.17406   causal +0.21519
+  median r           : masked +0.7936   causal +0.9145
+  corpora with |r|>0.2: masked 2/2   causal 2/2
+
+  The separation survives a direction-neutral evaluator at
+  matched scale.  The asymmetry is in the text, and the
+  objection from the evaluator's training direction is
+  answered.  (It remains that a pseudo-log-likelihood is no
+  log-probability, so the thermodynamic reading still needs
+  the any-order route.)
+
+# wrote /tmp/claude-0/-home-claude/1dbabeba-6de1-55fa-a8d0-cdb9a0e56b02/scratchpad/mock_pll_B/pll_comparison.json

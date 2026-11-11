@@ -1,0 +1,51 @@
+# device=cpu  L=6 V=4  states=4096  d=160 nlayer=3
+/mnt/attach/outputs/bert-affinity/mlm_entropy_production.py:136: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, nlayer)
+# d=32 nlayer=1 params=13317 loss=1.1148  [21s]
+# head route : sigma_EP = 7.4261e-03   rms|A| = 0.3377
+# joint pll : sigma_EP = -1.217e-19   rms|A| = 3.36e-16   Jeffreys(head || joint) = 0.1900
+# joint l2r : sigma_EP = +4.209e-19   rms|A| = 2.86e-16   Jeffreys(head || joint) = 0.1858
+# joint r2l : sigma_EP = +8.633e-20   rms|A| = 2.83e-16   Jeffreys(head || joint) = 0.1998
+# sigma (l2r - r2l)/L over all 4096 states: median -0.0710  min -1.0391  max +0.8299  mean|.| 0.2261
+/mnt/attach/outputs/bert-affinity/mlm_entropy_production.py:136: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, nlayer)
+# d=64 nlayer=2 params=101189 loss=1.1286  [54s]
+# head route : sigma_EP = 6.2751e-03   rms|A| = 0.3618
+# joint pll : sigma_EP = -3.135e-19   rms|A| = 3.33e-16   Jeffreys(head || joint) = 0.2084
+# joint l2r : sigma_EP = +2.341e-20   rms|A| = 2.95e-16   Jeffreys(head || joint) = 0.1192
+# joint r2l : sigma_EP = -4.952e-19   rms|A| = 3.08e-16   Jeffreys(head || joint) = 0.2568
+# sigma (l2r - r2l)/L over all 4096 states: median +0.1025  min -0.6777  max +0.8696  mean|.| 0.2169
+# d=96 nlayer=3 params=337349 loss=1.1360  [137s]
+# head route : sigma_EP = 1.4370e-02   rms|A| = 0.4960
+# joint pll : sigma_EP = +5.304e-19   rms|A| = 3.23e-16   Jeffreys(head || joint) = 0.2009
+# joint l2r : sigma_EP = -2.927e-20   rms|A| = 2.77e-16   Jeffreys(head || joint) = 0.2572
+# joint r2l : sigma_EP = +4.687e-19   rms|A| = 2.90e-16   Jeffreys(head || joint) = 0.3562
+# sigma (l2r - r2l)/L over all 4096 states: median +0.0185  min -0.9348  max +0.8036  mean|.| 0.2130
+# d=128 nlayer=3 params=597253 loss=1.1430  [263s]
+# head route : sigma_EP = 2.5346e-02   rms|A| = 0.6496
+# joint pll : sigma_EP = +1.008e-19   rms|A| = 3.09e-16   Jeffreys(head || joint) = 0.2248
+# joint l2r : sigma_EP = +3.006e-19   rms|A| = 2.92e-16   Jeffreys(head || joint) = 0.5079
+# joint r2l : sigma_EP = -1.098e-19   rms|A| = 2.74e-16   Jeffreys(head || joint) = 0.5490
+# sigma (l2r - r2l)/L over all 4096 states: median -0.0249  min -1.2351  max +1.0748  mean|.| 0.2508
+# d=160 nlayer=3 params=930885 loss=1.1570  [380s]
+# head route : sigma_EP = 2.5851e-02   rms|A| = 0.6392
+# joint pll : sigma_EP = +1.037e-19   rms|A| = 3.10e-16   Jeffreys(head || joint) = 0.2137
+# joint l2r : sigma_EP = -2.043e-19   rms|A| = 2.89e-16   Jeffreys(head || joint) = 0.4017
+# joint r2l : sigma_EP = -2.230e-19   rms|A| = 2.67e-16   Jeffreys(head || joint) = 0.4616
+# sigma (l2r - r2l)/L over all 4096 states: median -0.0776  min -1.2102  max +0.7315  mean|.| 0.2169
+
+    d   params     loss    sigma_EP  mean|sigma|
+   32    13317   1.1148  7.4261e-03       0.2261
+   64   101189   1.1286  6.2751e-03       0.2169
+   96   337349   1.1360  1.4370e-02       0.2130
+  128   597253   1.1430  2.5346e-02       0.2508
+  160   930885   1.1570  2.5851e-02       0.2169
+
+# sigma_EP against width      rho = +0.90  p = 0.037
+# mean|sigma| against width   rho = +0.10  p = 0.873
+# the two against each other  rho = +0.30  p = 0.624
+
+# wrote /mnt/attach/outputs/bert-affinity/bayes_route_control.json  [881s]
+# Every route through a joint returned zero; the model's own conditionals did not.
+# The number in the capacity table is a property of the conditionals the model emits,
+# not of the route chosen to turn them into rates.

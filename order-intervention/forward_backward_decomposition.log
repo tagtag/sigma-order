@@ -1,0 +1,22 @@
+# source: /user1/scl9/tag/LLM/order-intervention/forward_backward_sigma.json
+# runs:   /user1/scl9/tag/LLM/order-intervention/results_llada_20261109
+
+decomposition of sigma = [ log P_l2r(x) - log P_r2l(x) ] / L
+null = 0 exactly (sigma vanishes for any model with a joint)
+========================================================================
+corpus          non-causal    causal   authored  causal cmp    share
+------------------------------------------------------------------------
+Fable5              0.0724    0.0172    +0.0724     -0.0552    -321%
+GPT54               0.0905    0.0610    +0.0905     -0.0295     -48%
+GPT56               0.1269    0.0769    +0.1269     -0.0500     -65%
+Gemini31            0.0319    0.0035    +0.0319     -0.0284    -800%
+Opus46              0.0522    0.0649    +0.0522     +0.0127      20%
+------------------------------------------------------------------------
+median                                  +0.0724     -0.0295     -69%
+========================================================================
+  the causal component is NEGATIVE in 4 of 5 corpora.
+  causal order does not add to sigma; it subtracts.  the midrank
+  instrument puts this component at +0.042 (11% of the total);
+  here it is -0.0295 (-69% of the total).
+
+# wrote /user1/scl9/tag/LLM/order-intervention/forward_backward_decomposition.json

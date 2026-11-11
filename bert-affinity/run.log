@@ -1,0 +1,27 @@
+# device=cpu  L=6 V=4  states=4096
+# truth entropy = 7.1524 nats (uniform = 8.3178)
+# TRUE sigma = 3.484e-19  (detailed balance => 0)
+/mnt/attach/outputs/bert-affinity/mlm_entropy_production.py:136: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, nlayer)
+# MLM N=1000    loss=0.6396  sigma=1.4047e-01  rms|A|=4.4767  KL(mu||pi)=5.7508e-01
+/mnt/attach/outputs/bert-affinity/mlm_entropy_production.py:136: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, nlayer)
+# AR  N=1000    loss=1.0332  sigma=2.6809e-17  rms|A|=0.0000  KL(mu||pi)=9.2568e-01
+# MLM N=10000   loss=1.1512  sigma=1.7301e-02  rms|A|=0.6322  KL(mu||pi)=3.2359e-02
+# AR  N=10000   loss=1.1807  sigma=3.4104e-19  rms|A|=0.0000  KL(mu||pi)=8.5594e-02
+# MLM N=100000  loss=1.1360  sigma=1.4370e-02  rms|A|=0.4960  KL(mu||pi)=4.0095e-02
+# AR  N=100000  loss=1.1941  sigma=3.2737e-19  rms|A|=0.0000  KL(mu||pi)=6.7176e-03
+
+====================================================================================
+model          N     loss        sigma   sigma/site    rms|A|    max|A|   KL(mu||pi)
+====================================================================================
+TRUE           -        -   3.4837e-19   5.8061e-20    0.0000    0.0000  -9.0344e-18
+MLM         1000   0.6396   1.4047e-01   2.3411e-02    4.4767   20.1594   5.7508e-01
+AR          1000   1.0332   2.6809e-17   4.4681e-18    0.0000    0.0000   9.2568e-01
+MLM        10000   1.1512   1.7301e-02   2.8836e-03    0.6322    2.2155   3.2359e-02
+AR         10000   1.1807   3.4104e-19   5.6841e-20    0.0000    0.0000   8.5594e-02
+MLM       100000   1.1360   1.4370e-02   2.3949e-03    0.4960    2.1212   4.0095e-02
+AR        100000   1.1941   3.2737e-19   5.4562e-20    0.0000    0.0000   6.7176e-03
+====================================================================================
+
+# elapsed 683.6s   wrote /mnt/attach/outputs/bert-affinity/results.json

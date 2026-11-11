@@ -1,0 +1,50 @@
+Some weights of the model checkpoint at bert-large-uncased were not used when initializing BertForMaskedLM: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'cls.seq_relationship.bias', 'cls.seq_relationship.weight']
+- This IS expected if you are initializing BertForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+# model=bert-large-uncased (masked)  corpus=fixed_text_Gemini31.json  max_perms=24  shard=0/1
+#   causal 10/100  (9s)
+#   causal 20/100  (16s)
+#   causal 30/100  (24s)
+#   causal 40/100  (31s)
+#   causal 50/100  (38s)
+#   causal 60/100  (45s)
+#   causal 70/100  (52s)
+#   causal 80/100  (60s)
+#   causal 90/100  (67s)
+#   causal 100/100  (74s)
+# done causal: 100 texts
+#   noncausal 10/100  (81s)
+#   noncausal 20/100  (88s)
+#   noncausal 30/100  (96s)
+#   noncausal 40/100  (103s)
+#   noncausal 50/100  (110s)
+#   noncausal 60/100  (117s)
+#   noncausal 70/100  (124s)
+#   noncausal 80/100  (131s)
+#   noncausal 90/100  (139s)
+#   noncausal 100/100  (146s)
+# done noncausal: 100 texts
+
+============================================================================================
+Written block order among all block orders: bert-large-uncased (masked), fixed_text_Gemini31.json
+  200/200 texts enumerated exactly
+  percentile: 0.50 = indistinguishable from an arbitrary order, 1.00 = the most forward-costly of them all
+============================================================================================
+group          n   med pct  mean pct    med z  strict max  med sigma   med max
+causal       100    0.7708    0.6604    0.649       17.0%    0.06659   0.17126
+noncausal    100    0.5833    0.5458    0.209        4.0%    0.00688   0.11301
+
+measure                med causal  med noncaus        r           p
+percentile_written         0.7708       0.5833   0.2692   9.914e-04
+z_written                  0.6493       0.2086   0.2530   2.004e-03
+sigma_written              0.0666       0.0069   0.2844   5.141e-04
+
+============================================================================================
+Reading
+============================================================================================
+  The written order ranks HIGHER among arbitrary block
+  orders for causal texts than for non-causal ones.  Within
+  a text, with length and vocabulary held fixed, sigma
+  responds to causal order specifically.
+
+# wrote results_blkord_gpu/blkord_bert-large-uncased__Gemini31__0-1.json  (146s)

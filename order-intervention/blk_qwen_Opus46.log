@@ -1,0 +1,48 @@
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 94.78it/s]
+# model=Qwen/Qwen3-4B-Base (causal)  corpus=fixed_text_Opus46.json  max_perms=24  shard=0/1
+#   causal 10/100  (33s)
+#   causal 20/100  (38s)
+#   causal 30/100  (42s)
+#   causal 40/100  (46s)
+#   causal 50/100  (51s)
+#   causal 60/100  (55s)
+#   causal 70/100  (60s)
+#   causal 80/100  (64s)
+#   causal 90/100  (68s)
+#   causal 100/100  (73s)
+# done causal: 100 texts
+#   noncausal 10/100  (77s)
+#   noncausal 20/100  (81s)
+#   noncausal 30/100  (86s)
+#   noncausal 40/100  (90s)
+#   noncausal 50/100  (95s)
+#   noncausal 60/100  (99s)
+#   noncausal 70/100  (104s)
+#   noncausal 80/100  (108s)
+#   noncausal 90/100  (112s)
+#   noncausal 100/100  (117s)
+# done noncausal: 100 texts
+
+============================================================================================
+Written block order among all block orders: Qwen/Qwen3-4B-Base (causal), fixed_text_Opus46.json
+  200/200 texts enumerated exactly
+  percentile: 0.50 = indistinguishable from an arbitrary order, 1.00 = the most forward-costly of them all
+============================================================================================
+group          n   med pct  mean pct    med z  strict max  med sigma   med max
+causal       100    0.9375    0.9204    1.590       47.0%    0.65544   0.71194
+noncausal    100    0.8125    0.7683    1.081       13.0%    0.37815   0.58403
+
+measure                med causal  med noncaus        r           p
+percentile_written         0.9375       0.8125   0.5766   7.518e-13
+z_written                  1.5897       1.0805   0.5928   4.454e-13
+sigma_written              0.6554       0.3782   0.6082   1.093e-13
+
+============================================================================================
+Reading
+============================================================================================
+  The written order ranks HIGHER among arbitrary block
+  orders for causal texts than for non-causal ones.  Within
+  a text, with length and vocabulary held fixed, sigma
+  responds to causal order specifically.
+
+# wrote results_blkord_gpu/blkord_Qwen_Qwen3-4B-Base__Opus46__0-1.json  (117s)

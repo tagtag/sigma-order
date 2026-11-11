@@ -1,0 +1,37 @@
+# L=6 V=4 states=4096
+# joint entropy = 7.1524 nats
+
+==============================================================================================
+1) ORACLE provider: log P_pi(x) must equal log pi(x) for EVERY order
+==============================================================================================
+x                         log pi(x)          l2r          r2l     random:1     random:2
+(np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(2)) -10.25282032 -10.25282032 -10.25282032 -10.25282032 -10.25282032
+(np.int64(3), np.int64(2), np.int64(0), np.int64(3), np.int64(1), np.int64(3))  -7.64245571  -7.64245571  -7.64245571  -7.64245571  -7.64245571
+(np.int64(3), np.int64(3), np.int64(0), np.int64(2), np.int64(2), np.int64(3))  -6.19140050  -6.19140050  -6.19140050  -6.19140050  -6.19140050
+(np.int64(0), np.int64(3), np.int64(2), np.int64(1), np.int64(2), np.int64(3))  -5.97976788  -5.97976788  -5.97976788  -5.97976788  -5.97976788
+(np.int64(3), np.int64(0), np.int64(3), np.int64(2), np.int64(2), np.int64(3))  -8.65608198  -8.65608198  -8.65608198  -8.65608198  -8.65608198
+
+  max |log P_pi(x) - log pi(x)| over 5 texts x 7 orders = 1.776e-15
+  -> PASS (threshold 1e-10)
+
+==============================================================================================
+2) PERTURBED provider: log P_pi(x) must now DEPEND on the order
+   (otherwise the test above would pass vacuously)
+==============================================================================================
+     eps     mean spread over orders    max spread
+    0.01                    0.049108      0.067873
+    0.10                    0.486224      0.690106
+    0.50                    2.326798      3.611309
+  -> PASS (spread must be nonzero)
+
+==============================================================================================
+3) For a FIXED order, P_pi must be a normalised distribution: sum_x P_pi(x) = 1
+==============================================================================================
+  order=l2r          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 0.00e+00
+  order=r2l          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 4.44e-16
+  order=random:3     sum_x P_pi(x) = 1.000000000000   |1 - sum| = 2.22e-16
+  (oracle is consistent, so each order reproduces pi exactly)
+
+# wrote /mnt/attach/outputs/order-intervention/aoar_selftest.json
+
+ALL TESTS PASS

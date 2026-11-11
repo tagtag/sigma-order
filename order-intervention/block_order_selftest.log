@@ -1,0 +1,40 @@
+==========================================================================
+block_order_pll.py self-test (no weights needed)
+==========================================================================
+
+1. permutation set
+  [ok ] n=3: identity present
+  [ok ] n=3: closed under reversal
+  [ok ] n=3: exact flag correct (True)   6 perms
+  [ok ] n=4: identity present
+  [ok ] n=4: closed under reversal
+  [ok ] n=4: exact flag correct (True)   24 perms
+  [ok ] n=4: all 24 orders enumerated
+  [ok ] n=6: identity present
+  [ok ] n=6: closed under reversal
+  [ok ] n=6: exact flag correct (False)   24 perms
+
+2. antisymmetry of sigma over the permutation set
+  [ok ] values sum to zero   0.000e+00
+  [ok ] set closed under negation
+
+3. rank of the authored order is free to move
+  [ok ] percentile takes many distinct values under random scores   24 distinct values, range 0.0208..0.9792
+  [ok ] can reach the top of the range   max 0.9792
+  [ok ] can reach the bottom of the range   min 0.0208
+  [ok ] mean percentile is 0.5 under random scores   mean 0.4866
+
+4. a score that ignores order
+  [ok ] every sigma is exactly zero
+  [ok ] midrank percentile is exactly 0.50 for an order-blind score   0.500000
+  [ok ] an unadjusted <= count would have said 1.00 (why midrank is used)
+
+5. a score that rewards the authored order
+  [ok ] identity is the strict maximum   sigma_written=3.000, next=2.000
+  [ok ] midrank percentile is near 1.00   0.9792
+
+==========================================================================
+ALL CHECKS PASS -- the permutation bookkeeping is right and the
+rank statistic is free to move, so the test is not degenerate the
+way shuffle_control.py was.
+==========================================================================

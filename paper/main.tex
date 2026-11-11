@@ -139,8 +139,9 @@ text gives the forward path against its reverse,
 $\sigma = [\log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x)]/L$.  This
 vanishes identically whenever the model's conditionals come from a joint, so
 its value range holds no property of the text --- and an autoregressive
-evaluator, which has such a joint, both gives zero and cannot supply the
-backward term at all.  Measured on two masked evaluators over
+evaluator, which has such a joint, returns zero identically, its backward
+term being recoverable only from that same joint and so carrying nothing the
+forward term does not.  Measured on two masked evaluators over
 $\FbNCorpora$ corpora, $\sigma$ places the authored arrangement
 $\FbAuthoredStepsLLaDA$ grid steps from the null under one and
 $\FbAuthoredStepsBertBase$ under the other, on identical texts, while
@@ -581,10 +582,22 @@ and the distinction matters enough to make before anything else.  Everywhere
 else $\Delta$ is Eq.~\eqref{eq:delta}, a log-ratio between one text and its
 reversal.  Here we ask instead what entropy production the \emph{dynamics
 induced by a model's own conditionals} carries.  Take single-site Glauber
-updates driven by $p_\theta$; writing $w(x \to y)$ for the rate at which that
-chain moves between sequences --- not the joint $P$ of Eq.~\eqref{eq:delta},
-which is a distribution over whole sequences and plays no part here --- the
-chain has a stationary distribution $\mu$ and an entropy production rate
+updates driven by $p_\theta$: writing $x$ and $y$ for two sequences and $k$
+for a site,
+\begin{equation}
+w(x \to y) \;=\;
+  \begin{cases}
+    \dfrac{1}{L}\, p_\theta\!\left(y_k \mid x_{-k}\right)
+      & \text{if $x$ and $y$ differ at site $k$ alone},\\[1.8ex]
+    0 & \text{otherwise},
+  \end{cases}
+\label{eq:glauber}
+\end{equation}
+the $1/L$ being the uniform choice of which site to resample, a rescaling of
+time that nothing below depends on.  The object being used is the
+conditional, not the joint $P$ of Eq.~\eqref{eq:delta}, which is a
+distribution over whole sequences and plays no part here.  The chain has a
+stationary distribution $\mu$ and an entropy production rate
 \begin{equation}
 \sigEP \;=\; \sum_{x \neq y} \mu(x)\, w(x \to y)\,
     \log \frac{\mu(x)\, w(x \to y)}{\mu(y)\, w(y \to x)} ,
@@ -592,6 +605,20 @@ chain has a stationary distribution $\mu$ and an entropy production rate
 \end{equation}
 which is zero exactly when that chain is reversible.  $\sigEP$ and $\Delta$
 are not the same object and are never compared.
+
+Equation~\eqref{eq:glauber} is not complete until one says where
+$p_\theta(\cdot \mid x_{-k})$ is obtained, and the answer differs between the
+two model classes because only one of them has a choice.  A masked model
+emits this conditional directly, in one forward pass: it is what the training
+objective asks of it, and what sampling from it uses.  An autoregressive
+model emits no such thing --- no position of it attends to both sides --- so
+for that class the conditional has to be recovered from the joint, by scoring
+the $V$ complete sequences that differ at site $k$ alone and normalising.
+Table~\ref{tab:capacity} uses the emitted conditionals for its masked rows
+and recovered ones for its autoregressive row.  The asymmetry is forced, and
+it leaves a question the table cannot answer on its own: does a non-zero
+reading belong to the masked model, or to the route by which its rates were
+built?
 
 The system is a dense pairwise Markov random field on $L = \ToyL$ sites with
 $V = \ToyV$ symbols, whose $\ToyStates$ states can be enumerated, trained on
@@ -621,6 +648,56 @@ $\ToyNCap$ widths from $d = \ToyDMin$ to $d = \ToyDMax$.  This is a statement
 about the masked instrument and about nothing else.  It is the reason the text
 results in this paper rest on within-text ranks, where such a floor cancels
 between the permutations of one text, rather than on the magnitude of $\Delta$.
+
+\begin{table}[t]
+\centering
+\input{tables/tab_bayesroute}
+\caption{The route, controlled for.  One masked model at each width of
+Table~\ref{tab:capacity}, with its Glauber rates built both ways: from the
+conditionals it emits, and from conditionals recovered out of a joint.  Three
+joints are used --- $\exp(\mathrm{PLL})$ normalised over the state space, and
+the any-order chain rule taken left to right and right to left --- and the
+\emph{recovered} column is the largest $|\sigEP|$ of the three.  $J$ is the
+mean symmetrised Kullback--Leibler divergence between the emitted
+conditionals and the recovered ones, smallest and largest over the three
+joints.  The last column is the quantity of
+Section~\ref{sec:fbdef}, $\sigma = [\log P_{\mathrm{l2r}} - \log
+P_{\mathrm{r2l}}]/L$, averaged in magnitude over all $\ToyStates$ states.
+The emitted column reproduces Table~\ref{tab:capacity} exactly, same seed and
+same training call, so the comparison is within one model rather than between
+two.}
+\label{tab:bayesroute}
+\end{table}
+
+The reading therefore belongs to the conditionals the model emits, and not to
+the route.  Table~\ref{tab:bayesroute} gives the same model both routes at
+every width.  Every route through a joint returns zero, to
+$\CtrlSigmaJointMax$; the emitted conditionals do not.  That zero is not
+evidence about the model --- Eq.~\eqref{eq:sigep} vanishes for any
+conditionals that descend from a joint, so a route through one cannot report
+anything else --- but it is what makes the asymmetry harmless: the two routes
+coincide exactly when a joint exists, so the difference in construction can
+produce a difference in value only where the property under test fails.
+
+What the control does measure is how far the recovered conditionals are from
+the model's own: $J$ runs from $\CtrlJeffreysMin$ to $\CtrlJeffreysMax$ at
+the widest model, \emph{depending on which joint was recovered from}.  The
+three are not interchangeable and none is canonical.  ``Normalise it and the
+problem goes away'' therefore names a different model rather than repairing
+this one.
+
+The last column of Table~\ref{tab:bayesroute} is the quantity
+Section~\ref{sec:fbdef} measures on text, read here on the same models.  The
+two chain-rule joints above are its two terms, so no extra computation is
+involved.  Both quantities are non-zero at every width, which is the identity
+seen twice.  Their sizes behave differently: $\sigEP$ rises with capacity
+($\rho = \CtrlRhoEP$, $p = \CtrlPEP$, Spearman, $n = \CtrlNWidths$) while
+$\langle|\sigma|\rangle$ does not ($\rho = \CtrlRhoSig$, $p = \CtrlPSig$),
+and the two do not track each other across the sweep ($\rho = \CtrlRhoXS$,
+$p = \CtrlPXS$).  They are different functionals of one failure, and neither
+magnitude is the amount of it.  This is the same point Section~\ref{sec:capacity}
+makes about $\Delta$, established here on a system where the failure is
+known exactly rather than inferred.
 
 The permutation null of Section~\ref{sec:blkord} is untouched by this, and it
 is worth saying so where the floor is introduced.  Equation~\eqref{eq:antisym}

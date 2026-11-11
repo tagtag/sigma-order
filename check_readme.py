@@ -7,6 +7,7 @@ a file nobody wrote, and prose that reintroduces a term the glossary banned
 import io
 import os
 import re
+import subprocess
 import sys
 
 os.chdir(sys.argv[1] if len(sys.argv) > 1 else ".")
@@ -24,20 +25,45 @@ s = io.open(name, encoding="utf-8").read()
 print(f"  {name}: {len(s.splitlines())} lines")
 
 blk = s.split("## Layout")[1].split("```")[1]
-base, missing, named = None, [], 0
+base, missing, named, present = None, [], 0, []
 for line in blk.splitlines():
     m = re.match(r"^([A-Za-z0-9_-]+)/$", line.strip())
     if m:
         base = m.group(1)
         continue
-    m = re.match(r"^\s{2}([A-Za-z0-9_.-]+\.(?:py|sh|tex|txt|md|json))", line)
+    # .log included: the README names a measurement log beside each script
+    # that writes one, and those were not matched here at all, so nothing
+    # checked whether they were present.
+    m = re.match(r"^\s{2}([A-Za-z0-9_.-]+\.(?:py|sh|tex|txt|md|json|log))",
+                 line)
     if m and base:
         named += 1
         p = os.path.join(base, m.group(1))
         if not os.path.exists(p):
             missing.append(p)
+        else:
+            present.append(p)
 print(f"  {named} files named in Layout; missing: "
       + (", ".join(missing) if missing else "none"))
+
+# Present is not the same as published.  .gitignore carried *.log, for the
+# LaTeX artefacts, and it excluded every measurement log as well: the files
+# sat in the tree, this check found them, and a reader who cloned the
+# repository got a README naming files that were not there.
+if os.path.isdir(".git") and present:
+    try:
+        r = subprocess.run(["git", "check-ignore"] + present,
+                           capture_output=True, text=True)
+        ignored = [q for q in r.stdout.split("\n") if q.strip()]
+    except OSError:
+        ignored = []
+    if ignored:
+        print("  FAIL  named in Layout but ignored by .gitignore, so a clone "
+              "will not have them:")
+        for q in sorted(ignored):
+            print(f"          {q}")
+        sys.exit(1)
+    print(f"  all {len(present)} are tracked, none ignored")
 
 bad_hits = []
 for rule in io.open("paper/glossary.txt", encoding="utf-8"):

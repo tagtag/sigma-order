@@ -1,0 +1,8 @@
+mode: truncated  (p checkable to about one significant figure only; re-run reproduce_sagawa_stats.py for the exact comparison)
+compared 28 (corpus, reversal) pairs across 14 corpora
+  worst |dU|      = 0   
+  worst |dr|      = 3.33e-07   TII/Gemini1/block
+  worst rel |dp|  = 0.118   TII/Opus1/block
+  worst |sigma recomputed - shipped| = 8.53e-14
+
+every shipped U, r and p is recovered

@@ -1,0 +1,37 @@
+==========================================================================
+pll_sigma.py self-test (no weights needed)
+==========================================================================
+
+1. masked scorer: which positions get masked
+  [ok ] one forward row per content token   7 rows for T=7
+  [ok ] exactly one mask per row
+  [ok ] each content position masked exactly once   [1, 2, 3, 4, 5, 6, 7] vs [1, 2, 3, 4, 5, 6, 7]
+  [ok ] special tokens never masked
+  [ok ] all other content tokens left in place
+
+2. masked scorer: value under a uniform model
+  [ok ] PLL == -T log V   -27.3841605186 vs -27.3841610380
+
+3. causal scorer
+  [ok ] log P == -T log V   -27.3841629028 vs -27.3841610380
+  [ok ] one row, length T+1 (BOS prepended)
+  [ok ] BOS is first and content follows unchanged
+
+4. reversals
+  [ok ] token_reverse is an involution
+  [ok ] token_reverse preserves the multiset
+  [ok ] blocks split at sentence enders   [['The', ' glass', ' fell', '.'], [' It', ' broke', '.'], [' She', ' swept', '.']]
+  [ok ] block_reverse keeps the multiset
+  [ok ] block_reverse preserves length
+  [ok ] block_reverse is an involution   [' She', ' swept', '.', ' It', ' broke', '.', 'The', ' glass', ' fell', '.'] -> ['The', ' glass', ' fell', '.', ' It', ' broke', '.', ' She', ' swept', '.']
+  [ok ] blocks themselves are intact, only their order changed
+
+5. sigma under a direction-neutral model
+  [ok ] sigma_token == 0 exactly   0.000e+00
+  [ok ] sigma_block == 0 exactly   0.000e+00
+  [ok ] causal sigma_block == 0 exactly   0.000e+00
+
+==========================================================================
+ALL CHECKS PASS -- the bookkeeping is right; only the weights are
+missing, so this is safe to submit to the cluster.
+==========================================================================
