@@ -190,6 +190,9 @@ for f in ../order-intervention/block_order_pll.py \
          ../bert-affinity/mlm_entropy_production.py \
          ../bert-affinity/cycle_affinity.py \
          ../bert-affinity/capacity_sweep.py \
+         ../bert-affinity/bayes_route_control.py \
+         ../bert-affinity/reproduce_sagawa_stats.py \
+         ../bert-affinity/compare_repro.py \
          ../order-intervention/README.md; do
     [ -f "$f" ] && cp "$f" "$OUT/anc/"
 done
@@ -243,6 +246,29 @@ print("  all referenced files present" if not missing
       else f"  {len(missing)} missing -- the arXiv build would fail")
 sys.exit(1 if missing else 0)
 PY
+
+# Every script the paper names must be in anc/.  The Reproducibility
+# section says every number in the paper comes from these, so a name in the
+# text with no file beside it is a claim the bundle does not keep.  The list
+# above is hand-written and had drifted: the text named six scripts and the
+# bundle shipped four.
+python3 - "$OUT" <<'ANCPY' || exit 1
+import glob, os, re, sys
+out = sys.argv[1]
+named = set()
+for f in glob.glob(os.path.join(out, "*.tex")):
+    s = open(f, encoding="utf-8").read()
+    s = "\n".join(l.split("%")[0] for l in s.split("\n"))
+    for m in re.findall(r"\\(?:fn|texttt|path)\{([^}]*\.py)\}", s):
+        named.add(m.replace("\\_", "_"))
+have = set(os.listdir(os.path.join(out, "anc")))
+missing = sorted(n for n in named if n not in have)
+if missing:
+    print("  MISSING from anc/, but named in the text: " + ", ".join(missing))
+    print("  add them to the ancillary list in make_arxiv.sh")
+    raise SystemExit(1)
+print(f"  all {len(named)} script(s) the text names are in anc/")
+ANCPY
 
 echo
 echo "=== 3. build in isolation (this is what arXiv will do) ==="

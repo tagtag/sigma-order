@@ -933,6 +933,13 @@ $\ReproNCorpora$ corpora from the released values, agreeing to
 $\ReproMaxErr$, and \fn{compare_repro.py} checks the statistics it
 obtains against the ones the source repository ships.
 
+Two runs in the exactly solvable system are separate from those, because they
+train small models rather than scoring text: \fn{capacity_sweep.py} produces
+Table~\ref{tab:capacity} and \fn{bayes_route_control.py} produces
+Table~\ref{tab:bayesroute}, the second rebuilding the first's masked models
+from the same seed and reproducing its $\sigEP$ column exactly before
+giving each of them the second route.
+
 \bibliographystyle{unsrt}
 \begin{thebibliography}{9}
 \bibitem{sagawa2026}
