@@ -6,7 +6,8 @@ AUTOREGRESSIVE FACTORISATION?
 
 The question
 ------------
-Sagawa (PRX Intelligence 1, 023013, 2026) measures, for a fixed text x,
+Sagawa (PRX Intelligence, accepted 2026, DOI 10.1103/tv38-b23y) measures,
+for a fixed text x,
 
     sigma = [ log P(x) - log P(x~) ] / L          x~ = x reversed
 

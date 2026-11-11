@@ -15,14 +15,14 @@ it was written in" as with sigma responding to causal structure.  No
 between-set comparison can separate those.
 
 This test is WITHIN each text.  Concatenate the same sentences in each of the
-n! possible orders and ask where the written order ranks:
+n! possible orders and ask where the authored order ranks:
 
     sigma(pi) = [ S(x_pi) - S(x_{pi o rev}) ] / L
 
 for a score S.  Length, vocabulary, style and topic are identical across the
 permutations by construction, so nothing is left to confound.
 
-    rank 24/24  the written order is the single most forward-costly
+    rank 24/24  the authored order is the single most forward-costly
                 arrangement of these sentences
     rank 12/24  it is unremarkable among arbitrary arrangements
 
@@ -30,7 +30,7 @@ and then, the point:
 
     causal ranks high, non-causal ranks mid    sigma tracks causal order
     both rank equally high                    sigma tracks the text being in
-                                              its written order -- coherence,
+                                              its authored order -- coherence,
                                               anaphora, topical flow -- not
                                               causal structure
 
@@ -56,7 +56,7 @@ the same statistic.
 
 Note the symmetry is a property of the DESIGN, not a finding: the 24 sigma
 values come in +/- pairs and sum to zero by construction.  That is exactly why
-shuffle_control.py was uninformative -- it compared the written order against
+shuffle_control.py was uninformative -- it compared the authored order against
 the CENTRE of this symmetric set, which is zero whatever the model does.  The
 rank is not forced, and is what is reported here.
 
@@ -171,7 +171,7 @@ def main():
             k = len(vals)
             # MIDRANK, not a "<=" count.  A score blind to block order makes
             # every sigma exactly zero, and counting vals <= s_id would then
-            # put the written order at k/k = 1.00 -- reading as "the most
+            # put the authored order at k/k = 1.00 -- reading as "the most
             # forward-costly arrangement" when in fact the model cannot tell
             # the arrangements apart.  Splitting ties puts that case at
             # exactly 0.50, which is the null this test reads against.
@@ -262,14 +262,14 @@ def main():
     pc = between.get("percentile_written")
     if pc and pc["median_causal"] is not None:
         if pc["p"] < 0.05 and pc["r"] > 0.2:
-            print("  The written order ranks HIGHER among arbitrary block")
+            print("  The authored order ranks HIGHER among arbitrary block")
             print("  orders for causal texts than for non-causal ones.  Within")
             print("  a text, with length and vocabulary held fixed, sigma")
             print("  responds to causal order specifically.")
         elif pc["p"] >= 0.05 or abs(pc["r"]) <= 0.2:
-            print("  The written order ranks EQUALLY HIGH in both groups.")
+            print("  The authored order ranks EQUALLY HIGH in both groups.")
             print("  With every between-set confound removed, what sigma")
-            print("  responds to is the text being in its written order, not")
+            print("  responds to is the text being in its authored order, not")
             print("  its causal structure.  The causal/non-causal effect size")
             print("  is then not evidence that entropy production measures")
             print("  causality.")

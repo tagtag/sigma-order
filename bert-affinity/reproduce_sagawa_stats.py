@@ -4,7 +4,7 @@
 Independent reproduction of the statistical layer of
 
   T. Sagawa, "Stochastic Thermodynamics for Autoregressive Generative Models:
-  A Non-Markovian Perspective", PRX Intelligence 1, 023013 (2026),
+  A Non-Markovian Perspective", PRX Intelligence (accepted 2026), DOI 10.1103/tv38-b23y,
   arXiv:2604.07867, code/data: https://github.com/taksagawa/Paper2026
 
 What this checks
@@ -148,6 +148,11 @@ def main():
     shipped = sorted(glob.glob(os.path.join(
         args.repo, "gpt2", "text_sets*", "**", "mann_whitney_results_*.csv"),
         recursive=True))
+    # The shipped values are also KEPT, at full precision, not only printed.
+    # Printing them beside ours left the comparison to the eye, and a printed
+    # table rounds: a p of 4.473e-06 shows as 0.000004, which cannot be
+    # compared with anything.  compare_repro.py reads what is stored here.
+    shipped_rows = {}
     for f in shipped:
         tag = (os.path.basename(os.path.dirname(f)) + "/"
                + os.path.basename(f).replace("mann_whitney_results_", "").replace(".csv", ""))
@@ -155,10 +160,21 @@ def main():
         keep = [c for c in ("label", "U", "p", "rank_biserial_r") if c in d.columns]
         print(f"\n--- {tag} ---")
         print(d[keep].to_string(index=False) if keep else d.to_string(index=False))
+        if "label" in d.columns:
+            shipped_rows[tag] = {
+                str(row["label"]): {
+                    k: (float(row[k]) if k in d.columns and pd.notna(row[k])
+                        else None)
+                    for k in ("U", "p", "rank_biserial_r")
+                }
+                for _, row in d.iterrows()
+            }
 
     with open(args.out, "w") as fh:
-        json.dump(rows, fh, indent=1)
+        json.dump({"recomputed": rows, "shipped": shipped_rows}, fh, indent=1)
     print(f"\n# wrote {args.out}")
+    print("# run  python3 -I compare_repro.py  to check the two against "
+          "each other")
 
 
 if __name__ == "__main__":

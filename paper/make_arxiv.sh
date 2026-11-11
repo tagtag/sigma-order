@@ -45,10 +45,32 @@ if [ "${SKIP_REBUILD:-0}" = "1" ]; then
     echo "  SKIPPED by request (SKIP_REBUILD=1) -- tables/ and figures/ are"
     echo "  used as they stand.  Check them yourself before uploading."
 else
-    sh build_paper.sh >/dev/null 2>&1 || {
-        echo "  build_paper.sh failed; run it directly to see why"; exit 1; }
-    echo "  rebuilt from \$PLL/\$BLKORD/\$TOY"
+    # Keep the output.  Discarding it and saying "run it directly to see why"
+    # made a missing scipy look like a mystery; the cause was one line down.
+    if sh build_paper.sh >build_paper.log 2>&1; then
+        echo "  rebuilt from \$PLL/\$BLKORD/\$TOY"
+    else
+        echo "  build_paper.sh FAILED.  Its last 25 lines:"
+        tail -25 build_paper.log | sed 's/^/    /'
+        echo "  (full output in paper/build_paper.log)"
+        exit 1
+    fi
 fi
+
+echo
+echo "=== 0a2. do the parts of the document point at each other? ==="
+# The checks below this one all ask whether the document was built from real
+# measurements.  This one asks something the built document cannot answer: a
+# reference list prints whether or not anything cites it, a figure appears
+# whether or not a sentence points at it, and a sentence can promise that a
+# quantity is reported with no table reporting it.  All three shipped in this
+# project, in PDFs that looked correct.  Refuse to package on any of them.
+python3 -I check_paper_selftest.py >/dev/null || {
+    echo "  ERROR: check_paper.py no longer catches what it claims to;"
+    echo "  run  python3 -I check_paper_selftest.py  to see which case."
+    exit 1
+}
+python3 -I check_paper.py --tex main.tex --tables tables || exit 1
 
 echo
 echo "=== 0b. do the numbers come from real measurements? ==="
@@ -77,7 +99,31 @@ if todos:
     print("  These print as [TODO:Name] in the PDF.  Fix the measurements or")
     print("  remove the sentences that cite them before submitting.")
     sys.exit(1)
-print("  every quoted number is backed by a measurement")
+# A whole table can also be missing its input.  make_tables.py deletes every
+# table it owns before regenerating, then leaves a stub carrying a TODO marker
+# for any it could not build, so a stale table from an earlier run or from a
+# release tarball can no longer pass as current.  Refuse on the stub.
+stubs = sorted(os.path.basename(p) for p in glob.glob("tables/tab_*.tex")
+               if "[TODO:" in open(p).read())
+if stubs:
+    print(f"  ERROR: {len(stubs)} table(s) have no measurements behind them:")
+    print(f"  {', '.join(stubs)}")
+    sys.exit(1)
+# A figure can be a stub too.  make_figures.py deletes every figure it owns
+# before drawing and leaves a placeholder for any it could not draw, so a
+# stale figure from an earlier run cannot ship; this refuses on the stub.
+import subprocess
+figstubs = []
+if subprocess.run(["which", "pdftotext"], capture_output=True).returncode == 0:
+    for f in sorted(glob.glob("figures/fig*.pdf")):
+        t = subprocess.run(["pdftotext", f, "-"], capture_output=True, text=True)
+        if "[TODO:" in (t.stdout or ""):
+            figstubs.append(os.path.basename(f))
+if figstubs:
+    print(f"  ERROR: {len(figstubs)} figure(s) have no measurements behind them:")
+    print(f"  {', '.join(figstubs)}")
+    sys.exit(1)
+print("  every quoted number, table and figure is backed by a measurement")
 PY2
 
 echo
@@ -90,7 +136,9 @@ cp tables/*.tex "$OUT/tables/"
 cp figures/*.pdf "$OUT/figures/"
 
 # ancillary: the scripts that generate every number and figure
-cp make_tables.py make_figures.py figstyle.py build_paper.sh "$OUT/anc/" 2>/dev/null || true
+cp make_tables.py make_tables_selftest.py make_figures.py figstyle.py \
+   check_paper.py check_paper_selftest.py glossary.txt \
+   build_paper.sh "$OUT/anc/" 2>/dev/null || true
 for f in ../order-intervention/block_order_pll.py \
          ../order-intervention/block_order_selftest.py \
          ../order-intervention/pll_sigma.py \
@@ -194,6 +242,27 @@ fi
 echo "  built: $(cd "$OUT" && pdfinfo main.pdf | awk '/Pages/{print $2}') pages,"\
 " $(grep -c '^! ' "$OUT/arxiv_build.log" || true) error(s)"
 
+# Boxes that run past the text block.  This build is the one with the real
+# numbers in it, so it is the only place a table's true width can be measured;
+# a table that overflows here overflows in the submitted PDF.  Small ones are
+# normal in justified text, so only the ones worth looking at are listed.
+python3 - "$OUT/arxiv_build.log" <<'PY'
+import re, sys
+log = open(sys.argv[1], errors="replace").read()
+w = sorted({float(x) for x in
+            re.findall(r"Overfull \\hbox \(([0-9.]+)pt too wide\)", log)},
+           reverse=True)
+big = [x for x in w if x >= 5.0]
+if not big:
+    print("  no box runs more than 5pt past the text block")
+else:
+    print(f"  {len(big)} box(es) run past the text block by 5pt or more:"
+          f" {', '.join(f'{x:.0f}pt' for x in big[:6])}"
+          + (" ..." if len(big) > 6 else ""))
+    print("  A wide table is the usual cause; \\small on it, or a shorter")
+    print("  column, fixes it.  grep Overfull in the log for the line numbers.")
+PY
+
 echo
 echo "=== 3b. is the repository URL set? ==="
 if grep -qE '^\\newcommand\{\\repourl\}\{\}' "$OUT/main.tex" \
@@ -219,6 +288,12 @@ fi
 
 echo
 echo "=== 5. pack ==="
+# Keep the PDF step 3 built, before it is deleted from the bundle.  That build
+# is the only faithful preview of the submission -- same isolated tree, same
+# files present, same number of pdflatex passes as arXiv runs -- so discarding
+# it left nothing to check the upload against.  It is saved beside the paper
+# under a name that cannot be mistaken for the local build.
+cp "$OUT/main.pdf" arxiv_main.pdf
 # arXiv wants the files at the archive root, not inside a directory
 ( cd "$OUT" && rm -f main.pdf main.aux main.log main.out main.fls \
         main.fdb_latexmk arxiv_build.log && tar czf "../$TGZ" . )
@@ -227,3 +302,6 @@ tar tzf "$TGZ" | sed 's/^/  /'
 echo
 echo "Upload $TGZ to arXiv. It unpacks to main.tex, tables/, figures/, anc/;"
 echo "arXiv compiles main.tex with pdflatex and keeps anc/ as ancillary files."
+echo
+echo "Check paper/arxiv_main.pdf, not paper/main.pdf: it is the PDF built from"
+echo "the bundle alone, which is what arXiv will produce."

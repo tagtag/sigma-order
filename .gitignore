@@ -8,6 +8,8 @@ __pycache__/
 *.out
 *.synctex.gz
 paper/main.pdf
+# the preview of the arXiv build, kept by make_arxiv.sh for checking
+paper/arxiv_main.pdf
 paper/build.log
 paper/arxiv_submission/
 paper/arxiv_submission.tar.gz

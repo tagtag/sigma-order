@@ -1,0 +1,89 @@
+% Replacement for Sections 5.2 and 5.3 (main.tex l.732--901).
+% Draft 2026-11-11, written against the measured autoregressive ladder.
+%
+% The section this replaces argued that the causal contribution falls as the
+% evaluator saturates.  Measured across \TrendNEval\ autoregressive
+% evaluators spanning \TrendCapSpan$\times$ in parameters, it does not.  What
+% rises is the fraction of texts already at the ceiling.  The two are easy to
+% confuse and the earlier draft confused them; the rank correlations below
+% are reported precisely so the text cannot.
+
+\subsection{What the measured distance is made of}
+\label{sec:contrast}
+
+Section~\ref{sec:blkord} supplies the origin that Eq.~\eqref{eq:delta}
+lacks: the distribution of $\Delta$ over the $n!$ arrangements of a text's
+own sentences, against which its authored arrangement has a position.
+Section~\ref{sec:decomp} splits the median position's distance from the
+$0.50$ null into the part a non-causal --- but still authored --- order
+earns, and the part causal order earns beyond it.
+
+Table~\ref{tab:decomposition}, introduced with the rule in Section~\ref{sec:decomp}, gives both for every evaluator.  The authored
+component is $\AuthoredGPTtwo$ at $\ParamsGPTtwo$ and $\AuthoredQwen$ at
+$\ParamsQwen$; the causal component is $\CausalGPTtwo$ and $\CausalQwen$.
+Between a tenth and a fifth of the measured distance is attributable to the
+labelled contrast, and the rest to the arrangement simply being the one a
+writer chose.
+
+\subsection{The causal component is one step of the statistic}
+\label{sec:resolution}
+
+Before reading those numbers as magnitudes, note what the statistic can
+express.  The midrank over $n!$ arrangements lives on a grid of width
+$1/n! = \GridStep$.  A causal component of $\CausalGPTtwo$ is one grid step.
+Across the \CausalCompNEval\ autoregressive evaluators the component takes
+\CausalCompNDistinct\ distinct values, between \CausalCompStepsMin\ and
+\CausalCompStepsMax\ steps, while the authored component spans several.
+
+The causal contribution is therefore at the instrument's resolution.  Its
+value is not a measured size but the smallest non-zero reading available,
+and a difference between two evaluators of one step is a difference between
+adjacent representable numbers.  This is why Section~\ref{sec:decomp}
+reports the same split on
+$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$, which has neither a
+ceiling nor a grid: there the share runs $\ShareZMin\%$ to $\ShareZMax\%$.
+
+Nothing here says the causal contribution is absent.  The rank test of
+Section~\ref{sec:blkord} separates the two label groups at
+$p < \BlkPMaxCausal$ in every corpus and evaluator.  What is at resolution
+is the \emph{size} of that separation once it is expressed as a share of the
+authored distance, and only the $z$ form can carry it.
+
+\subsection{The room runs out; the contribution does not fall}
+\label{sec:window}
+
+A strong evaluator pushes an arbitrary authored order towards the top of its
+own permutation range, and once the authored order \emph{is} the extreme
+arrangement no normalisation can express a further increase.  That ceiling
+is real and it is approaching.  Over the \TrendCapSpan$\times$ span of
+parameters covered here, the fraction of causally labelled texts whose
+authored order is already the extreme arrangement rises with capacity at
+$\rho = \TrendCeilRho$ ($p = \TrendCeilP$, Spearman, $n = \TrendNEval$) ---
+the only component with a significant trend.
+
+The causal component itself does not fall.  Against capacity it gives
+$\rho = \TrendCausalRho$ ($p = \TrendCausalP$), and the ceiling-free $z$
+share gives $\rho = \TrendShareZRho$ ($p = \TrendShareZP$).  Both
+correlations are taken after rounding the components to $10^{-\TrendQuantum}$,
+because at this resolution they are differences of medians on the same grid:
+the causal component takes \TrendCausalNDistinct\ distinct values across the
+\TrendNEval\ evaluators, and without rounding, differences of order
+$10^{-16}$ between values that are mathematically equal would be ranked as
+an ordering.  The authored
+component rises, $\rho = \TrendAuthoredRho$ ($p = \TrendAuthoredP$), which
+is the saturation showing up directly.
+
+The distinction matters because the two readings make different predictions.
+``The causal contribution shrinks with capacity'' would say the quantity
+responds less and less to causal order, and extrapolates to a measurement
+that eventually sees nothing.  What is measured is the opposite in kind: the
+causal contribution is constant to within one grid step across
+\TrendCapSpan$\times$ in capacity, while the space above an authored order
+closes.  The instrument loses headroom, not signal --- and the signal was at
+the resolution floor from the smallest evaluator onwards.
+
+We therefore do not extrapolate past $\ParamsQwen$, and we claim only what
+the ladder supports: a tenth to a fifth of what $\Delta$ measures is
+attributable to causal order, that share does not vary systematically with
+capacity, and the margin within which it could be measured at all is
+narrowing.

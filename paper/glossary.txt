@@ -1,0 +1,21 @@
+# Terms this paper settled on, and the ones that must not come back.
+#
+# Every line here was a real correction, and every one of them was caught by
+# a person reading the text rather than by anything mechanical.  Writing the
+# decision down is what makes it checkable: a choice that lives only in the
+# prose cannot be enforced, and a near-synonym reintroduced three revisions
+# later reads perfectly well in its own sentence.
+#
+# Format, one rule per line:
+#
+#     preferred term | banned alternative, another one   # why
+#
+# check_paper.py fails if a banned alternative appears anywhere in the body.
+# Matching ignores case and requires whole words.  Section headings are
+# searched too, because that is where one of these drifted.
+
+fluctuation theorem | fluctuation relation, fluctuation relations   # Sagawa uses "theorem" 19x and "relation" 2x; match the paper being re-examined
+autoregressive, AR | causal evaluator, causal model, causal evaluators   # "causal" in this paper means the TEXT label, never the attention pattern
+unadjusted | naive   # the count that does not split ties is unadjusted, not naive
+masked language model | bidirectional model, bidirectional evaluator   # one name for the model class, the one its own literature uses
+authored order | written order   # one object, one name; the two were used interchangeably for 30 revisions and, asked what the difference was, this paper's draft invented one

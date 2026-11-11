@@ -1,0 +1,156 @@
+% Replacement for Section 1 (main.tex l.129--239).
+% Draft 2026-11-11.  Every number is a macro; nothing here is typed by hand.
+%
+% The order of argument is deliberate and was chosen over the alternative of
+% opening with the defect.  We begin where Ref.~\cite{sagawa2026} itself
+% leaves off -- an open problem it states in its own final section -- carry
+% that problem out, and let the carrying-out be what exposes the
+% substitution.  A reader who follows the construction arrives at the
+% conclusion before we state it.  No part of this paper needs to characterise
+% the original work; it needs only to compute.
+
+\section{Introduction}
+
+Recent work~\cite{sagawa2026} places a thermodynamic reading on a simple
+measurement.  Take a fixed text $x$ of $L$ tokens, reverse it to obtain
+$\tilde{x}$, score both with a language model, and form
+\begin{equation}
+\Delta \;=\; \frac{\log P(x) - \log P(\tilde{x})}{L} .
+\label{eq:delta}
+\end{equation}
+Here $P$ is the joint distribution over token sequences that the evaluator
+defines; for an autoregressive model $P(x) = \prod_k p_\theta(x_k \mid
+x_{<k})$, so the joint exists and Eq.~\eqref{eq:delta} is a difference of two
+of its log-probabilities.
+
+With an autoregressive evaluator this is read as an entropy production, and a
+positive value as irreversibility carried by the text.  A forward--backward
+asymmetry in language has been quantified before~\cite{arrow}, but by training
+a second model on the reversed corpus and comparing the two;
+Eq.~\eqref{eq:delta} scores both directions under \emph{one} model, and
+Ref.~\cite{sagawa2026} draws that distinction itself.  The reading is
+supported by a contrast between two sets of generated passages: those whose
+sentences stand in a causal sequence, and those whose sentences are arranged
+arbitrarily.  The first set scores higher.
+
+We reproduce this.  Before any of what follows, the statistical layer of the
+published analysis was recomputed independently from the released per-text
+values of all $\ReproNCorpora$ corpora and agrees to $\ReproMaxErr$, and every
+Mann--Whitney statistic and rank-biserial effect size the repository ships is
+recovered.  Nothing below disputes a measured number.
+
+\subsection*{An open problem, and the instrument it asks for}
+
+Reference~\cite{sagawa2026} ends by naming what its own measurement cannot
+do.  The block-level production mixes genuine causal dependence with mere
+temporal ordering and with whatever else the ordering carries, and separating
+those contributions ``remains a highly nontrivial open problem''
+\cite[Sec.~VIII]{sagawa2026}.
+
+The difficulty is structural rather than technical.  An autoregressive model
+generates in one direction, and that direction is the text's own; its
+generation order and its token order are the same object.  There is no handle
+by which one could be held fixed while the other varies, so no experiment
+within that model class can tell the two apart.
+
+A masked model supplies the missing handle.  It conditions on context in any
+direction, so the order in which a text is assembled becomes a parameter
+independent of the text itself.  Fixing an unmasking order $\pi$, the
+any-order chain rule
+\begin{equation}
+\log P_\pi(x) \;=\; \sum_{t=1}^{L}
+   \log p_\theta\!\left( x_{\pi(t)} \,\middle|\, x_{\pi(1)}, \ldots,
+                         x_{\pi(t-1)} \right)
+\label{eq:aoarintro}
+\end{equation}
+is a genuine log-probability, normalised over sequences.  Taking $\pi$ to be
+the left-to-right and then the right-to-left order of one text gives the
+forward path and its reverse under a single model:
+\begin{equation}
+\sigma(x) \;=\; \frac{1}{L}
+   \bigl[ \log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x) \bigr].
+\label{eq:sigmaintro}
+\end{equation}
+This is the entropy production of the stochastic-thermodynamic
+definition~\cite{jarzynski1997, crooks1999, seifert2012}: one trajectory
+weighed against its own reversal, not against another trajectory.
+
+Carrying out the open problem means measuring Eq.~\eqref{eq:sigmaintro}.
+Doing so settles it, though not in the direction the question anticipates,
+and on the way it determines what Eq.~\eqref{eq:delta} was measuring.
+
+\subsection*{What the instrument shows}
+
+Equation~\eqref{eq:sigmaintro} carries an identity.  If the evaluator's
+conditionals are those of some joint $P$, every term of
+Eq.~\eqref{eq:aoarintro} telescopes, $\log P_\pi(x) = \log P(x)$ for every
+$\pi$, and therefore
+\begin{equation}
+\sigma(x) = 0 \qquad \text{for every } x, \text{ causal or not.}
+\label{eq:zerointro}
+\end{equation}
+The value range of $\sigma$ contains no property of the text.  Three
+consequences follow, and they are the content of this paper.
+
+\emph{First}, an autoregressive evaluator cannot be placed in
+Eq.~\eqref{eq:sigmaintro} at all.  It has a joint, so
+Eq.~\eqref{eq:zerointro} applies; and the backward term asks for
+$p_\theta(x_1 \mid x_2 \ldots x_L)$, which conditions on the future and which
+causal attention cannot supply.  For the evaluators of
+Ref.~\cite{sagawa2026}, the quantity its thermodynamic reading names is
+simultaneously trivial and unevaluable.  Equation~\eqref{eq:delta} is what
+can be computed in its place --- but it compares $x$ with a \emph{different}
+text, and a comparison of two states is not a comparison of a path with its
+reverse (Section~\ref{sec:notareversal}).  We therefore write it $\Delta$
+throughout and reserve $\sigma$ for Eq.~\eqref{eq:sigmaintro}.  The
+distinction is not notational fastidiousness: the two quantities behave
+differently under the very operation that defines them, and
+Section~\ref{sec:blkord} exhibits a model for which $\sigma$ vanishes
+identically while $\Delta$ does not.
+
+\emph{Second}, $\Delta$ does separate the two text sets, and we ask what in
+them it responds to.  Supplying the origin that Eq.~\eqref{eq:delta} lacks ---
+the distribution of $\Delta$ over the $n!$ arrangements of the same text's
+own sentences, against which the authored arrangement can be located --- splits
+the measured distance in two: the part any writer-chosen order earns, and the
+part only causal order earns.  Across the autoregressive ladder the causal
+part is $\CausalShareMin\%$ to $\CausalShareMax\%$ of the total, and
+it falls as the evaluator saturates --- not because causal order contributes
+less, but because the room above an authored order runs out and no
+normalisation can express a further increase.  The stronger the evaluator, the
+less $\Delta$ can separate causal order at all.
+
+\emph{Third}, $\sigma$ does not measure causality either, and
+Eq.~\eqref{eq:zerointro} says why before any measurement is taken.  A
+non-zero reading is a measure of the evaluator's \emph{in}compatibility --- its
+conditionals descending from no joint --- as exposed by that text.  We measure
+it on two masked evaluators across $\FbNCorpora$ corpora, both within texts
+(the authored arrangement's rank among the $n!$) and between the two sets.
+Both constructions place the causal contribution on the same side of zero,
+and it is the side that subtracts: a causal text exposes \emph{less} of the
+evaluator's incompatibility, not more.
+
+The open problem of Ref.~\cite[Sec.~VIII]{sagawa2026} therefore has an
+answer, and it is that neither quantity can do what was asked of it.  One is
+not a path reversal; the other is a path reversal whose value cannot depend
+on the text.  This is a stronger statement than a correction to a
+measurement, and it does not rest on one: Eq.~\eqref{eq:zerointro} is an
+identity, and what follows confirms rather than establishes it.
+
+\subsection*{The labels}
+
+One further thing is left open, of a different kind.  The two text sets were
+produced by different generation prompts, and ``causal'' there means that a
+language model, asked for a passage whose sentences stand in a causal
+sequence, produced one.  No independent criterion is applied --- no
+intervention, no counterfactual, no specified causal structure the text is
+checked against.  The sets also differ in ways other than the one of
+interest: in these corpora their token counts differ significantly in four of
+five, and the non-causal passages are not incoherent --- their topic
+continues, their pronouns resolve backwards, their connectives are in place.
+They are coherent discourse whose sentence order is simply not causal.
+
+Every measurement below that bears on causal order is therefore made
+\emph{within} a text, across the arrangements of its own sentences, where
+length, vocabulary, topic and style are identical by construction and the
+labels enter only as a grouping of the resulting ranks.

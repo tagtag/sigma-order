@@ -1,0 +1,32 @@
+{
+ "source": "/user1/scl9/tag/LLM/order-intervention/forward_backward_sigma.json",
+ "dir": "/user1/scl9/tag/LLM/order-intervention/results_llada_20261109",
+ "per_corpus": {
+  "Fable5": {
+   "authored": 0.07243913438547966,
+   "causal_component": -0.05522218429679485
+  },
+  "GPT54": {
+   "authored": 0.09046759740227744,
+   "causal_component": -0.029473888477293472
+  },
+  "GPT56": {
+   "authored": 0.12687977542969278,
+   "causal_component": -0.05000279740274033
+  },
+  "Gemini31": {
+   "authored": 0.031902788645109266,
+   "causal_component": -0.028357574711342433
+  },
+  "Opus46": {
+   "authored": 0.05222157573324005,
+   "causal_component": 0.012672256972341
+  }
+ },
+ "authored": 0.07243913438547966,
+ "causal_component": -0.029473888477293472,
+ "total": 0.04296524590818619,
+ "causal_share": -0.6859937108303108,
+ "n_corpora": 5,
+ "n_causal_component_negative": 4
+}

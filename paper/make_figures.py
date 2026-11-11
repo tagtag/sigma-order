@@ -11,7 +11,7 @@ jobs are still going.
 
 Figures
 -------
-fig1_block_order   The decisive result.  Where the WRITTEN sentence order sits
+fig1_block_order   The decisive result.  Where the AUTHORED sentence order sits
                    among all 4! = 24 orders of the same text, for causal and
                    non-causal texts, against the 0.50 null.  Within-text, so
                    length, vocabulary, style and topic are held fixed.
@@ -49,9 +49,17 @@ CORPUS_ORDER = ["Opus46", "GPT54", "GPT56", "Gemini31", "Fable5"]
 # ordered by parameter count: the capacity series is what the paper reads
 EVAL_ORDER = ["bert-base-uncased", "gpt2", "bert-large-uncased",
               "Qwen/Qwen3-4B-Base", "GSAI-ML/LLaDA-8B-Base"]
-PARAMS = {"bert-base-uncased": "110M", "gpt2": "117M",
+PARAMS = {"bert-base-uncased": "110M", "gpt2": "124M",
           "bert-large-uncased": "340M", "Qwen/Qwen3-4B-Base": "4B",
           "GSAI-ML/LLaDA-8B-Base": "8B"}
+
+
+
+def kind_str(kind):
+    """Model class as printed; see the note in make_tables.py.  "causal" in
+    the JSON means causal attention, and must not share a panel with the
+    causal/non-causal text labels under that name."""
+    return {"causal": "AR", "masked": "masked"}.get(kind, kind or "?")
 
 
 def load_cells(dirpath, prefix):
@@ -167,10 +175,10 @@ def fig_block_order(blk, kinds, outdir):
         ax.set_xticks(xs)
         ax.set_xticklabels(corpora, rotation=35, ha="right")
         ax.set_title(f"{model.split('/')[-1]}  ({PARAMS.get(model, '?')}, "
-                     f"{kinds.get(model, '?')})")
+                     f"{kind_str(kinds.get(model))})")
         ax.set_ylim(0.45, 1.02)
     for r in range(nrow):
-        flat[r * ncol].set_ylabel("position of the written order\n"
+        flat[r * ncol].set_ylabel("position of the authored order\n"
                                   "among all 24 orders")
     # label the null on the line itself, not floating in the middle of the panel
     # the 0.50 line is explained in the caption; an in-figure note here
@@ -215,9 +223,11 @@ def fig_capacity(pll, toy_dir, outdir):
             # A log y-axis would span 18 decades to reach the AR value and the
             # MLM rise -- the point of this panel -- would flatten into a line.
             # So the axis is linear and the AR result is stated on the zero
-            # line, which is where it sits to 20 significant figures.
+            # line, where it sits to within 4e-20 -- not "to 20 significant
+            # figures", which an earlier caption said and which means nothing
+            # for a value compared against zero.
             ax.axhline(0.0, color=C[1], linewidth=1.0, zorder=2)
-            ax.annotate(f"autoregressive: $\\sigma = "
+            ax.annotate(f"autoregressive: $\\sigma_{{\\mathrm{{EP}}}} = "
                         f"{ar[0]['sigma']:.1e}".replace("e-", r"\times10^{-")
                         + "}$ (machine zero)",
                         xy=(0.03, 0.0), xycoords=("axes fraction", "data"),
@@ -227,9 +237,9 @@ def fig_capacity(pll, toy_dir, outdir):
         ax.set_xscale("log")
         ax.set_ylim(bottom=-0.0012)
         ax.set_xlabel("parameters")
-        ax.set_ylabel("$\\sigma$  (exact, Schnakenberg)")
+        ax.set_ylabel("$\\sigma_{\\mathrm{EP}}$  (exact, Schnakenberg)")
         ax.set_title("exactly solvable system\n(detailed balance: "
-                     "$\\sigma_{\\mathrm{true}}=0$)")
+                     "$\\sigma_{\\mathrm{EP}}=0$ exactly)")
         ax.legend(loc="upper left")
     if have_pll:
         ax = tidy(axes[0][k])
@@ -283,8 +293,8 @@ def fig_capacity(pll, toy_dir, outdir):
 def fig_evaluators(pll, blk, kinds, outdir):
     """Effect size, and the decomposition of the within-text distance.
 
-    An earlier version of this figure put median sigma for a masked and a
-    causal evaluator side by side as bars.  That invites a comparison that
+    An earlier version of this figure put median sigma for a masked and an
+    autoregressive evaluator side by side as bars.  That invites a comparison that
     cannot be made: a pseudo-log-likelihood sums conditionals on L-1 tokens
     and an autoregressive log P sums conditionals on k-1 tokens, so the two
     scales differ by construction and the ratio means nothing.  Only
@@ -315,7 +325,7 @@ def fig_evaluators(pll, blk, kinds, outdir):
             ax.bar(xs + (j - (len(models) - 1) / 2) * w, vals, width=w * 0.86,
                    color=C[j % len(C)], zorder=3, linewidth=0,
                    label=f"{short_name(model)} "
-                         f"({PARAMS.get(model, '?')}, {kinds.get(model, '?')})")
+                         f"({PARAMS.get(model, '?')}, {kind_str(kinds.get(model))})")
         ax.set_xticks(xs)
         ax.set_xticklabels(corpora, rotation=35, ha="right")
         ax.axhline(0.0, color=NULLC, linewidth=0.8)
@@ -346,8 +356,8 @@ def fig_evaluators(pll, blk, kinds, outdir):
                 continue
             auth.append(float(np.median(a_)))
             caus.append(float(np.median(c_)))
-            labels.append(f"{short_name(model)}\n({kinds.get(model, '?')})")
-            kinds_l.append(kinds.get(model, "?"))
+            labels.append(f"{short_name(model)}\n({kind_str(kinds.get(model))})")
+            kinds_l.append(kind_str(kinds.get(model)))
         if labels:
             xs = np.arange(len(labels))
             # a 2px-equivalent gap between the stacked segments, so the two
@@ -384,6 +394,19 @@ def main():
 
     setup()
     os.makedirs(args.outdir, exist_ok=True)
+    # Delete the figures this script owns before drawing any of them.  A figure
+    # whose measurements are missing is simply not drawn, which used to leave
+    # whatever was already on disk in place -- a figure from an earlier run, or
+    # one unpacked from a release tarball.  make_tables.py was given this guard
+    # after a stale table shipped; the figures never were, and a stale panel
+    # with the old model-class labels survived here until the PDF was read.
+    import glob as _glob
+    for _f in _glob.glob(os.path.join(args.outdir, "fig*_*.pdf")) + \
+              _glob.glob(os.path.join(args.outdir, "fig*_*.png")):
+        try:
+            os.unlink(_f)
+        except OSError:
+            pass
     pll, kinds_p = load_cells(args.pll, "pll")
     blk, kinds_b = load_cells(args.blkord, "blkord")
     kinds = {**kinds_p, **kinds_b}
@@ -392,6 +415,25 @@ def main():
     fig_block_order(blk, kinds, args.outdir)
     fig_capacity(pll, args.toy, args.outdir)
     fig_evaluators(pll, blk, kinds, args.outdir)
+
+    # A figure that could not be drawn does not exist now, because everything
+    # this script owns was deleted above.  Write a visible placeholder so the
+    # document still compiles during a partial run, carrying the same TODO
+    # marker the table stubs use; make_arxiv.sh refuses to package on it.
+    for stem, what in (("fig1_block_order", "within-text permutation test"),
+                       ("fig2_capacity", "capacity sweep"),
+                       ("fig3_evaluators", "evaluator comparison")):
+        path = os.path.join(args.outdir, stem + ".pdf")
+        if os.path.exists(path):
+            continue
+        f, ax = plt.subplots(figsize=(6.0, 1.4))
+        ax.axis("off")
+        ax.text(0.5, 0.5, f"[TODO:{stem}] no measurements for the {what}",
+                ha="center", va="center", fontsize=11)
+        f.savefig(path, bbox_inches="tight")
+        plt.close(f)
+        print(f"  {stem}.pdf  STUB -- no measurements")
+
     print(f"# figures in {args.outdir}/")
 
 

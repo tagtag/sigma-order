@@ -7,20 +7,20 @@ The column that decides the paper's central claim is `pct causal` against
 `pct noncausal`: the median position of the WRITTEN sentence order among all
 24 orders of the same text.
 
-    0.50   the model cannot distinguish the written order from an arbitrary
+    0.50   the model cannot distinguish the authored order from an arbitrary
            rearrangement of the same sentences
-    1.00   the written order is the most forward-costly arrangement there is
+    1.00   the authored order is the most forward-costly arrangement there is
 
 Because the comparison is within each text, length, vocabulary, style and
 topic are identical across the permutations, so the between-set confounds
 that qualify every causal-vs-noncausal effect size elsewhere in this project
 do not apply.
 
-    r > 0, p < 0.05   the written order ranks higher for causal texts than for
+    r > 0, p < 0.05   the authored order ranks higher for causal texts than for
                       non-causal ones: sigma responds to causal order
                       specifically
     r ~ 0             it ranks equally high in both: sigma responds to the
-                      text being in its written order -- coherence, anaphora,
+                      text being in its authored order -- coherence, anaphora,
                       topical flow -- and the causal/non-causal effect size is
                       not evidence that entropy production measures causality
 
@@ -57,7 +57,7 @@ def rb(a, b):
 def vs_half(x):
     """Is the median percentile different from the 0.50 null?
 
-    0.50 is where an order-blind score lands, so this says whether the written
+    0.50 is where an order-blind score lands, so this says whether the authored
     order is distinguishable from an arbitrary one at all -- a separate
     question from whether causal and non-causal differ.
     """
@@ -164,28 +164,28 @@ def main():
         pn = np.array([c["median_pct_noncausal"] for c in cells])
         sep = int((np.abs(rr) > 0.2).sum())
         print(f"  {m} ({kinds[m]}), {len(cells)} corpora")
-        print(f"    written order sits at {np.median(pc):.3f} (causal) and "
+        print(f"    authored order sits at {np.median(pc):.3f} (causal) and "
               f"{np.median(pn):.3f} (non-causal) of the permutation range")
         print(f"    causal vs non-causal |r| > 0.2 in {sep}/{len(cells)} corpora"
               f"  (median r = {np.median(rr):+.3f})")
         if np.median(pc) > 0.7 and np.median(pn) > 0.7 and sep == 0:
-            print("    -> the written order is special in BOTH groups and")
+            print("    -> the authored order is special in BOTH groups and")
             print("       equally so.  With every between-set confound removed,")
             print("       sigma responds to the text being in its written")
             print("       order, not to causal structure.")
         elif sep == len(cells) and np.median(rr) > 0:
-            print("    -> the written order is more extreme for causal texts,")
+            print("    -> the authored order is more extreme for causal texts,")
             print("       within text, with length and vocabulary fixed.")
             print("       sigma does respond to causal order specifically.")
         elif np.median(pc) < 0.6 and np.median(pn) < 0.6:
-            print("    -> the written order is barely distinguishable from an")
+            print("    -> the authored order is barely distinguishable from an")
             print("       arbitrary one for this evaluator.")
         else:
             print("    -> mixed; report corpus by corpus.")
         print()
 
     # ---------------- the decomposition ----------------
-    # The distance of the written order from the 0.50 null splits into a part
+    # The distance of the authored order from the 0.50 null splits into a part
     # that any authored order earns -- measured by the NON-CAUSAL texts, whose
     # order is arbitrary but still the one a writer chose -- and a part that
     # only causal order earns.  Reporting the split per evaluator is what
@@ -231,7 +231,7 @@ def main():
             auth_z = caus_z = share_z = float("nan")
         # how often the causal median sits in the top permutation bin, i.e.
         # the measure has no room left above it
-        # the fraction of individual CAUSAL texts whose written order is the
+        # the fraction of individual CAUSAL texts whose authored order is the
         # single most forward-costly arrangement.  Once a text is there the
         # measure has no room above it, so this is what bounds the protocol --
         # not whether the corpus MEDIAN happens to land in the top bin, which

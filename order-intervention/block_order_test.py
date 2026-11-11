@@ -28,7 +28,7 @@ sigma(id)/(n!-1) ~ 0.018 for n=4.)
 
 The test that is not forced
 ---------------------------
-Ask instead where the written order ranks among ALL block orders of the same
+Ask instead where the authored order ranks among ALL block orders of the same
 text.  With four blocks there are 4! = 24 orders, so this is exact rather than
 sampled.  For each permutation pi the measure is
 
@@ -38,9 +38,9 @@ The set of 24 values is symmetric about zero by the identity above, which is
 fine: the question is not whether the distribution is centred, it is whether
 sigma(identity) sits at the TOP of it.
 
-    rank 24/24  the written order is the single most forward-costly
+    rank 24/24  the authored order is the single most forward-costly
                 arrangement of these sentences
-    rank 12/24  the written order is unremarkable among arbitrary arrangements
+    rank 12/24  the authored order is unremarkable among arbitrary arrangements
 
 The discriminator
 -----------------
@@ -221,8 +221,8 @@ def main():
     print("=" * 92)
     print(f"Block-order position: {corpus}, unmasking order {args.order}")
     print(f"  {nex}/{len(records)} texts enumerated exactly (all block orders)")
-    print("  percentile = where the WRITTEN order sits among all block orders")
-    print("  1.00 means the written order is the most forward-costly of them all")
+    print("  percentile = where the AUTHORED order sits among all block orders")
+    print("  1.00 means the authored order is the most forward-costly of them all")
     print("=" * 92)
     print(f"{'group':<11}{'n':>5}{'med pct':>10}{'mean pct':>10}{'med z':>9}"
           f"{'strict max':>12}{'med sigma':>11}{'med max':>10}")
@@ -248,11 +248,11 @@ def main():
     pc = between.get("percentile_written")
     if pc:
         if pc["p"] < 0.05 and pc["r"] > 0.2:
-            print("  The written order ranks HIGHER among arbitrary block orders")
+            print("  The authored order ranks HIGHER among arbitrary block orders")
             print("  for causal texts than for non-causal ones.  sigma_block")
             print("  responds to causal order specifically, beyond coherence.")
         elif pc["p"] >= 0.05 or abs(pc["r"]) <= 0.2:
-            print("  The written order ranks EQUALLY HIGH in both groups.")
+            print("  The authored order ranks EQUALLY HIGH in both groups.")
             print("  What sigma_block responds to is the text being in the order")
             print("  it was written in -- discourse coherence, anaphora, topical")
             print("  flow -- not causal structure.  The causal/non-causal effect")

@@ -18,7 +18,7 @@ What has to be right
    as empty as the shuffle control was.
 4. A score that is blind to order puts the identity exactly mid-rank, which is
    the null this test reads against.
-5. A score that rewards the written order puts the identity at the top.
+5. A score that rewards the authored order puts the identity at the top.
 
     python3 block_order_selftest.py
 """
@@ -86,7 +86,7 @@ def main():
           sorted(np.round(v, 12)) == sorted(np.round(-v, 12)))
 
     # ---- 3. the rank is NOT pinned by that symmetry ----------------
-    print("\n3. rank of the written order is free to move")
+    print("\n3. rank of the authored order is free to move")
     pcts = []
     for trial in range(400):
         sc = {p: float(rng.normal()) for p in perms}
@@ -102,7 +102,7 @@ def main():
           f"max {pcts.max():.4f}")
     check("can reach the bottom of the range", pcts.min() < 0.05,
           f"min {pcts.min():.4f}")
-    # under a score unrelated to the written order the percentile is uniform,
+    # under a score unrelated to the authored order the percentile is uniform,
     # so its mean is 0.5: that is the reference the real measurement moves away
     # from, and it is a property of the statistic, not of any model
     check("mean percentile is 0.5 under random scores",
@@ -115,20 +115,20 @@ def main():
     v = np.array([sig[p] for p in perms])
     s_id = sig[tuple(range(n))]
     check("every sigma is exactly zero", bool(np.all(v == 0.0)))
-    # A "<=" count would report k/k = 1.00 here, i.e. "the written order is
+    # A "<=" count would report k/k = 1.00 here, i.e. "the authored order is
     # the most forward-costly arrangement", for a model that cannot tell the
     # arrangements apart at all.  The midrank splits the ties and lands on the
     # true null.
     check("midrank percentile is exactly 0.50 for an order-blind score",
           abs(pct(v, s_id) - 0.5) < 1e-12, f"{pct(v, s_id):.6f}")
-    check("a naive <= count would have said 1.00 (why midrank is used)",
+    check("an unadjusted <= count would have said 1.00 (why midrank is used)",
           abs(float((v <= s_id).sum()) / len(v) - 1.0) < 1e-12)
 
-    # ---- 5. a score that rewards the written order -----------------
-    print("\n5. a score that rewards the written order")
+    # ---- 5. a score that rewards the authored order -----------------
+    print("\n5. a score that rewards the authored order")
 
     def ordered_score(p):
-        # rewards adjacent pairs that appear in ascending written order, the
+        # rewards adjacent pairs that appear in ascending authored order, the
         # way a language model rewards sentences that follow their antecedents
         return float(sum(1 for a, b in zip(p, p[1:]) if b == a + 1))
 

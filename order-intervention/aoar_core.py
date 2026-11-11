@@ -7,7 +7,8 @@ protocol.
 
 Background
 ----------
-Sagawa (PRX Intelligence 1, 023013 (2026); arXiv:2604.07867) defines, for a
+Sagawa (PRX Intelligence, accepted 2026, DOI 10.1103/tv38-b23y;
+arXiv:2604.07867) defines, for a
 fixed text, the stochastic entropy production under protocol reversal
 
     sigma = log P(forward token sequence) - log P(reversed sequence)

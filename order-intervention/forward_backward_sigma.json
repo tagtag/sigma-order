@@ -1,0 +1,58 @@
+{
+ "dir": "/user1/scl9/tag/LLM/order-intervention/results_llada_20261109",
+ "corpora": {
+  "Fable5": {
+   "n": 200,
+   "model": "GSAI-ML/LLaDA-8B-Base",
+   "median_all": 0.05521518493905882,
+   "median_causal": 0.01721695008868481,
+   "median_noncausal": 0.07243913438547966,
+   "frac_positive": 0.61,
+   "rank_biserial": -0.2006
+  },
+  "GPT54": {
+   "n": 200,
+   "model": "GSAI-ML/LLaDA-8B-Base",
+   "median_all": 0.0752838636261812,
+   "median_causal": 0.06099370892498397,
+   "median_noncausal": 0.09046759740227744,
+   "frac_positive": 0.69,
+   "rank_biserial": -0.15400000000000003
+  },
+  "GPT56": {
+   "n": 200,
+   "model": "GSAI-ML/LLaDA-8B-Base",
+   "median_all": 0.10881482289462585,
+   "median_causal": 0.07687697802695245,
+   "median_noncausal": 0.12687977542969278,
+   "frac_positive": 0.67,
+   "rank_biserial": -0.14459999999999995
+  },
+  "Gemini31": {
+   "n": 200,
+   "model": "GSAI-ML/LLaDA-8B-Base",
+   "median_all": 0.016050798451584396,
+   "median_causal": 0.0035452139337668314,
+   "median_noncausal": 0.031902788645109266,
+   "frac_positive": 0.55,
+   "rank_biserial": -0.0494
+  },
+  "Opus46": {
+   "n": 200,
+   "model": "GSAI-ML/LLaDA-8B-Base",
+   "median_all": 0.057416709477563485,
+   "median_causal": 0.06489383270558105,
+   "median_noncausal": 0.05222157573324005,
+   "frac_positive": 0.605,
+   "rank_biserial": 0.04180000000000006
+  }
+ },
+ "summary": {
+  "median_min": 0.016050798451584396,
+  "median_max": 0.10881482289462585,
+  "r_min": -0.2006,
+  "r_max": 0.04180000000000006,
+  "n_corpora": 5,
+  "n_negative": 4
+ }
+}

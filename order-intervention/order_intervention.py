@@ -3,7 +3,8 @@
 """
 Order intervention on the fixed-text entropy-production protocol of
 
-  T. Sagawa, PRX Intelligence 1, 023013 (2026), arXiv:2604.07867
+  T. Sagawa, PRX Intelligence (accepted 2026), DOI 10.1103/tv38-b23y,
+  arXiv:2604.07867
   code/data: https://github.com/taksagawa/Paper2026
 
 For a masked (any-order) generative model, the unmasking order pi is a free
@@ -104,9 +105,39 @@ class HFMaskedProvider:
                       f"falling back to the default load", flush=True)
                 model = None
         if model is None:
-            model = AutoModel.from_pretrained(
-                model_dir, trust_remote_code=True, torch_dtype=td)
+            # AutoModel gives the bare encoder for an ordinary masked model
+            # such as BERT: its output is the hidden state, width 768, not a
+            # distribution over the vocabulary.  Scoring that silently treats
+            # hidden units as tokens.  LLaDA is different -- its AutoModel IS
+            # the language model -- and that is why this path went untested
+            # until a BERT run hit it.  Ask for the masked-LM head first and
+            # fall back only if the architecture does not register one.
+            from transformers import AutoModelForMaskedLM
+            try:
+                model = AutoModelForMaskedLM.from_pretrained(
+                    model_dir, trust_remote_code=True, torch_dtype=td)
+            except Exception as e:
+                print(f"# no masked-LM head ({type(e).__name__}); "
+                      f"falling back to AutoModel", flush=True)
+                model = AutoModel.from_pretrained(
+                    model_dir, trust_remote_code=True, torch_dtype=td)
         self.model = model.to(self.device).eval()
+
+        # Whatever path loaded it, the last axis of the output must be the
+        # vocabulary.  Check it once, here, rather than discovering it as an
+        # out-of-bounds index on whichever token first exceeds the hidden
+        # width -- which is how this was found, deep inside a run.
+        want = int(getattr(cfg, "vocab_size", 0)) or len(self.tok)
+        with torch.no_grad():
+            probe = self.model(torch.zeros((1, 4), dtype=torch.long,
+                                           device=self.device))
+        got = (probe.logits if hasattr(probe, "logits") else probe[0]).shape[-1]
+        if got != want:
+            raise SystemExit(
+                f"{model_dir}: the model's output has width {got}, but the "
+                f"vocabulary is {want}.  This is not a distribution over "
+                f"tokens -- most likely the bare encoder was loaded instead "
+                f"of the masked-LM head.")
 
         mid = mask_token_id
         if mid is None:

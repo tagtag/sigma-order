@@ -138,7 +138,7 @@
 # 追記: 沙川(2026)固定テキスト解析の独立再現
 
 T. Sagawa, *Stochastic Thermodynamics for Autoregressive Generative Models:
-A Non-Markovian Perspective*, PRX Intelligence **1**, 023013 (2026),
+A Non-Markovian Perspective*, PRX Intelligence (accepted, 2026), DOI: 10.1103/tv38-b23y,
 [arXiv:2604.07867](https://arxiv.org/abs/2604.07867),
 コード/データ: https://github.com/taksagawa/Paper2026
 

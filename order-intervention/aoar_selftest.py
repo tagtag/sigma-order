@@ -27,6 +27,7 @@ order-DEPENDENT, which shows the test has power rather than passing trivially.
 
 import itertools
 import os
+import json
 import sys
 
 import numpy as np
@@ -173,14 +174,28 @@ def main():
     print("3) For a FIXED order, P_pi must be a normalised distribution: "
           "sum_x P_pi(x) = 1")
     print("=" * 94)
+    worst_norm = 0.0
     for o in ("l2r", "r2l", "random:3"):
         order = make_order(o, L)
         tot = 0.0
         for s in states:
             tot += np.exp(aoar_logprob(list(s), order, oracle))
+        worst_norm = max(worst_norm, abs(1 - tot))
         print(f"  order={o:<12} sum_x P_pi(x) = {tot:.12f}   "
               f"|1 - sum| = {abs(1-tot):.2e}")
     print("  (oracle is consistent, so each order reproduces pi exactly)")
+
+    # The paper quotes these two tolerances.  They were typed in from a run
+    # and nothing tied them to a run afterwards, so write them down where
+    # make_tables.py can read them.
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "aoar_selftest.json")
+    with open(out, "w") as fh:
+        json.dump({"max_abs_order_dev": float(worst),
+                   "max_abs_norm_dev": float(worst_norm),
+                   "n_texts": len(test_x), "n_orders": len(orders)}, fh,
+                  indent=1)
+    print(f"\n# wrote {out}")
 
     print()
     print("ALL TESTS PASS" if (ok1 and ok2) else "TESTS FAILED")

@@ -40,7 +40,16 @@ for d in order-intervention bert-affinity; do
     done
 done
 
-cp "$SRC/paper/main.tex" "$SRC/paper"/*.py "$SRC/paper"/*.sh "$REPO/paper/"
+# *.tex, not main.tex: the body is split across sec_intro.tex,
+# sec_decomp.tex and sec_truesigma.tex, and copying only main.tex produced a
+# repository in which the paper silently would not build.  *.txt as well,
+# for glossary.txt, which check_paper.py reads.
+cp "$SRC/paper"/*.tex "$SRC/paper"/*.py "$SRC/paper"/*.sh "$REPO/paper/"
+cp "$SRC/paper"/*.txt "$REPO/paper/" 2>/dev/null || true
+# top-level scripts that belong to the repository rather than to one subtree
+for f in check_readme.py; do
+    [ -f "$SRC/$f" ] && cp "$SRC/$f" "$REPO/"
+done
 mkdir -p "$REPO/paper/tables" "$REPO/paper/figures"
 cp "$SRC/paper/tables"/*.tex "$REPO/paper/tables/" 2>/dev/null || true
 cp "$SRC/paper/figures"/*.pdf "$REPO/paper/figures/" 2>/dev/null || true
@@ -64,6 +73,8 @@ __pycache__/
 *.out
 *.synctex.gz
 paper/main.pdf
+# the preview of the arXiv build, kept by make_arxiv.sh for checking
+paper/arxiv_main.pdf
 paper/build.log
 paper/arxiv_submission/
 paper/arxiv_submission.tar.gz
@@ -115,9 +126,10 @@ done
 echo
 echo "=== 3. the self-tests still pass from the copy ==="
 ok=1
-for t in order-intervention/block_order_selftest.py \
-         order-intervention/pll_selftest.py \
-         order-intervention/aoar_selftest.py; do
+# Every self-test in the copy, found rather than listed: a hand-written
+# list goes stale silently, and this one did -- it named three while the
+# repository had grown to eight.
+for t in $(cd "$REPO" && find . -name '*_selftest.py' | sed 's|^\./||' | sort); do
     [ -f "$REPO/$t" ] || continue
     if ( cd "$REPO/$(dirname "$t")" && python3 -I "$(basename "$t")" >/dev/null 2>&1 ); then
         echo "  pass  $t"
@@ -127,33 +139,92 @@ for t in order-intervention/block_order_selftest.py \
 done
 [ "$ok" = 1 ] || { echo "  a self-test fails from the copy -- do not publish yet"; exit 1; }
 
+# The self-tests just run import modules from the copy, which leaves
+# __pycache__ behind -- after step 2 has already looked for it.  .gitignore
+# covers it, but a check that runs before the thing it checks for can appear
+# is not a check.  Remove it, then look again.
+find "$REPO" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
+left=$(find "$REPO" \( -name '__pycache__' -o -name '*.pyc' \) | head -3)
+[ -n "$left" ] && { echo "  PRESENT after cleanup: $left"; exit 1; }
+echo "  no build artefacts left by the checks"
+
+
+echo
+echo "=== 3b. the paper's relations hold from the copy ==="
+# The omission above was invisible: main.tex was present, every table was
+# present, and the document was missing three sections.  check_paper.py
+# verifies that every \input resolves, so running it from the copy is the
+# check that this assembly is complete.
+if [ -f "$REPO/paper/check_paper.py" ]; then
+    if ( cd "$REPO/paper" && python3 -I check_paper.py >/dev/null 2>&1 ); then
+        echo "  pass  paper/check_paper.py"
+    else
+        echo "  FAIL  paper/check_paper.py -- run it there to see why"
+        ( cd "$REPO/paper" && python3 -I check_paper.py 2>&1 | tail -20 \
+          | sed 's/^/    /' )
+        echo "  the assembled copy is not a working repository -- do not publish"
+        exit 1
+    fi
+fi
+
+echo
+echo "=== 3c. the README describes this repository ==="
+if [ -f "$REPO/check_readme.py" ]; then
+    if ( cd "$REPO" && python3 -I check_readme.py . >/dev/null 2>&1 ); then
+        echo "  pass  check_readme.py"
+    else
+        ( cd "$REPO" && python3 -I check_readme.py . 2>&1 | sed 's/^/    /' )
+        echo "  FAIL  the README does not match the tree -- do not publish"
+        exit 1
+    fi
+fi
+
 echo
 echo "=== 4. next ==="
 cat <<EOF
+--- publish the repository -------------------------------------------
+
   cd $REPO
   git init -b main
   git add -A
   git commit -m "Within-text permutation test for fixed-text entropy production"
   gh repo create $NAME --private --source=. --push
 
-Created private.  Two things follow from that:
-
-  * Stay private until arXiv has ANNOUNCED the paper, not merely until it
-    is submitted.  Making the repository public earlier would put the work
-    in the open with no timestamp on it.  The paper's Reproducibility
-    section prints \\repourl as a live link, and that link returning 404
-    for a few days is the lesser cost -- arXiv does not check it at
-    submission.  Only after the announcement:
-        gh repo edit $NAME --visibility public --accept-visibility-change-consequences
-
-  * Set the URL in the paper once the repository exists:
-        https://github.com/<your-login>/$NAME
-
 If 'gh' is not installed or not logged in, create the repository in the web
-interface instead and push over HTTPS:
+interface instead (private, with no README and no license, so the first push
+is not a merge) and push over HTTPS:
+
   git remote add origin https://github.com/<your-login>/$NAME.git
   git push -u origin main
+
 At the password prompt give a personal access token, not your account
-password.  'git config --global credential.helper store' saves it so the
-prompt comes only once.
+password: Settings -> Developer settings -> Fine-grained tokens, with
+Repository access covering this repository and Contents set to Read and
+write.  A 403 on push means one of those two is missing, not a bad token.
+'git config --global credential.helper store' saves it so the prompt comes
+only once.
+
+--- package the paper for arXiv --------------------------------------
+
+  cd $(pwd)
+  sh make_arxiv.sh
+
+That regenerates the tables and figures from the measurements, refuses if
+any quoted number has no measurement behind it, builds the bundle in an
+empty directory the way arXiv will, and writes two things:
+
+    arxiv_submission.tar.gz   the file to upload
+    arxiv_main.pdf            the PDF that build produced -- check this
+                              one, not main.pdf, because it is the only
+                              faithful preview of the submission
+
+Upload with primary class stat.ML, cross-listed cs.CL and cond-mat.stat-mech.
+
+--- after arXiv announces it -----------------------------------------
+
+Only now make the repository public.  Earlier would put the work in the
+open with no timestamp on it; the paper's \\repourl link returning 404 for
+a few days is the lesser cost, and arXiv does not check it at submission.
+
+  gh repo edit $NAME --visibility public --accept-visibility-change-consequences
 EOF
