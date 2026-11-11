@@ -42,13 +42,15 @@ from figstyle import C, GRID, INK, INK_MUTED, MARKERS, NULLC, setup, tidy
 import matplotlib.pyplot as plt  # noqa: E402
 
 CORPUS_ORDER = ["Opus46", "GPT54", "GPT56", "Gemini31", "Fable5"]
-# fixed evaluator order: smallest first, masked before causal at equal size
-# ordered by parameter count: the capacity series is what the paper reads
-EVAL_ORDER = ["bert-base-uncased", "gpt2", "bert-large-uncased",
-              "Qwen/Qwen3-4B-Base", "GSAI-ML/LLaDA-8B-Base"]
-PARAMS = {"bert-base-uncased": "110M", "gpt2": "124M",
-          "bert-large-uncased": "340M", "Qwen/Qwen3-4B-Base": "4B",
-          "GSAI-ML/LLaDA-8B-Base": "8B"}
+# The evaluator order and the parameter counts come from make_tables, which
+# is where they are maintained.  This file kept its own copies, and when the
+# four-model autoregressive ladder was added they were updated there and not
+# here: gpt2-medium, gpt2-large and gpt2-xl were absent from both, so they
+# sorted alphabetically after the models that were listed -- the panels ran
+# gpt2, Qwen, gpt2-large, gpt2-medium, gpt2-xl under a caption that says "in
+# order of capacity" -- and their titles printed their size as "?".  Two
+# copies of a list is one copy too many.
+from make_tables import EVAL_ORDER, params_str  # noqa: E402
 
 
 
@@ -186,7 +188,7 @@ def fig_block_order(blk, kinds, outdir):
                         label="causal" if cat == "causal" else "non-causal")
         ax.set_xticks(xs)
         ax.set_xticklabels(corpora, rotation=35, ha="right")
-        ax.set_title(f"{model.split('/')[-1]}  ({PARAMS.get(model, '?')}, "
+        ax.set_title(f"{model.split('/')[-1]}  ({params_str(model)}, "
                      f"{kind_str(kinds.get(model))})")
         ax.set_ylim(0.45, 1.02)
     for r in range(nrow):

@@ -146,11 +146,18 @@ def kind_str(kind):
 
 
 def params_str(model):
-    """Parameter count as it should read in a table cell."""
+    """Parameter count as it should read in a table cell or a panel title.
+
+    One decimal above 1000M, with a trailing zero stripped: 1.6B, not the
+    1B integer division used to give.  \\Params<Tag> was fixed for this and
+    this was not, which is the usual consequence of two formatters.
+    """
     p = PARAMS.get(model)
     if not p:
         return "?"
-    return f"{p}M" if p < 1000 else f"{p // 1000}B"
+    if p < 1000:
+        return f"{p}M"
+    return f"{p / 1000:.1f}".rstrip("0").rstrip(".") + "B"
 
 
 def rb(a, b):
@@ -1003,6 +1010,11 @@ def table_fbrank(dirpath, outdir, k=None):
     per_model = defaultdict(lambda: {"a": [], "c": [], "r": []})
     n_texts = n_degen = 0
     all_r, all_rp, all_disp = [], [], []
+    # Displacement is a per-evaluator reading: one evaluator can sit far from
+    # the null in every corpus while the other sits on it.  Pooling the two
+    # and quoting the pooled maximum put bert-base's p into a sentence about
+    # LLaDA, which then claimed that twenty tests "reject" at p < 0.989.
+    disp_by_model = defaultdict(list)
     for model in models:
         for corpus in corpora:
             recs = cells.get((model, corpus))
@@ -1028,10 +1040,11 @@ def table_fbrank(dirpath, outdir, k=None):
                 dd = np.asarray(v, float) - 0.5
                 if (dd != 0).sum() >= 6:
                     try:
-                        all_disp.append(float(wilcoxon(
-                            dd, alternative='two-sided').pvalue))
+                        q = float(wilcoxon(dd, alternative='two-sided').pvalue)
                     except ValueError:
-                        pass
+                        continue
+                    all_disp.append(q)
+                    disp_by_model[model].append(q)
             per_model[model]["a"].append(mn - 0.5)
             per_model[model]["c"].append(mc - mn)
             per_model[model]["r"].append(r_rb)
@@ -1055,8 +1068,19 @@ def table_fbrank(dirpath, outdir, k=None):
         mac("FbNSurviving", str(sum(1 for q in all_rp if q < thr)))
         mac("FbNNominal", str(sum(1 for q in all_rp if q < 0.05)))
         mac("FbNExpected", f"{0.05 * len(all_rp):.1f}")
+    for model, qs in disp_by_model.items():
+        t = TAG.get(model)
+        if t and qs:
+            mac(f"FbNTestsDisp{t}", str(len(qs)))
+            mac(f"FbDispPMax{t}", tex_sci(max(qs)))
+            mac(f"FbDispNRejecting{t}",
+                str(sum(1 for q in qs if q < 0.05 / len(all_disp))))
     if all_disp:
         mac("FbNTestsDisp", str(len(all_disp)))
+        # Its own correction.  \\FbBonferroni is 0.05 over the number of
+        # CAUSAL tests, which is half as many; quoting it as the threshold
+        # these were judged against would be the wrong number.
+        mac("FbDispBonferroni", f"{0.05 / len(all_disp):.4f}")
         mac("FbDispPMax", tex_sci(max(all_disp)))
         mac("FbDispNSurviving",
             str(sum(1 for q in all_disp if q < 0.05 / len(all_disp))))
@@ -1362,7 +1386,11 @@ def main():
     # as a visible TODO instead of an undefined-control-sequence error.
     expected = ["FbNTestsCausal", "FbBonferroni", "FbNSurviving",
                 "FbNNominal", "FbNExpected", "FbNTestsDisp",
-                "FbDispPMax", "FbDispNSurviving",
+                "FbDispPMax", "FbDispNSurviving", "FbDispBonferroni",
+                "FbNTestsDispLLaDA", "FbDispPMaxLLaDA",
+                "FbDispNRejectingLLaDA",
+                "FbNTestsDispBertBase", "FbDispPMaxBertBase",
+                "FbDispNRejectingBertBase",
                 "FbAuthoredStepsBertBase", "FbCausalStepsBertBase",
                 "FbAuthoredStepsLLaDA", "FbCausalStepsLLaDA",
                 "FbSignPBertBase", "FbSignNegBertBase",

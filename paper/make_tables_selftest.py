@@ -278,3 +278,106 @@ def check_capacity_scale():
 
 
 check_capacity_scale()
+
+
+# --------------------------------------------------- figures and tables agree
+def check_figure_order():
+    """The figures must name and order the evaluators as the tables do.
+
+    make_figures.py kept private copies of the evaluator order and the
+    parameter counts.  When the autoregressive ladder was added they were
+    updated in make_tables.py alone, so the three new models were unknown to
+    the figure: they sorted alphabetically after the models that were listed,
+    and Figure 1 ran gpt2, Qwen, gpt2-large, gpt2-medium, gpt2-xl under a
+    caption that says "in order of capacity", with their sizes printed as
+    "?".  The copies are gone; this pins that they stay gone.
+    """
+    import os, sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import make_figures as F
+    import make_tables as M
+
+    names = {"gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl",
+             "Qwen/Qwen3-4B-Base", "bert-base-uncased",
+             "GSAI-ML/LLaDA-8B-Base"}
+    assert F.order_models(names) == M.order_m(names), \
+        f"figure order {F.order_models(names)} != table order {M.order_m(names)}"
+    for m in names:
+        assert M.params_str(m) != "?", f"{m} has no parameter count"
+    # integer division printed 1558M as "1B" here long after the macro was
+    # fixed; one decimal, trailing zero stripped
+    assert M.params_str("gpt2-xl") == "1.6B", M.params_str("gpt2-xl")
+    assert M.params_str("Qwen/Qwen3-4B-Base") == "4B"
+    assert M.params_str("gpt2") == "124M"
+    print("  figures and tables order and name the evaluators alike")
+
+
+check_figure_order()
+
+
+# ------------------------------------------------- displacement, per evaluator
+def check_displacement_macros():
+    """A displacement p quoted for one evaluator must come from that evaluator.
+
+    The paper says, of LLaDA, that every one of its displacement tests
+    rejects, and quoted the largest p over ALL such tests.  Those were pooled
+    across both masked evaluators, so the number printed was bert-base's --
+    0.989 -- in a sentence asserting rejection.  Here one evaluator sits on
+    the null and the other far below it, and the per-evaluator macros must
+    tell them apart while the pooled one takes the worse of the two.
+    """
+    import json, os, shutil, sys, tempfile
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import make_tables as M
+
+    d = tempfile.mkdtemp()
+    try:
+        def cell(model, corpus, base_c, base_n):
+            recs = []
+            for cat, base in (("causal", base_c), ("noncausal", base_n)):
+                for i in range(20):
+                    recs.append({
+                        # a symmetric spread about `base`: when base is 0.5
+                        # the signed-rank test sees no displacement
+                        "percentile_written": base + 0.01 * (i % 5 - 2),
+                        "degenerate": False, "category": cat, "index": i,
+                        "sigma_fb_written": 0.05,
+                    })
+            json.dump({"meta": {"script": "block_sigma_fb.py",
+                                "model": model, "corpus": corpus},
+                       "records": recs},
+                      open(os.path.join(
+                          d, f"{model.split('/')[-1]}__{corpus}.json"), "w"))
+
+        # on the null, and far below it
+        cell("bert-base-uncased", "fixed_text_A", 0.50, 0.50)
+        cell("GSAI-ML/LLaDA-8B-Base", "fixed_text_A", 0.20, 0.22)
+        out = tempfile.mkdtemp()
+        M.MACROS.clear()
+        M.table_fbrank(d, out)
+        g = M.MACROS
+
+        for k in ("FbDispPMaxLLaDA", "FbDispPMaxBertBase", "FbDispPMax",
+                  "FbNTestsDispLLaDA", "FbNTestsDispBertBase",
+                  "FbDispBonferroni"):
+            assert k in g, f"{k} not emitted"
+        assert g["FbNTestsDispLLaDA"] == "2", g["FbNTestsDispLLaDA"]
+        assert g["FbNTestsDispBertBase"] == "2", g["FbNTestsDispBertBase"]
+        assert g["FbNTestsDisp"] == "4", g["FbNTestsDisp"]
+        # the evaluator on the null must not lend its p to the other
+        assert g["FbDispPMaxLLaDA"] != g["FbDispPMaxBertBase"], \
+            "the two evaluators report the same displacement p"
+        # and the pooled macro is the worse of the two, which is why a
+        # sentence about one evaluator must not use it
+        assert g["FbDispPMax"] == g["FbDispPMaxBertBase"], \
+            (g["FbDispPMax"], g["FbDispPMaxBertBase"])
+        assert g["FbDispNRejectingLLaDA"] == "2", g["FbDispNRejectingLLaDA"]
+        assert g["FbDispNRejectingBertBase"] == "0", \
+            g["FbDispNRejectingBertBase"]
+        print("  displacement: each evaluator's p is its own")
+        shutil.rmtree(out)
+    finally:
+        shutil.rmtree(d)
+
+
+check_displacement_macros()

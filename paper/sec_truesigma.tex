@@ -135,10 +135,13 @@ evaluator.}
 Under \texttt{LLaDA} the authored arrangement sits far below the null ---
 $\FbAuthoredLLaDA$, or $\FbAuthoredStepsLLaDA$ steps of the
 $1/\GridK = \GridStep$ grid --- and it does so in every corpus and in both
-label groups: all \FbNTestsDisp\ displacement tests reject at
-$p < \FbDispPMax$.  Under \texttt{bert-base} the same texts give
-$\FbAuthoredBertBase$, which is $\FbAuthoredStepsBertBase$ steps, and no
-corpus rejects after correction.
+label groups: all \FbNTestsDispLLaDA\ of its displacement tests reject at
+$p < \FbDispPMaxLLaDA$, against a Bonferroni threshold of
+$\FbDispBonferroni$ for the $\FbNTestsDisp$ displacement tests this section
+reports.  Under
+\texttt{bert-base} the same texts give $\FbAuthoredBertBase$, which is
+$\FbAuthoredStepsBertBase$ steps, and its displacement tests clear that
+threshold in $\FbDispNRejectingBertBase$ of $\FbNTestsDispBertBase$ cases.
 
 The two readings differ by about thirteen grid steps on identical input.
 Nothing about the texts changed between them; only the evaluator did.  A
