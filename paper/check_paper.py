@@ -53,6 +53,12 @@ LATEX_CAPS = {
     "Gamma", "Lambda", "Phi", "Pi", "Psi", "Theta", "Upsilon", "Xi",
     "DeclareMathOperator", "Vert", "Leftarrow", "Rightarrow", "Longrightarrow",
     "Leftrightarrow", "Pr", "Re", "Im",
+    # url.sty, which hyperref loads; \DeclareUrlCommand defines the file-name
+    # command the preamble uses.  This list is what the undefined-macro check
+    # knows is not ours to define, and a package command missing from it is
+    # reported as a missing definition -- a true statement about this file and
+    # a false one about the document.
+    "DeclareUrlCommand",
 }
 
 

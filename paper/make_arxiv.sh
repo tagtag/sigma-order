@@ -87,6 +87,23 @@ print(f"  measurement files: {n_pll} in {pll}, {n_blk} in {blk}")
 if n_pll == 0 and n_blk == 0:
     print("  ERROR: no measurement files at all -- nothing to submit")
     sys.exit(1)
+# Texts too short to permute are dropped by block_order_pll.py.  That used to
+# be invisible: the per-corpus n simply came out lower and the paper still
+# said 200.  Refuse to package while any text is missing for that reason.
+dropped = 0
+for f in glob.glob(os.path.join(blk, "blkord_*.json")):
+    try:
+        import json as _json
+        d = _json.load(open(f))
+    except Exception:
+        continue
+    dropped += int(d.get("n_skipped", 0) or 0)
+if dropped:
+    print(f"  ERROR: {dropped} text(s) were dropped as too short to permute.")
+    print("  Every per-corpus n in the paper is then smaller than the corpus,")
+    print("  and nothing in the text says so.  Look at the 'skipped' list in")
+    print("  the blkord JSONs before submitting.")
+    sys.exit(1)
 try:
     macros = open("tables/macros.tex").read()
 except OSError:
@@ -135,18 +152,44 @@ cp main.tex "$OUT/"
 cp tables/*.tex "$OUT/tables/"
 cp figures/*.pdf "$OUT/figures/"
 
+# Every file main.tex \input{}s that is not a generated table.  This step
+# used to copy main.tex and nothing else.  When the paper grew three sections
+# into files of their own the bundle lost them silently: the local build was
+# fine, because the files were sitting in the working directory, and only the
+# arXiv machine would have seen a document with three sections missing.  Step
+# 2 below caught it -- that is what step 2 is for -- but a collect step that
+# needs catching will eventually be run with step 2 skipped.  Derived from the
+# source now, so a section added later is copied without anyone remembering.
+grep -o '\\input{[^}]*}' main.tex | sed 's/.*{//; s/}//' | sort -u |
+while read -r f; do
+    case "$f" in
+        tables/*|figures/*) continue ;;
+    esac
+    [ -f "$f.tex" ] && cp "$f.tex" "$OUT/"
+done
+
 # ancillary: the scripts that generate every number and figure
 cp make_tables.py make_tables_selftest.py make_figures.py figstyle.py \
    check_paper.py check_paper_selftest.py glossary.txt \
    build_paper.sh "$OUT/anc/" 2>/dev/null || true
 for f in ../order-intervention/block_order_pll.py \
          ../order-intervention/block_order_selftest.py \
+         ../order-intervention/block_split_selftest.py \
          ../order-intervention/pll_sigma.py \
          ../order-intervention/pll_selftest.py \
          ../order-intervention/aoar_core.py \
          ../order-intervention/order_intervention.py \
          ../order-intervention/merge_blkord.py \
          ../order-intervention/merge_pll.py \
+         ../order-intervention/block_sigma_fb.py \
+         ../order-intervention/block_sigma_fb_selftest.py \
+         ../order-intervention/block_vs_fb_selftest.py \
+         ../order-intervention/merge_sigfb.py \
+         ../order-intervention/forward_backward_sigma.py \
+         ../order-intervention/forward_backward_decomposition.py \
+         ../bert-affinity/mlm_entropy_production.py \
+         ../bert-affinity/cycle_affinity.py \
+         ../bert-affinity/capacity_sweep.py \
          ../order-intervention/README.md; do
     [ -f "$f" ] && cp "$f" "$OUT/anc/"
 done
@@ -260,7 +303,8 @@ else:
           f" {', '.join(f'{x:.0f}pt' for x in big[:6])}"
           + (" ..." if len(big) > 6 else ""))
     print("  A wide table is the usual cause; \\small on it, or a shorter")
-    print("  column, fixes it.  grep Overfull in the log for the line numbers.")
+    print("  column, fixes it.  For the line numbers:")
+    print("      grep -n -B2 Overfull paper/arxiv_build.log")
 PY
 
 echo
@@ -278,12 +322,19 @@ fi
 
 echo
 echo "=== 4. remaining notes in the source ==="
+# The \todo in \repoline is the fallback for an unset \repourl: with the URL
+# set it is never expanded, so it does not print in red or anywhere else.
+# Counting it reported a note to resolve in a document that had none, and
+# step 3b above has already established which case this is.
 n=$(grep -c "todo{" "$OUT/main.tex" || true)
+if grep -q '^.renewcommand{.repourl}{[^}]' "$OUT/main.tex"; then
+    n=$((n - 1))
+fi
 if [ "$n" -gt 0 ]; then
     printf '  %s todo note(s) still in the source -- these print in red in the PDF.\n' "$n"
     echo "  Run with --strip once they are resolved, or edit main.tex."
 else
-    echo "  none"
+    echo "  none that reach the page"
 fi
 
 echo
@@ -294,6 +345,11 @@ echo "=== 5. pack ==="
 # it left nothing to check the upload against.  It is saved beside the paper
 # under a name that cannot be mistaken for the local build.
 cp "$OUT/main.pdf" arxiv_main.pdf
+# Keep the build log too, for the same reason.  Step 3 ends by telling the
+# reader to grep it for the line numbers of any overfull box; this step then
+# deleted it, so the instruction pointed at a file that no longer existed by
+# the time anyone could follow it.  It is moved beside the paper, not removed.
+[ -f "$OUT/arxiv_build.log" ] && mv "$OUT/arxiv_build.log" arxiv_build.log
 # arXiv wants the files at the archive root, not inside a directory
 ( cd "$OUT" && rm -f main.pdf main.aux main.log main.out main.fls \
         main.fdb_latexmk arxiv_build.log && tar czf "../$TGZ" . )

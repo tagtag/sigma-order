@@ -307,12 +307,12 @@ order-intervention/
   pll_sigma.py              the original between-set protocol, both scorer types
   pll_selftest.py           its correctness checks
   merge_pll.py              its aggregation
-  results_pll/              measured JSON
-                            -- RETAINED, NOT REPORTED.  This is the faithful
-                            reproduction of the published protocol and the
-                            record of what was tried.  The paper reports
-                            neither it nor any pseudo-log-likelihood; see
-                            "What this work got wrong on the way".
+  results_pll/              measured JSON.  The autoregressive files hold
+                            exact log-likelihoods, so they are Delta and the
+                            paper reports them (the between-set table and the
+                            token-reversal table).  The masked files hold
+                            pseudo-log-likelihoods -- RETAINED, NOT REPORTED;
+                            see "What this work got wrong on the way".
 
   block_split_selftest.py   what the sentence splitter does, and where it is wrong
   bundle_check.py           a shipped tarball must stand up in an empty directory
@@ -425,10 +425,15 @@ these is a mistake a reader might repeat:
    looks decisive and is empty: the antisymmetry above forces it. See
    `order-intervention/shuffle_control.py`, retained and marked as retracted.
 2. On the scale-matched pair alone (`bert-base` 110M vs `gpt2` 124M) the
-   authored component reads as a property of the **autoregressive class**. An
-   8B masked model reaches the same level, so it is a property of capability,
-   and the class only sets how cheaply it is obtained. The capacity series is
-   what distinguishes the two, and it was necessary.
+   authored component read as a property of the **autoregressive class**, and
+   a capacity series of masked evaluators was built to test that reading
+   against a capability one. Both the reading and its test are void, for a
+   reason that took longer to see than either: `Delta` is defined only where a
+   joint exists, so the masked side of the comparison was never `Delta` at all
+   but the pseudo-log-likelihood of the next item. A comparison between a
+   quantity and a different quantity concludes about neither. It is withdrawn,
+   and what replaced it is a ladder inside one class, where every rung reports
+   the same quantity.
 3. **The paper was built for weeks on the pseudo-log-likelihood.** `PLL` sums
    `log p(x_k | x_{-k})` over positions, each term conditioning on every other
    token. It is not the logarithm of anything — `sum_x exp(PLL(x))` is 2.27

@@ -15,12 +15,9 @@ fig1_block_order   The decisive result.  Where the AUTHORED sentence order sits
                    among all 4! = 24 orders of the same text, for causal and
                    non-causal texts, against the 0.50 null.  Within-text, so
                    length, vocabulary, style and topic are held fixed.
-fig2_capacity      sigma against evaluator capacity, in the exactly solvable
-                   toy system and in the BERT pair.  sigma rises with capacity
-                   in both, so it has no capacity-independent value.
-fig3_evaluators    sigma and the causal/non-causal effect size for each
-                   evaluator, with the scale-matched masked/causal pair
-                   (bert-base 110M, gpt2 117M) adjacent.
+fig2_capacity      sigma_EP of Eq. (sigep), the entropy production of the
+                   chain induced by a model's own conditionals, against model
+                   capacity in the exactly solvable toy system.
 
     python3 make_figures.py --pll ../order-intervention/results_pll \\
         --blkord ../order-intervention/results_blkord \\
@@ -121,11 +118,26 @@ def rb(a, b):
 
 
 # ---------------------------------------------------------------- figure 1
+def ar_only(models, kinds):
+    """The autoregressive evaluators, in order.
+
+    Delta exists only for a model that supplies a joint, so only these are
+    drawn.  The masked runs in results_blkord/ were scored with a
+    pseudo-log-likelihood; they are kept as a record and filtered out here,
+    exactly as in make_tables.py, so the figure and the tables show the same
+    evaluators.
+    """
+    return [m for m in order_models(models) if kinds.get(m) == "causal"]
+
+
 def fig_block_order(blk, kinds, outdir):
     if not blk:
         print("  fig1 skipped: no blkord_*.json yet")
         return
-    models = order_models({m for m, _ in blk})
+    models = ar_only({m for m, _ in blk}, kinds)
+    if not models:
+        print("  fig1 skipped: no autoregressive evaluator in results_blkord")
+        return
     corpora = order_corpora({c for _, c in blk})
     n = len(models)
     # Five panels across one text width squeeze the tick labels into each
@@ -196,19 +208,24 @@ def fig_block_order(blk, kinds, outdir):
 
 
 # ---------------------------------------------------------------- figure 2
-def fig_capacity(pll, toy_dir, outdir):
+def fig_capacity(toy_dir, outdir):
+    """The exactly solvable system, alone.
+
+    The right-hand panel put median sigma_block for the two BERT evaluators
+    against parameter count.  That number is a pseudo-log-likelihood
+    difference, not Delta, and the paper no longer reports it; a panel is not
+    the place to keep a measurement the text has withdrawn.  What is left is
+    the one reading in the figure that is exact.
+    """
     rows = None
     p = os.path.join(toy_dir or "", "capacity_results.json")
     if os.path.isfile(p):
         rows = json.load(open(p)).get("rows")
-    have_pll = bool(pll)
-    if not rows and not have_pll:
-        print("  fig2 skipped: neither capacity_results.json nor pll_*.json")
+    if not rows:
+        print("  fig2 skipped: no capacity_results.json")
         return
 
-    ncol = int(bool(rows)) + int(have_pll)
-    fig, axes = plt.subplots(1, ncol, figsize=(3.1 * ncol + 0.3, 2.5),
-                             squeeze=False)
+    fig, axes = plt.subplots(1, 1, figsize=(3.4, 2.5), squeeze=False)
     k = 0
     if rows:
         ax = tidy(axes[0][k]); k += 1
@@ -241,147 +258,11 @@ def fig_capacity(pll, toy_dir, outdir):
         ax.set_title("exactly solvable system\n(detailed balance: "
                      "$\\sigma_{\\mathrm{EP}}=0$ exactly)")
         ax.legend(loc="upper left")
-    if have_pll:
-        ax = tidy(axes[0][k])
-        base, large = "bert-base-uncased", "bert-large-uncased"
-        corpora = order_corpora({c for _, c in pll})
-        drawn = 0
-        ends = []
-        for corpus in corpora:
-            vb = [r["sigma_block_per_T"]
-                  for r in pll.get((base, corpus), {}).values()]
-            vl = [r["sigma_block_per_T"]
-                  for r in pll.get((large, corpus), {}).values()]
-            if not vb or not vl:
-                continue
-            ax.plot([110, 340], [np.median(vb), np.median(vl)],
-                    MARKERS[0] + "-", color=C[0], alpha=0.85,
-                    markeredgecolor="white", markeredgewidth=0.5, zorder=3)
-            ends.append((float(np.median(vl)), corpus))
-            drawn += 1
-        # labels at nearly equal heights overlapped; push them apart
-        if ends:
-            ends.sort()
-            span = max(e[0] for e in ends) - min(e[0] for e in ends)
-            gap = 0.055 * max(span, 1e-9)
-            placed = []
-            for y, name in ends:
-                yy = y if not placed else max(y, placed[-1] + gap)
-                placed.append(yy)
-                ax.annotate(name, xy=(340, y), xytext=(348, yy),
-                            textcoords="data", fontsize=6.5, color=INK_MUTED,
-                            va="center",
-                            arrowprops=(dict(arrowstyle="-", color=GRID,
-                                             linewidth=0.5)
-                                        if abs(yy - y) > 1e-12 else None))
-        if drawn == 0:
-            ax.text(0.5, 0.5, "bert-large not finished yet",
-                    ha="center", va="center", transform=ax.transAxes,
-                    fontsize=7, color=INK_MUTED)
-        ax.set_xlabel("parameters (M)")
-        ax.set_ylabel("median $\\sigma_{block}$ per token")
-        ax.set_title("BERT pair on the fixed texts")
-        ax.set_xlim(70, 470)
     fig.tight_layout()
     for ext in ("pdf", "png"):
         fig.savefig(os.path.join(outdir, f"fig2_capacity.{ext}"))
     plt.close(fig)
     print("  fig2_capacity written")
-
-
-# ---------------------------------------------------------------- figure 3
-def fig_evaluators(pll, blk, kinds, outdir):
-    """Effect size, and the decomposition of the within-text distance.
-
-    An earlier version of this figure put median sigma for a masked and an
-    autoregressive evaluator side by side as bars.  That invites a comparison that
-    cannot be made: a pseudo-log-likelihood sums conditionals on L-1 tokens
-    and an autoregressive log P sums conditionals on k-1 tokens, so the two
-    scales differ by construction and the ratio means nothing.  Only
-    rank-based quantities and the percentile decomposition are comparable
-    across scorer types, so only those are drawn.
-    """
-    if not pll and not blk:
-        print("  fig3 skipped: no results yet")
-        return
-    fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.6))
-
-    # (a) effect size by corpus and evaluator -- a rank statistic, comparable
-    ax = tidy(axes[0])
-    if pll:
-        models = order_models({m for m, _ in pll})
-        corpora = order_corpora({c for _, c in pll})
-        w = 0.8 / max(len(models), 1)
-        xs = np.arange(len(corpora))
-        for j, model in enumerate(models):
-            vals = []
-            for corpus in corpora:
-                recs = pll.get((model, corpus), {})
-                if not recs:
-                    vals.append(np.nan); continue
-                a = [r["sigma_block_per_T"] for k, r in recs.items() if k[0] == "causal"]
-                b = [r["sigma_block_per_T"] for k, r in recs.items() if k[0] == "noncausal"]
-                vals.append(rb(a, b))
-            ax.bar(xs + (j - (len(models) - 1) / 2) * w, vals, width=w * 0.86,
-                   color=C[j % len(C)], zorder=3, linewidth=0,
-                   label=f"{short_name(model)} "
-                         f"({PARAMS.get(model, '?')}, {kind_str(kinds.get(model))})")
-        ax.set_xticks(xs)
-        ax.set_xticklabels(corpora, rotation=35, ha="right")
-        ax.axhline(0.0, color=NULLC, linewidth=0.8)
-        ax.set_ylabel("effect size $r$")
-        ax.set_title("causal vs non-causal, between texts")
-        # headroom so the legend never sits on top of a bar
-        lo, hi = ax.get_ylim()
-        ax.set_ylim(lo, hi + 0.42 * (hi - lo))
-        ax.legend(loc="upper left", fontsize=6.5)
-
-    # (b) the decomposition, from the within-text permutation test
-    ax = tidy(axes[1])
-    if blk:
-        bmodels = order_models({m for m, _ in blk})
-        bcorp = order_corpora({c for _, c in blk})
-        auth, caus, labels, kinds_l = [], [], [], []
-        for model in bmodels:
-            a_, c_ = [], []
-            for corpus in bcorp:
-                recs = blk.get((model, corpus), {})
-                pc = [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
-                pn = [r["percentile_written"] for k, r in recs.items() if k[0] == "noncausal"]
-                if not pc or not pn:
-                    continue
-                a_.append(np.median(pn) - 0.5)
-                c_.append(np.median(pc) - np.median(pn))
-            if not a_:
-                continue
-            auth.append(float(np.median(a_)))
-            caus.append(float(np.median(c_)))
-            labels.append(f"{short_name(model)}\n({kind_str(kinds.get(model))})")
-            kinds_l.append(kind_str(kinds.get(model)))
-        if labels:
-            xs = np.arange(len(labels))
-            # a 2px-equivalent gap between the stacked segments, so the two
-            # components never read as one bar
-            ax.bar(xs, auth, width=0.55, color="#b9bcc0", zorder=3,
-                   linewidth=0, label="any authored order")
-            ax.bar(xs, caus, bottom=np.array(auth) + 0.004, width=0.55,
-                   color=C[0], zorder=3, linewidth=0, label="causal order only")
-            for x, a_v, c_v in zip(xs, auth, caus):
-                ax.annotate(f"{c_v:+.3f}", xy=(x, a_v + c_v + 0.012),
-                            ha="center", fontsize=6.5, color=C[0])
-            ax.set_xticks(xs)
-            ax.set_xticklabels(labels, fontsize=6.5, rotation=30, ha="right")
-            ax.axhline(0.0, color=NULLC, linewidth=0.8)
-            ax.set_ylabel("distance from the 0.50 null")
-            ax.set_title("what that distance is made of, within text")
-            lo, hi = ax.get_ylim()
-            ax.set_ylim(lo, hi + 0.42 * (hi - lo))
-            ax.legend(loc="upper left", fontsize=6.5)
-    fig.tight_layout()
-    for ext in ("pdf", "png"):
-        fig.savefig(os.path.join(outdir, f"fig3_evaluators.{ext}"))
-    plt.close(fig)
-    print("  fig3_evaluators written")
 
 
 def main():
@@ -413,16 +294,14 @@ def main():
     print(f"# pll cells: {len(pll)}   blkord cells: {len(blk)}")
 
     fig_block_order(blk, kinds, args.outdir)
-    fig_capacity(pll, args.toy, args.outdir)
-    fig_evaluators(pll, blk, kinds, args.outdir)
+    fig_capacity(args.toy, args.outdir)
 
     # A figure that could not be drawn does not exist now, because everything
     # this script owns was deleted above.  Write a visible placeholder so the
     # document still compiles during a partial run, carrying the same TODO
     # marker the table stubs use; make_arxiv.sh refuses to package on it.
     for stem, what in (("fig1_block_order", "within-text permutation test"),
-                       ("fig2_capacity", "capacity sweep"),
-                       ("fig3_evaluators", "evaluator comparison")):
+                       ("fig2_capacity", "capacity sweep")):
         path = os.path.join(args.outdir, stem + ".pdf")
         if os.path.exists(path):
             continue

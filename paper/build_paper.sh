@@ -65,6 +65,8 @@ echo "=== 1. tables and prose numbers ==="
 # before it is run on the real ones.  It needs no data and takes a second; a
 # table that silently stops being written is the failure it catches.
 $PY -I make_tables_selftest.py || exit 1
+# the sentence splitter the whole within-text test rests on
+$PY -I ../order-intervention/block_split_selftest.py >/dev/null || exit 1
 $PY -I make_tables.py --pll "$PLL" --blkord "$BLKORD" --toy "$TOY" \
     --outdir tables
 
@@ -104,8 +106,19 @@ echo "=== 4. what is still missing ==="
 # source is prose still to be written.  Both are listed so nothing silently
 # ships as a placeholder.
 grep -o "TODO:[A-Za-z]*" tables/macros.tex | sort -u | sed 's/^/  number  /' || true
-grep -c "todo{" main.tex | sed 's/^/  prose placeholders: /'
-
+# A \todo in the source is prose still to be written.  The one in \repoline
+# is the fallback for an unset \repourl: while the URL is set it is never
+# typeset, and counting it reported a missing piece in a document that had
+# none.  \todo{ appears once per use; the \newcommand that defines it spells
+# the name \todo} and is not counted.
+ntodo=$(grep -c 'todo{' main.tex)
+if grep -q '^.renewcommand{.repourl}{[^}]' main.tex; then
+    echo "  prose placeholders: $((ntodo - 1))"
+    echo "  (repourl is set, so the todo fallback in repoline is not typeset)"
+else
+    echo "  prose placeholders: $ntodo"
+    echo "  (repourl is EMPTY -- the Reproducibility line will print a TODO)"
+fi
 echo
 echo "=== 5. relations ==="
 # Everything above checks that the document was built.  This checks what a
