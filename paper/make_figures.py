@@ -56,7 +56,7 @@ from make_tables import EVAL_ORDER, params_str  # noqa: E402
 
 def kind_str(kind):
     """Model class as printed; see the note in make_tables.py.  "causal" in
-    the JSON means causal attention, and must not share a panel with the
+    the JSON means attention to the left only, and must not share a panel with the
     causal/non-causal text labels under that name."""
     return {"causal": "AR", "masked": "masked"}.get(kind, kind or "?")
 
@@ -302,7 +302,7 @@ def main():
     # this script owns was deleted above.  Write a visible placeholder so the
     # document still compiles during a partial run, carrying the same TODO
     # marker the table stubs use; make_arxiv.sh refuses to package on it.
-    for stem, what in (("fig1_block_order", "within-text permutation test"),
+    for stem, what in (("fig1_block_order", "within-text permutation set"),
                        ("fig2_capacity", "capacity sweep")):
         path = os.path.join(args.outdir, stem + ".pdf")
         if os.path.exists(path):

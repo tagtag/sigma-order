@@ -7,14 +7,14 @@ Nothing numeric in this paper is typed by hand.  Tables are written as
 \\input-able fragments, and each figure quoted in the running text becomes a
 macro in macros.tex, so the sentence reads
 
-    causality accounts for \\CausalShareOpus of the effect
+    causality accounts for \\CausalRatioOpus of the effect
 
 and cannot drift from the measurement.  Rerunning the measurement and this
 script updates the prose.
 
 Outputs (into --outdir):
     macros.tex        \\newcommand for each quoted figure
-    tab_blkord.tex    within-text permutation test, the decisive table
+    tab_blkord.tex    within-text permutation set, the decisive table
     tab_pll.tex       evaluator comparison, sigma and effect size
     tab_capacity.tex  toy-system capacity sweep
 
@@ -25,6 +25,7 @@ Outputs (into --outdir):
 
 import argparse
 import glob
+import itertools
 import json
 import math
 import os
@@ -36,6 +37,176 @@ from math import comb
 from scipy.stats import mannwhitneyu, wilcoxon
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+EXACT_MAX_N = 8          # 8! = 40320 dot products, under a second
+
+
+def spearman(x, y):
+    """Spearman rho, with an EXACT two-sided p-value at small n.
+
+    ``scipy.stats.spearmanr`` returns a p-value from the t-approximation at
+    every sample size.  Every correlation this paper reports is at n = 5 --
+    five autoregressive evaluators on the ladder, five widths in the
+    capacity sweep -- and at n = 5 the smallest two-sided p an exact test
+    can produce is 2/5! = 0.0167.  The asymptotic form returned 0.005 for
+    the ceiling trend, a value that is not attainable, and the exact figure
+    is 0.033.
+
+    rho is Pearson on midranks, which is Spearman with the usual tie
+    correction.  Under the null the two rank vectors are independent, so the
+    null distribution of rho is its distribution over the n! relabellings of
+    one of them; the denominator is invariant under those, so only the
+    numerator has to be recomputed.  Returns (rho, p, exact).
+    """
+    from scipy.stats import rankdata, spearmanr
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
+    n = len(x)
+    rx = rankdata(x)
+    ry = rankdata(y)
+    rx = rx - rx.mean()
+    ry = ry - ry.mean()
+    den = math.sqrt(float((rx ** 2).sum()) * float((ry ** 2).sum()))
+    if den == 0:                      # one side constant: rho undefined
+        return float("nan"), 1.0, True
+    rho = float((rx * ry).sum() / den)
+    if n > EXACT_MAX_N:
+        return rho, float(spearmanr(x, y).pvalue), False
+    perms = np.array(list(itertools.permutations(range(n))))
+    rhos = (rx * ry[perms]).sum(axis=1) / den
+    p = float(np.mean(np.abs(rhos) >= abs(rho) - 1e-12))
+    return rho, p, True
+
+
+def _lt(text, thr):
+    """A macro body compared with a threshold, tolerating a TODO."""
+    try:
+        return float(text) < thr
+    except (TypeError, ValueError):
+        return False
+
+
+def exact_p_floor(n):
+    """The smallest two-sided p the exact rank null can return at this n."""
+    return 2.0 / math.factorial(n)
+
+
+# Measurements this file emits that the prose deliberately does not
+# quote.  An orphan NOT on this list is a number the text dropped,
+# and check_paper.py fails on one: that is how \BlkNSepCausal came
+# to sit unused while three sentences asserted what it counts, and
+# how \TailSweepLoSixty sat unused while Section 5.3 claimed to
+# report the whole sweep.  A warning listing a hundred names is not
+# a check; this list is the declaration that makes one possible.
+RETIRED = (
+    # the gap-to-room ratio: Section 5.4 withdrew the claim that the room
+    # closes, and the analysis went with it.  The columns are still in
+    # tab_saturation and the values still in the JSON.
+    "GapGPTtwo", "GapQwen", "GapSpreadRatio", "PctCGPTtwo", "PctCQwen",
+    "PctNGPTtwo", "PctNQwen", "RCausal", "RGPTtwo", "RQwen", "RatioGPTtwo",
+    "RatioHiGPTtwo", "RatioHiQwen", "RatioLoGPTtwo", "RatioLoQwen",
+    "RatioMax", "RatioMin", "RatioNCI", "RatioOverlapHi",
+    "RatioOverlapLo", "RatioQwen", "RatioWidestHi", "RatioWidestLo",
+    # the pseudo-log-likelihood comparison, withdrawn in Section 3.2 and
+    # retained in the repository (Section 8).
+    "ARSpanRatio", "BlkNSepMasked", "BlkNTotMasked", "BlkPBestMasked",
+    "BlkPctCMasked", "BlkPctNMasked", "BlkRMasked", "ParamsBertLarge",
+    # the ceiling rise, withdrawn with the saturation argument.
+    "CeilRise", "CeilRiseUnits",
+    # the single-evaluator between-set macros.  forward_backward_sigma.json
+    # is one model; the reading is now generated per evaluator from
+    # results_sigfb, where both are.  The file and its generator stay: the
+    # cross-check they carry on FbNCorpora still runs.
+    "FbBetweenMin", "FbBetweenMax", "FbBetweenNCorpora",
+    "FbBetweenCausal", "FbBetweenNNeg",
+    # the threshold sweep, printed as tab_sweep rather than quoted.
+    "TailSweepHiEighty", "TailSweepHiFifty", "TailSweepHiNinety",
+    "TailSweepHiNinetyFive", "TailSweepHiSeventy", "TailSweepHiSixty",
+    "TailSweepLoEighty", "TailSweepLoFifty", "TailSweepLoNinety",
+    "TailSweepLoNinetyFive", "TailSweepLoSeventy", "TailSweepLoSixty",
+    # per-evaluator values whose table already prints the column; the prose
+    # quotes the two ends of the ladder and the median.
+    "CausalGPTtwoLarge", "CausalGPTtwoMedium", "CausalGPTtwoXL",
+    "ShareGPTtwo", "ShareGPTtwoLarge", "ShareGPTtwoMedium",
+    "ShareGPTtwoXL", "ShareQwen", "TailDiffGPTtwoLarge",
+    "TailDiffGPTtwoMedium", "TailDiffGPTtwoXL",
+    # counts and diagnostics the prose states as a rule instead of a number.
+    "NBlkordCells", "ShareEvalNEval", "ShareZNEval", "TailTrendNEval",
+    # withdrawn: a sign test over cells that are not independent draws
+    "TailSignP",
+    "TrendAuthoredNDistinct", "TrendAuthoredZNDistinct",
+    "TrendCeilNDistinct", "TrendCeilNNDistinct", "TrendShareZNDistinct",
+    "TrendSignificantIs",
+    # sigma detail per evaluator; Section 6 quotes the pair it compares.
+    "CtrlSigMax", "CtrlSigMeanAbs",
+    "CtrlSigMedian", "CtrlSigMin", "CtrlSigmaHead",
+    # FbCausalBertBase, FbCausalLLaDA and their step forms came off this
+    # list with #166: Section 6.3 now gives both readings' causal
+    # components side by side, to show that they agree in direction and
+    # are not in the same units.
+    "FbDispNSurviving", "FbDispPMax",
+    "FbDispPMaxBertBase", "FbPctCausalBertBase",
+    "FbPctCausalLLaDA", "FbPctNoncausalBertBase", "FbPctNoncausalLLaDA",
+    "FbRBertBase", "FbRLLaDA", "FbRMin", "ToyCapMonotone",
+    # FbRMax came off this list when Section 6.3 began naming the one
+    # cell where r is positive (#173).  The retirement was right while
+    # the prose only said "one cell below".
+    # The same per-evaluator values for the three middle rungs.  The prose
+    # quotes the two ends of the ladder and the median, so every middle-rung
+    # macro is retired by construction; they are listed rather than matched
+    # by pattern so that one the prose does start using shows up as a stale
+    # retirement rather than being silently covered.
+    "CeilGPTtwoLarge", "CeilGPTtwoMedium", "CeilGPTtwoXL",
+    "CeilNGPTtwoLarge", "CeilNGPTtwoMedium", "CeilNGPTtwoXL",
+    "GapGPTtwoLarge", "GapGPTtwoMedium", "GapGPTtwoXL",
+    "PctCGPTtwoLarge", "PctCGPTtwoMedium", "PctCGPTtwoXL",
+    "PctNGPTtwoLarge", "PctNGPTtwoMedium", "PctNGPTtwoXL",
+    "RGPTtwoLarge", "RGPTtwoMedium", "RGPTtwoXL",
+    "RatioGPTtwoLarge", "RatioGPTtwoMedium", "RatioGPTtwoXL",
+    "RatioHiGPTtwoLarge", "RatioHiGPTtwoMedium", "RatioHiGPTtwoXL",
+    "RatioLoGPTtwoLarge", "RatioLoGPTtwoMedium", "RatioLoGPTtwoXL",
+    "RoomGPTtwoLarge", "RoomGPTtwoMedium", "RoomGPTtwoXL",
+    # counts behind the causal/authored ratio, which the prose states as a
+    # range rather than a tally
+    "CausalRatioNPos", "CausalRatioNTot",
+    # Delta detail the decomposition tables print.
+    "AuthoredCausal", "BlkNSepCausal", "BlkNTotCausal", "BlkPBestCausal",
+    "BlkPctCCausal", "BlkPctNCausal", "BlkRCausal", "CausalCompCapHi",
+    "CausalCompCapLo", "CausalCompCapSpan", "CausalCompCausal",
+    "CausalCompMax", "CausalCompMin", "CausalRatioCausal",
+    "CausalRatioMax", "CausalRatioMedian", "CausalRatioMin",
+    "ContrastPBest", "NSepCausal", "NTotCausal", "PctVsNullP",
+    "SigmaCausal", "TailZPMax",
+)
+
+
+# The other half of a withdrawal.  RETIRED above is the macros, and the
+# orphan check makes that half impossible to leave undone.  This is the
+# prose, which had no list and no check: \texttt{bert-large} outlived the
+# retirement of \ParamsBertLarge by weeks, "pseudo-log-likelihood" kept six
+# mentions of a comparison that needed one, and "flat" went on describing a
+# series the data had stopped supporting.
+#
+#   word -> (budget, the withdrawal it belongs to, why that budget)
+#
+# The budget is not always zero.  A withdrawal worth recording needs the
+# record, and the question that went unasked was how many times.  A budget
+# of None means the word has a check of its own; it is listed here so one
+# place holds the whole of what a withdrawal removed.
+WITHDRAWN_FROM_PROSE = {
+    "bert-large": (
+        0, "the pseudo-log-likelihood comparison",
+        "it was in this paper only for that comparison"),
+    "pseudo-log-likelihood": (
+        1, "the pseudo-log-likelihood comparison",
+        "the appendix normalises exp of it as one of three candidate "
+        "joints, which is the only place the quantity is computed"),
+    "flat": (
+        None, "the saturation argument",
+        "check_flat_sense() carries this one: the word is permitted only "
+        "in the negative, which a count cannot express"),
+}
+
 
 CORPUS_ORDER = ["Opus46", "GPT54", "GPT56", "Gemini31", "Fable5"]
 # ordered by parameter count: the capacity series is what the paper reads
@@ -62,7 +233,22 @@ PARAMS = {"bert-base-uncased": 110, "gpt2": 124,
 MACROS = {}
 
 
+def _check_macro_name(name):
+    """A control sequence may contain letters only.
+
+    \\TailSweepLo50 was emitted for six thresholds and the document stopped
+    with "Missing \\begin{document}" pointing at macros.tex -- a long way
+    from the loop that wrote it.  Refusing the name here names the loop.
+    """
+    if not name.isalpha():
+        raise ValueError(
+            f"macro name {name!r} is not all letters; LaTeX control "
+            f"sequences take letters only, so spell digits out "
+            f"(TailSweepLoFifty, not TailSweepLo50)")
+
+
 def mac(name, value):
+    _check_macro_name(name)
     MACROS[name] = value
 
 
@@ -123,9 +309,25 @@ def load_cells(dirpath, prefix):
     return bucket, kinds
 
 
+def corpus_base(name):
+    """The bare corpus name.
+
+    The masked runs key cells by meta.corpus, which carries a
+    "fixed_text_" prefix, and CORPUS_ORDER lists the bare names.  Testing
+    membership on the full string put every masked corpus in order_c's
+    alphabetical tail, so the masked tables ran F, GPT54, GPT56, Gemini31,
+    O while every autoregressive table ran O, GPT54, GPT56, Gemini31, F --
+    invisibly, because the tables print the stripped name either way.
+    """
+    return name[len("fixed_text_"):] if name.startswith("fixed_text_") \
+        else name
+
+
 def order_c(names):
-    return [c for c in CORPUS_ORDER if c in names] + \
-           sorted(n for n in names if n not in CORPUS_ORDER)
+    known = sorted((n for n in names if corpus_base(n) in CORPUS_ORDER),
+                   key=lambda n: CORPUS_ORDER.index(corpus_base(n)))
+    return known + sorted(n for n in names
+                          if corpus_base(n) not in CORPUS_ORDER)
 
 
 def order_m(names):
@@ -229,6 +431,21 @@ def table_blkord(blk, kinds, outdir):
     # macros, and the sentence would still say five.
     mac("NEval", str(len(ar_only({m for m, _ in blk}, kinds))))
     mac("NCorp", str(len({c for _, c in blk})))
+    # Equation (rb) names n_1 and n_2 and the paper never gave their
+    # values.  They are in the measurements.  Define the macro only if
+    # every cell agrees, on the rule enumeration_macros() uses for the
+    # block count: a disagreement would make the sentence false, and an
+    # undefined macro prints as a TODO that make_arxiv.sh refuses.
+    sizes = set()
+    for recs in blk.values():
+        for cat in ("causal", "noncausal"):
+            sizes.add(sum(1 for q in recs if q[0] == cat))
+    sizes.discard(0)
+    if len(sizes) == 1:
+        mac("NPerGroup", str(sizes.pop()))
+    else:
+        print(f"  WARNING: label groups differ in size {sorted(sizes)}; "
+              f"the sentence giving n_1 = n_2 is false as written")
     models = ar_only({m for m, _ in blk}, kinds)
     corpora = order_c({c for _, c in blk})
     lines = [
@@ -238,7 +455,7 @@ def table_blkord(blk, kinds, outdir):
         r"evaluator & corpus & $n$ & causal & non-causal & $r$ & $p$ \\",
         r"\midrule",
     ]
-    shares = {}
+    ratios_ = {}
     for model in models:
         first = True
         for corpus in corpora:
@@ -255,9 +472,14 @@ def table_blkord(blk, kinds, outdir):
             mc, mn = float(np.median(pc)), float(np.median(pn))
             # how much of the distance from the 0.50 null is attributable to
             # causality, over and above the coherence of an arbitrary but
-            # authored order
+            # authored order.  This divides by the AUTHORED component, so it
+            # is how large the causal part is relative to that -- a ratio.
+            # table_decomposition's "share" divides by the total instead,
+            # which is what a share is.  Both were called share, and the two
+            # names then stood side by side in the abstract reading as a
+            # contradiction (10-19% against -8% to +40%).
             coh = mn - 0.5
-            shares[(model, corpus)] = (mc - mn) / coh if coh else np.nan
+            ratios_[(model, corpus)] = (mc - mn) / coh if coh else np.nan
             name = (f"{model.split('/')[-1]} ({params_str(model)}, "
                     f"{kind_str(kinds.get(model))})") if first else ""
             first = False
@@ -270,11 +492,24 @@ def table_blkord(blk, kinds, outdir):
     lines += [r"\bottomrule", r"\end{tabular}"]
     open(os.path.join(outdir, "tab_blkord.tex"), "w").write("\n".join(lines) + "\n")
 
-    # prose numbers
-    allpc, allpn = [], []
-    for (model, corpus), recs in blk.items():
-        allpc += [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
-        allpn += [r["percentile_written"] for k, r in recs.items() if k[0] == "noncausal"]
+    # prose numbers.  Autoregressive evaluators only, and paired within a
+    # corpus, like every other Delta figure: this used to run over every
+    # model in blk, so it pooled the masked runs that ar_only() exists to
+    # keep out, and pooled texts rather than taking the median of the
+    # per-corpus medians that Section 3.4 states as the rule.
+    ar_models = ar_only({m for m, _ in blk}, kinds)
+    percorpus_c, percorpus_n = [], []
+    for model in ar_models:
+        for corpus in order_c({c for _, c in blk}):
+            recs = blk.get((model, corpus), {})
+            pc = [r["percentile_written"] for k, r in recs.items()
+                  if k[0] == "causal"]
+            pn = [r["percentile_written"] for k, r in recs.items()
+                  if k[0] == "noncausal"]
+            if pc and pn:
+                percorpus_c.append(float(np.median(pc)))
+                percorpus_n.append(float(np.median(pn)))
+    allpc, allpn = percorpus_c, percorpus_n
     if allpc:
         mac("MedPctCausal", f"{np.median(allpc):.3f}")
         mac("MedPctNoncausal", f"{np.median(allpn):.3f}")
@@ -305,7 +540,13 @@ def table_blkord(blk, kinds, outdir):
             mac(f"BlkR{tag}", f"{np.median(rs):+.3f}")
             mac(f"BlkNSep{tag}", str(nsep))
             mac(f"BlkNTot{tag}", str(ntot))
-            mac(f"BlkPMax{tag}", tex_p_bare(pmin))
+            # NOT emitted as BlkPMax{tag}: pmin is a MINIMUM, the name
+            # said maximum, the p tests the causal group against the 0.50
+            # null rather than the two groups against each other, and the
+            # loop computes it for one model per tag.  Three sentences
+            # quoted it for "present in every corpus and evaluator".
+            # contrast_macros() measures that claim instead.
+            mac(f"BlkPBest{tag}", tex_p_bare(pmin))
         # the median position of each group, per evaluator
         pcs, pns = [], []
         for corpus in corpora:
@@ -373,16 +614,16 @@ def table_blkord(blk, kinds, outdir):
     if len(allgaps) > 1:
         mac("GapSpreadRatio", f"{max(allgaps) / min(allgaps):.1f}")
 
-    if shares:
-        v = np.array([s for s in shares.values() if np.isfinite(s)])
+    if ratios_:
+        v = np.array([s for s in ratios_.values() if np.isfinite(s)])
         if len(v):
-            mac("CausalShareMedian", f"{100*np.median(v):.0f}")
-            mac("CausalShareMin", f"{100*v.min():+.0f}")
-            mac("CausalShareMax", f"{100*v.max():+.0f}")
-            mac("NBlkordCells", str(len(shares)))
-            mac("CausalShareNPos", str(int((v > 0.05).sum())))
-            mac("CausalShareNTot", str(len(v)))
-    print(f"  tab_blkord.tex  ({len(shares)} cells)")
+            mac("CausalRatioMedian", f"{100*np.median(v):.0f}")
+            mac("CausalRatioMin", f"{100*v.min():+.0f}")
+            mac("CausalRatioMax", f"{100*v.max():+.0f}")
+            mac("NBlkordCells", str(len(ratios_)))
+            mac("CausalRatioNPos", str(int((v > 0.05).sum())))
+            mac("CausalRatioNTot", str(len(v)))
+    print(f"  tab_blkord.tex  ({len(ratios_)} cells)")
 
 
 # -------------------------------------------------------------- pll
@@ -515,9 +756,13 @@ def table_token(pll, kinds, outdir):
     corpora = order_c({c for _, c in pll})
     lines = [
         r"% generated by make_tables.py -- do not edit",
-        r"\begin{tabular}{llrrr}",
+        r"\begin{tabular}{llrrrr}",
         r"\toprule",
-        r"evaluator & corpus & $n$ & median $\Delta_{\mathrm{token}}$ & $r$ \\",
+        # The block median goes in beside the token one.  The caption
+        # compares the two and printed only one of them, which sent a
+        # reader to Table 3 and fourteen pages away to divide.
+        r"evaluator & corpus & $n$ & median $\Delta_{\mathrm{token}}$ & "
+        r"median $\Delta_{\mathrm{block}}$ & $r$ \\",
         r"\midrule",
     ]
     ratio = []            # median sigma_token / median sigma_block, per cell
@@ -544,10 +789,13 @@ def table_token(pll, kinds, outdir):
             t_rb, _ = rb(ta, tb)
             blk = np.array([r["sigma_block_per_T"] for r in recs.values()], float)
             b_med = float(np.median(blk))
-            if abs(b_med) > 1e-9:
-                ratio.append(abs(t_med) / abs(b_med))
             if abs(t_med) > abs(b_med):
                 larger += 1
+                # Only here.  The prose quotes this range for the cells in
+                # which the token median IS the larger; computed over every
+                # cell it would start below 1 under the word "larger".
+                if abs(b_med) > 1e-9:
+                    ratio.append(abs(t_med) / abs(b_med))
             k = kind_str(kinds.get(model))
             neg[k][1] += 1
             if np.isfinite(t_rb) and t_rb < 0:
@@ -556,9 +804,12 @@ def table_token(pll, kinds, outdir):
             name = (f"{model.split('/')[-1]} ({params_str(model)}, "
                     f"{kind_str(kinds.get(model))})") if first else ""
             first = False
-            rcol = f"{t_rb:+.3f}" if np.isfinite(t_rb) else "--"
+            # In math mode, like every other generated table: outside it
+            # a negative value prints a hyphen, and Table 1 sits beside
+            # Table 3 where the same number carries a minus.
+            rcol = f"${t_rb:+.3f}$" if np.isfinite(t_rb) else "--"
             lines.append(f"{name} & {corpus} & {len(tall)} & "
-                         f"{t_med:.4f} & {rcol} \\\\")
+                         f"${t_med:.4f}$ & ${b_med:.4f}$ & {rcol} \\\\")
         if not first:
             lines.append(r"\addlinespace")
     if not cells:
@@ -640,6 +891,22 @@ def selftest_macros(blkord_dir):
             d = json.load(open(p))
             mac("AoarOrderDev", tex_sci(d["max_abs_order_dev"], 1))
             mac("AoarNormDev", tex_sci(d["max_abs_norm_dev"], 1))
+            # Section 3.2 argues about a model whose conditionals belong to
+            # NO joint, and quoted the normalisation measured on a
+            # consistent oracle.  This is the same check on deliberately
+            # inconsistent conditionals, which is the case the section is
+            # about.
+            if "max_abs_norm_dev_inconsistent" in d:
+                mac("AoarNormDevInc",
+                    tex_sci(d["max_abs_norm_dev_inconsistent"], 1))
+            # The system THIS test runs on.  The prose reached for the
+            # appendix's \ToyStates when it first described it, which is a
+            # different system entirely.
+            for k, name in (("L", "AoarL"), ("V", "AoarV"),
+                            ("n_states", "AoarStates"),
+                            ("n_orders", "AoarNOrders")):
+                if k in d:
+                    mac(name, str(d[k]))
             return
 
 
@@ -697,6 +964,16 @@ def table_bayes_route(toy_dir, outdir):
     jeff = [q["jeffreys_vs_head"] for q in jr]
     mac("CtrlJeffreysMin", f"{min(jeff):.2f}")
     mac("CtrlJeffreysMax", f"{max(jeff):.2f}")
+    # The level of <|sigma|> at every width, not just the widest.  Section
+    # 6.3 argued that the incompatible regime is not being left behind, and
+    # supported it with sigma_EP's rise -- which is the one inference
+    # Appendix A forbids: the sweep shows no relation between the two, which
+    # at that n is not the same as showing they move apart.
+    # The supportable form is sigma's own readings: if none of them is small,
+    # the sweep shows nothing heading for zero.
+    allsig = [r["sigma_l2r_r2l"]["mean_abs"] for r in rows]
+    mac("CtrlSigAbsMin", f"{min(allsig):.4f}")
+    mac("CtrlSigAbsMax", f"{max(allsig):.4f}")
     sg = top["sigma_l2r_r2l"]
     mac("CtrlSigMedian", f"{sg['median']:+.4f}")
     mac("CtrlSigMeanAbs", f"{sg['mean_abs']:.4f}")
@@ -707,14 +984,16 @@ def table_bayes_route(toy_dir, outdir):
     # transform of the other, so this is a check that they are sensitive to
     # one property, not a claim about the relation between their sizes.
     if len(rows) > 2:
-        from scipy.stats import spearmanr
         d = [r["d"] for r in rows]
         se = [r["head"]["sigma"] for r in rows]
         sg2 = [r["sigma_l2r_r2l"]["mean_abs"] for r in rows]
         for tag, a, b in (("EP", d, se), ("Sig", d, sg2), ("XS", se, sg2)):
-            rho, pv = spearmanr(a, b)
+            rho, pv, _ = spearman(a, b)
             mac(f"CtrlRho{tag}", f"{rho:+.2f}")
             mac(f"CtrlP{tag}", f"{pv:.3f}")
+        # \CtrlNWidths already carries this n; a second spelling of the same
+        # number is how two of them drift apart.
+        mac("CtrlPFloor", f"{exact_p_floor(len(rows)):.3f}")
     print(f"  tab_bayesroute.tex  ({len(rows)} widths)")
 
 
@@ -749,7 +1028,19 @@ def table_capacity(toy_dir, outdir):
     if mlm:
         mac("ToySigmaMin", tex_sci(min(r["sigma"] for r in mlm)))
         mac("ToySigmaMax", tex_sci(max(r["sigma"] for r in mlm)))
-        mac("ToyCapRatio", f"{max(r['sigma'] for r in mlm)/min(r['sigma'] for r in mlm):.1f}")
+        # Endpoints, not max over min.  The prose says "from d = 32 to
+        # d = 160", and max/min answered a different question: the sweep is
+        # not monotone -- it dips at the second width -- so the smallest
+        # value is not the one at the smallest model, and max/min (4.1)
+        # overstated what the capacity trend supports (3.5).
+        bywidth = sorted(mlm, key=lambda r: r["d"])
+        mac("ToyCapRatio",
+            f"{bywidth[-1]['sigma'] / bywidth[0]['sigma']:.1f}")
+        mac("ToyCapMonotone",
+            "yes" if all(bywidth[i]["sigma"] <= bywidth[i + 1]["sigma"]
+                         for i in range(len(bywidth) - 1)) else "no")
+        mac("ToySpanRatio",
+            f"{max(r['sigma'] for r in mlm) / min(r['sigma'] for r in mlm):.1f}")
         mac("ToyNCap", str(len(mlm)))
         mac("ToyDMin", str(min(r["d"] for r in mlm)))
         mac("ToyDMax", str(max(r["d"] for r in mlm)))
@@ -853,6 +1144,15 @@ def table_saturation(blk, kinds, outdir):
     ]
     n_rows = 0
     all_ratios, all_ci = [], []
+    # How many texts each ceiling fraction is a fraction OF.  Section 5.4
+    # rests its saturation claim on this fraction rising 32% -> 40%, having
+    # withdrawn the authored component's rise because one grid step is not a
+    # measured size.  The same question has to be asked of the replacement:
+    # a fraction over n texts moves in units of 1/n, and a rise of 8 points
+    # is only evidence if 8 points is several of those units.  Measuring it
+    # is the point -- asserting that a proportion "has no grid" would be the
+    # same mistake in a new place.
+    ceil_n = []
     for model in models:
         fc, fn, gaps, per_corpus = [], [], [], []
         for corpus in corpora:
@@ -861,6 +1161,7 @@ def table_saturation(blk, kinds, outdir):
             n = [r["is_strict_max"] for k, r in recs.items() if k[0] == "noncausal"]
             if c:
                 fc.append(float(np.mean(c)))
+                ceil_n.append(len(c))
             if n:
                 fn.append(float(np.mean(n)))
             pc = np.array([r["percentile_written"] for k, r in recs.items()
@@ -873,7 +1174,10 @@ def table_saturation(blk, kinds, outdir):
         if not fc:
             continue
         p = PARAMS.get(model)
-        ps = "--" if not p else (f"{p}M" if p < 1000 else f"{p//1000}B")
+        # params_str, not a second formatter: p//1000 printed 1B for
+        # gpt2-xl in this table while every other one printed 1.6B, and
+        # the 13-fold span quoted in Section 3.1 is 1.6B/124M.
+        ps = "--" if not p else params_str(model)
         if per_corpus:
             ratio = float(np.median([gap_room_ratio(a, b)
                                      for a, b in per_corpus]))
@@ -902,9 +1206,38 @@ def table_saturation(blk, kinds, outdir):
             all_ratios.append(ratio)
             if np.isfinite(lo):
                 all_ci.append((lo, hi))
+    # This column is a median of \\NCorp per-corpus ratios, so it can only
+    # take one of those \\NCorp values and its bootstrap interval can only
+    # have endpoints among them.  That is a grid, and this paper refuses
+    # every other grid-bound number the status of a measured size, so the
+    # same question is asked here and the answer is printed.
+    if all_ratios:
+        mac("RatioNDistinct", str(len({f"{r:.2f}" for r in all_ratios})))
+        # RatioNEval is emitted below with the same expression; emitting it
+        # twice is how a macro ends up both retired and in use.
+    if all_ci:
+        ends = {f"{v:.2f}" for lo, hi in all_ci for v in (lo, hi)}
+        mac("RatioNDistinctEnds", str(len(ends)))
+        mac("RatioNAtEnd", str(sum(
+            1 for r, (lo, hi) in zip(all_ratios, all_ci)
+            if f"{r:.2f}" in (f"{lo:.2f}", f"{hi:.2f}"))))
     # The span and the common overlap, so the prose never has to name which
     # evaluator sits at an extreme: a superlative typed by hand goes stale the
     # moment the measurements change, and two of them already had.
+    # The ceiling fraction's own resolution, by the same test Section 5.3
+    # applies to the midrank.  CeilRiseUnits is the 32% -> 40% rise expressed
+    # in units of 1/n: if it comes out near 1 the replacement evidence is in
+    # the same condition as the component it replaced, and Section 5.4 would
+    # have to say so.
+    if ceil_n:
+        nmin = min(ceil_n)
+        mac("CeilNTexts", str(nmin))
+        mac("CeilResolution", f"{100.0 / nmin:.1f}")
+        lo_t, hi_t = TAG.get(models[0]), TAG.get(models[-1])
+        if lo_t and hi_t and f"Ceil{lo_t}" in MACROS and f"Ceil{hi_t}" in MACROS:
+            rise = float(MACROS[f"Ceil{hi_t}"]) - float(MACROS[f"Ceil{lo_t}"])
+            mac("CeilRise", f"{rise:.0f}")
+            mac("CeilRiseUnits", f"{rise / (100.0 / nmin):.1f}")
     if all_ratios:
         mac("RatioMin", f"{min(all_ratios):.2f}")
         mac("RatioMax", f"{max(all_ratios):.2f}")
@@ -954,9 +1287,10 @@ def table_decomposition(blk, kinds, outdir):
         r" & authored & causal & share \\",
         r"\midrule",
     ]
-    got, gotz = {}, {}
+    got, gotz, swapped, n_over = {}, {}, {}, []
     for model in models:
         a_, c_, az_, cz_ = [], [], [], []
+        as_, cs_ = [], []            # the same two with the labels exchanged
         for corpus in corpora:
             recs = blk.get((model, corpus), {})
             pc = [r["percentile_written"] for k, r in recs.items() if k[0] == "causal"]
@@ -965,6 +1299,18 @@ def table_decomposition(blk, kinds, outdir):
                 continue
             a_.append(float(np.median(pn)) - 0.5)
             c_.append(float(np.median(pc)) - float(np.median(pn)))
+            # The same decomposition with the two labels exchanged.  The
+            # paper claimed Eq. (8) is "independent of whether the labelling
+            # is correct", which is not so: Eq. (8) SELECTS the non-causal
+            # set, and selecting the other set is a different number.  Both
+            # sets are authored, so either choice yields an authored
+            # component, and the difference between the two choices is
+            # exactly Eq. (9).  Measuring the swap lets the paper say that
+            # from a number instead of asserting an independence it does
+            # not have -- and the swapped share comes out negative, which
+            # is the plainest way to show the quantity is not label-free.
+            as_.append(float(np.median(pc)) - 0.5)
+            cs_.append(float(np.median(pn)) - float(np.median(pc)))
             # z has no ceiling and its null is 0 for the same antisymmetry
             # reason, so it is the check on the midrank split
             zc1 = [r["z_written"] for k, r in recs.items()
@@ -979,7 +1325,19 @@ def table_decomposition(blk, kinds, outdir):
         auth, caus = float(np.median(a_)), float(np.median(c_))
         tot = auth + caus
         share = caus / tot if tot else float("nan")
+        # A share above 100% would mean a negative authored component.  The
+        # caption used to explain that case; it does not occur, and a
+        # caption explaining an absent row sends the reader looking for it.
+        # The explanation lives here instead, and this macro counts the
+        # rows that would need it -- so if one ever appears, the number
+        # stops being zero and the omission is visible.
+        if share > 1.0 or auth < 0:
+            n_over.append(model)
         got[model] = (auth, caus, share)
+        if as_ and cs_ and kinds.get(model) == "causal":
+            a2, c2 = float(np.median(as_)), float(np.median(cs_))
+            t2 = a2 + c2
+            swapped[model] = (a2, c2, c2 / t2 if t2 else float("nan"))
         zc, zn = cz_, az_
         if zc and zn:
             az = float(np.median(zn))
@@ -1012,7 +1370,7 @@ def table_decomposition(blk, kinds, outdir):
             mac(f"Authored{tag}", f"{auth:+.3f}")
             mac(f"CausalComp{tag}", f"{caus:+.3f}")
             if np.isfinite(share):
-                mac(f"CausalShare{tag}", f"{100*share:.0f}")
+                mac(f"CausalRatio{tag}", f"{100*share:.0f}")
     # The z decomposition has no ceiling and no grid, so its share is the
     # one to quote when the midrank share sits at the statistic's resolution.
     zsh = [v for v in gotz.values() if np.isfinite(v)]
@@ -1020,6 +1378,61 @@ def table_decomposition(blk, kinds, outdir):
         mac("ShareZMin", f"{100 * min(zsh):.0f}")
         mac("ShareZMax", f"{100 * max(zsh):.0f}")
         mac("ShareZNEval", str(len(zsh)))
+
+    # Do the two normalisations agree evaluator by evaluator?  The caption
+    # said their agreement was what showed the midrank's ceiling was not
+    # driving the split.  They do not agree: measured, the rank correlation
+    # between the two share columns is negative and one evaluator differs by
+    # more than a factor of two.  What the two forms do share is the range,
+    # and that is the claim the ceiling argument needs.
+    pair = [(got[m][2], gotz[m]) for m in got
+            if m in gotz and np.isfinite(got[m][2]) and np.isfinite(gotz[m])]
+    if len(pair) > 2:
+        rho, pv, _ = spearman([a for a, _ in pair], [b for _, b in pair])
+        mac("ShareFormRho", f"{rho:+.2f}")
+        mac("ShareFormP", f"{pv:.3f}")
+        mac("ShareFormNEval", str(len(pair)))
+        worst = max(pair, key=lambda t: max(t) / min(t) if min(t) > 0 else 0)
+        if min(worst) > 0:
+            mac("ShareFormWorst", f"{max(worst) / min(worst):.1f}")
+    # The range of the per-evaluator share.  The prose said "a tenth to a
+    # fifth" in three places, in words, which is a ratio spelled out in prose
+    # -- the thing this file exists to avoid.  It also sat next to the range
+    # over the individual (evaluator, corpus) cells, and the two read as a
+    # contradiction rather than as two levels of aggregation.
+    if n_over:
+        print("  WARNING: share above 100% (negative authored component) "
+              "for " + ", ".join(n_over) + " -- Table 2's caption says "
+              "nothing about this case because it did not occur; it does "
+              "now and the caption needs a line.")
+    ev = [share for (_, _, share) in got.values() if np.isfinite(share)]
+    if ev:
+        mac("ShareEvalMin", f"{100 * min(ev):.0f}")
+        mac("ShareEvalMax", f"{100 * max(ev):.0f}")
+        mac("ShareEvalNEval", str(len(ev)))
+
+    # What the decomposition becomes if the two labels are exchanged.  The
+    # paper described Eq. (8) as independent of the labelling; it is not,
+    # and the size of the dependence is this.  One evaluator is quoted in
+    # full so a reader can check the arithmetic, and the range of the
+    # swapped share is given because its sign changes, which no
+    # label-independent quantity does.
+    if swapped:
+        lo_m = [m for m in order_m(set(swapped)) ][0]
+        a2, c2, s2 = swapped[lo_m]
+        a1, c1, s1 = got[lo_m]
+        mac("SwapEval", lo_m.split("/")[-1].replace("_", r"\_"))
+        mac("SwapAuthored", f"{a2:+.3f}")
+        mac("SwapCausal", f"{c2:+.3f}")
+        mac("SwapAuthoredOrig", f"{a1:+.3f}")
+        mac("SwapCausalOrig", f"{c1:+.3f}")
+        sw = [q for (_, _, q) in swapped.values() if np.isfinite(q)]
+        if sw:
+            mac("SwapShareMin", f"{100 * min(sw):.0f}")
+            mac("SwapShareMax", f"{100 * max(sw):.0f}")
+            mac("SwapShareNNeg", str(sum(1 for q in sw if q < 0)))
+            mac("SwapShareNEval", str(len(sw)))
+
     # and one set per evaluator, for the capacity series in the prose
     for model, (auth, caus, share) in got.items():
         t = TAG.get(model)
@@ -1077,13 +1490,24 @@ def table_fbrank(dirpath, outdir, k=None):
     corpora = order_c({c for _, c in cells})
     lines = [
         r"% generated by make_tables.py -- do not edit",
-        r"\begin{tabular}{llrrrrrr}",
+        r"\begin{tabular}{llrrrrrrrr}",
         r"\toprule",
-        r"evaluator & corpus & $n$ & degen & causal & non-causal & $r$ & $p$ \\",
+        r"evaluator & corpus & $n$ & degen & causal & non-causal & "
+        r"$p_{c}$ & $p_{nc}$ & $r$ & $p$ \\",
         r"\midrule",
     ]
-    per_model = defaultdict(lambda: {"a": [], "c": [], "r": []})
+    per_model = defaultdict(lambda: {"a": [], "c": [], "r": [],
+                                     "w": [], "wc": []})
+    # The between-set reading, keyed by cell so it can be tabulated.  It
+    # used to be generated from a separate single-evaluator file.
+    between = {}
+    between_c = {}
     n_texts = n_degen = 0
+    # A text scored by two evaluators is one text and two scorings.  n_texts
+    # counted rows, and the prose then wrote "across all 2000 texts and both
+    # evaluators", which multiplies the 2000 by two a second time.  Keep both
+    # numbers, and name each after what it counts.
+    seen_texts = set()
     all_r, all_rp, all_disp = [], [], []
     # Displacement is a per-evaluator reading: one evaluator can sit far from
     # the null in every corpus while the other sits on it.  Pooling the two
@@ -1097,6 +1521,8 @@ def table_fbrank(dirpath, outdir, k=None):
                 continue
             live = [r for r in recs if not r.get("degenerate")]
             degen = len(recs) - len(live)
+            for r in recs:
+                seen_texts.add((corpus, r.get("category"), r.get("index")))
             n_texts += len(recs)
             n_degen += degen
             pc = [r["percentile_written"] for r in live
@@ -1111,21 +1537,47 @@ def table_fbrank(dirpath, outdir, k=None):
             all_rp.append(float(p_val))
             # Is each set displaced from the null at all?  r is silent
             # on this: both sets could sit at 0.50 and still differ.
-            for v in (pc, pn):
+            # These were computed and then thrown away, while the
+            # caption and Section 6.3 both said the table showed them.
+            # Keep them per group so the row can print both.
+            qdisp = {}
+            for side, v in (("c", pc), ("n", pn)):
                 dd = np.asarray(v, float) - 0.5
                 if (dd != 0).sum() >= 6:
                     try:
                         q = float(wilcoxon(dd, alternative='two-sided').pvalue)
                     except ValueError:
                         continue
+                    qdisp[side] = q
                     all_disp.append(q)
                     disp_by_model[model].append(q)
             per_model[model]["a"].append(mn - 0.5)
             per_model[model]["c"].append(mc - mn)
             per_model[model]["r"].append(r_rb)
+            # sigma of the authored arrangement itself, nothing rearranged.
+            wa = [r["sigma_fb_written"] for r in live
+                  if r.get("sigma_fb_written") is not None]
+            wc = [r["sigma_fb_written"] for r in live
+                  if r["category"] == "causal"
+                  and r.get("sigma_fb_written") is not None]
+            wn = [r["sigma_fb_written"] for r in live
+                  if r["category"] == "noncausal"
+                  and r.get("sigma_fb_written") is not None]
+            if wa:
+                per_model[model]["w"].append(float(np.median(wa)))
+                between[(model, corpus)] = float(np.median(wa))
+            if wc and wn:
+                comp = float(np.median(wc)) - float(np.median(wn))
+                per_model[model]["wc"].append(comp)
+                # Kept per cell as well, so the lower block of
+                # tab_fbbetween can print what the prose used to
+                # summarise.
+                between_c[(model, corpus)] = comp
             lines.append(
                 f"{model.split('/')[-1]} & {corpus.replace('fixed_text_', '')}"
                 f" & {len(recs)} & {degen} & ${mc:.3f}$ & ${mn:.3f}$ & "
+                f"{tex_p(qdisp['c']) if 'c' in qdisp else '---'} & "
+                f"{tex_p(qdisp['n']) if 'n' in qdisp else '---'} & "
                 f"${r_rb:+.3f}$ & {tex_p(p_val)} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     open(os.path.join(outdir, "tab_fbrank.tex"), "w").write(
@@ -1160,13 +1612,90 @@ def table_fbrank(dirpath, outdir, k=None):
         mac("FbDispNSurviving",
             str(sum(1 for q in all_disp if q < 0.05 / len(all_disp))))
     mac("FbNCorpora", str(len(corpora)))
-    mac("FbNTexts", str(n_texts))
+    mac("FbNScorings", str(n_texts))
+    mac("FbNTexts", str(len(seen_texts)))
     mac("FbNCells", str(len(all_r)))
     mac("FbDegenTotal", str(n_degen))
     if all_r:
         mac("FbRMin", f"{min(all_r):+.3f}")
         mac("FbRMax", f"{max(all_r):+.3f}")
         mac("FbNNegative", str(sum(1 for r in all_r if r < 0)))
+    # The between-set reading as a table.  It had none, which is why prose
+    # naming an evaluator the data did not cover went unnoticed.
+    if between:
+        bm = order_m({m for m, _ in between})
+        bc = order_c({c for _, c in between})
+        bl = [r"% generated by make_tables.py -- do not edit",
+              r"\begin{tabular}{l" + "r" * len(bm) + "}",
+              r"\toprule",
+              "corpus & " + " & ".join(m.split("/")[-1] for m in bm)
+              + r" \\",
+              r"\midrule"]
+        for c in bc:
+            row = [c.replace("fixed_text_", "")]
+            for m in bm:
+                v = between.get((m, c))
+                row.append("--" if v is None else f"${v:+.4f}$")
+            bl.append(" & ".join(row) + r" \\")
+        if any(between_c.get((m, c)) is not None for m in bm for c in bc):
+            bl += [r"\midrule",
+                   r"\multicolumn{%d}{l}{\emph{causal component}} \\"
+                   % (len(bm) + 1)]
+            for c in bc:
+                row = [c.replace("fixed_text_", "")]
+                for m in bm:
+                    v = between_c.get((m, c))
+                    row.append("--" if v is None else f"${v:+.4f}$")
+                bl.append(" & ".join(row) + r" \\")
+        bl += [r"\bottomrule", r"\end{tabular}"]
+        open(os.path.join(outdir, "tab_fbbetween.tex"), "w").write(
+            "\n".join(bl) + "\n")
+        print(f"  tab_fbbetween.tex  ({len(bc)} corpora)")
+        if len(bm) == 2:
+            opp = sum(1 for c in bc
+                      if between.get((bm[0], c)) is not None
+                      and between.get((bm[1], c)) is not None
+                      and between[(bm[0], c)] * between[(bm[1], c)] < 0)
+            mac("FbBetweenNOpposite", str(opp))
+            mac("FbBetweenNCompared", str(len(bc)))
+    # How far apart the evaluators place the same texts, in grid steps.  The
+    # prose spelled this out as "about thirteen", which is 0.2708/0.0208 --
+    # one evaluator's displacement over the other's, or its displacement in
+    # half-steps.  The quantity the sentence claims is the difference, and
+    # that is 7.0.  A number written as a word is a number nothing checks.
+    auth_steps = []
+    for model, d in per_model.items():
+        if d["a"] and k:
+            auth_steps.append(float(np.median(d["a"])) * k)
+    if len(auth_steps) >= 2:
+        mac("FbStepGap", f"{max(auth_steps) - min(auth_steps):.1f}")
+
+    # The per-evaluator decomposition, which the prose quotes and the
+    # per-corpus table above does not show.  Recovering -0.2708 from that
+    # table meant taking its non-causal column, subtracting 0.5, and taking a
+    # median over five corpora -- and then multiplying by n! for the steps.
+    # Delta has had this table since the beginning (tab_decomposition);
+    # sigma quoted the same kind of number with nowhere to look it up.
+    dec = [r"% generated by make_tables.py -- do not edit",
+           r"\begin{tabular}{lrrrrr}", r"\toprule",
+           r"evaluator & authored & steps & causal & steps & $r$ \\",
+           r"\midrule"]
+    nrow = 0
+    for model in models:
+        d = per_model.get(model)
+        if not d or not d["a"]:
+            continue
+        au, ca = float(np.median(d["a"])), float(np.median(d["c"]))
+        dec.append(f"{model.split('/')[-1]} & ${au:+.4f}$ & "
+                   f"${au * k:+.1f}$ & ${ca:+.4f}$ & ${ca * k:+.1f}$ & "
+                   f"${np.median(d['r']):+.3f}$ \\\\")
+        nrow += 1
+    dec += [r"\bottomrule", r"\end{tabular}"]
+    if nrow:
+        open(os.path.join(outdir, "tab_fbdecomp.tex"), "w").write(
+            "\n".join(dec) + "\n")
+        print(f"  tab_fbdecomp.tex  ({nrow} evaluators)")
+
     for model, d in per_model.items():
         t = TAG.get(model)
         if not t or not d["a"]:
@@ -1181,6 +1710,27 @@ def table_fbrank(dirpath, outdir, k=None):
         if k:
             mac(f"FbAuthoredSteps{t}", f"{auth * k:+.1f}")
             mac(f"FbCausalSteps{t}", f"{caus * k:+.1f}")
+        # Where each label group's median sits relative to the null, per
+        # corpus.  The prose claimed a direction for the within-text
+        # displacement and quoted FbSignNeg, which counts negative effect
+        # sizes -- a different quantity, and one that happened to give 5
+        # where the displacement gives 4.  The group-level fact is the one
+        # the sentence wanted and it was nowhere in the paper: under both
+        # evaluators the causally labelled group sits below the null.
+        below = sum(1 for ai, ci in zip(d["a"], d["c"]) if ai + ci < 0)
+        mac(f"FbCausalBelow{t}", str(below))
+        mac(f"FbAuthoredAbove{t}", str(sum(1 for ai in d["a"] if ai > 0)))
+        mac(f"FbNCorporaOf{t}", str(len(d["a"])))
+        if d["w"]:
+            mac(f"FbBetweenMin{t}", f"{min(d['w']):+.4f}")
+            mac(f"FbBetweenMax{t}", f"{max(d['w']):+.4f}")
+            mac(f"FbBetweenNPos{t}", str(sum(1 for v in d["w"] if v > 0)))
+            mac(f"FbBetweenNOf{t}", str(len(d["w"])))
+        if d["wc"]:
+            mac(f"FbBetweenCausal{t}", f"{float(np.median(d['wc'])):+.4f}")
+            mac(f"FbBetweenNNegOf{t}",
+                str(sum(1 for v in d["wc"] if v < 0)))
+
         neg = sum(1 for v in d["r"] if v < 0)
         n_c = len(d["r"])
         if n_c >= 2:
@@ -1197,17 +1747,22 @@ def table_fbrank(dirpath, outdir, k=None):
           if TAG.get(m) and d["r"]}
     if len(rs) >= 2:
         vals = list(rs.values())
-        same = all(v < 0 for v in vals) or all(v > 0 for v in vals)
-        if same:
-            mac("FbMaskRateVerdict",
-                "They agree in sign, so the reading does not depend on "
-                "whether the evaluator saw the mask rates the chain rule "
-                "asks it for.")
-        else:
-            mac("FbMaskRateVerdict",
-                "They do not agree in sign, and the mask rate is the "
-                "difference between them; the \\textsc{bert} reading has to "
-                "be set aside.")
+        # Strictly opposite signs, not "not all the same": a median of
+        # exactly zero is an absence of sign, not a disagreement, and the
+        # selftest's synthetic fixture produces one.  A real zero would be
+        # visible in the printed per-evaluator numbers.
+        # Section 6.5 states in its own words that the two evaluators agree
+        # in sign and that the mask rate is therefore not what separates
+        # them.  That sentence is hand-written, so the measurement behind it
+        # is an assertion here rather than a macro: if the agreement ever
+        # fails, the build stops instead of printing prose that says it
+        # holds.  (This was \\FbMaskRateVerdict, which no longer has a
+        # reader.)
+        if any(v > 0 for v in vals) and any(v < 0 for v in vals):
+            raise SystemExit(
+                "mask rate: the two masked evaluators no longer agree in "
+                "sign (%s).  Section 6.5 asserts that they do; rewrite it "
+                "before rebuilding." % rs)
 
 
 def fb_between_macros(dirpath):
@@ -1224,6 +1779,14 @@ def fb_between_macros(dirpath):
                 mac("FbBetweenMin", f"{min(ms):.4f}")
                 mac("FbBetweenMax", f"{max(ms):.4f}")
                 mac("FbBetweenNCorpora", str(len(ms)))
+                # Read from a different file than \\FbNCorpora, and used for
+                # the same corpora in adjacent subsections.
+                if MACROS.get("FbNCorpora", str(len(ms))) != str(len(ms)):
+                    raise SystemExit(
+                        "FbBetweenNCorpora=%d but FbNCorpora=%s: the "
+                        "within-set and between-set runs do not cover the "
+                        "same corpora, and the text reads them as one set"
+                        % (len(ms), MACROS["FbNCorpora"]))
         else:
             if "causal_component" in d:
                 mac("FbBetweenCausal", f"{d['causal_component']:+.4f}")
@@ -1253,9 +1816,9 @@ def grid_macros(blk, kinds):
     mac("GridK", str(k))
 
     ar = [m for m in order_m({m for m, _ in blk}) if kinds.get(m) == "causal"]
-    comps, steps, params = [], [], []
+    comps, steps, params, auth = [], [], [], []
     for model in ar:
-        c_ = []
+        c_, a_ = [], []
         for corpus in order_c({c for _, c in blk}):
             recs = blk.get((model, corpus), {})
             pc = [r["percentile_written"] for q, r in recs.items()
@@ -1264,11 +1827,13 @@ def grid_macros(blk, kinds):
                   if q[0] == "noncausal"]
             if pc and pn:
                 c_.append(float(np.median(pc)) - float(np.median(pn)))
+                a_.append(float(np.median(pn)) - 0.5)
         if not c_:
             continue
         v = float(np.median(c_))
         comps.append(v)
         steps.append(round(v / step))
+        auth.append(float(np.median(a_)))
         if PARAMS.get(model):
             params.append(PARAMS[model])
     if not comps:
@@ -1279,6 +1844,41 @@ def grid_macros(blk, kinds):
     mac("CausalCompStepsMin", str(min(steps)))
     mac("CausalCompStepsMax", str(max(steps)))
     mac("CausalCompNDistinct", str(len(set(steps))))
+    # The authored component read on the SAME grid, because the paper quotes
+    # one grid step as a resolution floor in this section and, two
+    # subsections later, quotes a rise of one grid step as a measurement.
+    # Two different readings of the authored component are involved and they
+    # need separate macros: how far it sits from the null, which is several
+    # steps and well resolved, and how far it moves across the ladder, which
+    # is one step and is not.  The prose said "spans several", which is the
+    # first number attached to the second question.
+    # How much the authored component varies across the FIVE GENERATORS.
+    # All texts in these corpora were produced by a language model, so the
+    # "authored order" is an order a left-to-right sampler emitted.  If the
+    # component were an artefact of that, it should be much the same
+    # whichever model did the emitting; if it tracked something about the
+    # particular writer, it should not.  This is the one discriminating
+    # number the existing data can offer, and the paper has to report it
+    # whichever way it comes out.
+    spread = []
+    for model in ar:
+        per = []
+        for corpus in order_c({c for _, c in blk}):
+            recs = blk.get((model, corpus), {})
+            pn = [r["percentile_written"] for k, r in recs.items()
+                  if k[0] == "noncausal"]
+            if pn:
+                per.append(float(np.median(pn)) - 0.5)
+        if len(per) > 1:
+            spread.append((max(per) - min(per)) / step)
+    if spread:
+        mac("AuthoredCorpSpreadSteps", f"{float(np.median(spread)):.1f}")
+        mac("AuthoredCorpSpreadMax", f"{max(spread):.1f}")
+        mac("AuthoredCorpNGen", str(len(order_c({c for _, c in blk}))))
+    mac("AuthoredCompStepsMin", f"{min(auth) / step:.1f}")
+    mac("AuthoredCompStepsMax", f"{max(auth) / step:.1f}")
+    mac("AuthoredCompSpanSteps", f"{(max(auth) - min(auth)) / step:.1f}")
+    mac("AuthoredCompSpan", f"{max(auth) - min(auth):.3f}")
     # how far the capacity range reaches, so "no trend" has a span attached
     if len(params) >= 2:
         mac("CausalCompCapSpan", f"{max(params) / min(params):.0f}")
@@ -1304,6 +1904,430 @@ def cross_instrument_macros():
     return
 
 
+TAIL_THRESHOLDS = (0.50, 0.60, 0.70, 0.80, 0.90, 0.95)
+TAIL_TAGS = ("Fifty", "Sixty", "Seventy", "Eighty", "Ninety", "NinetyFive")
+TAIL_Q = 0.90          # the non-causal percentile the z tail is cut at
+
+
+def tail_macros(blk, kinds, outdir):
+    """How far into the upper tail the causal/non-causal contrast reaches.
+
+    Two statistics of one contrast, and the paper needs both because they
+    disagree about resolution.  The MEDIAN midrank difference is one step of
+    the 1/n! grid (Section 5.3).  The TAIL difference -- how much more often
+    a causal text's authored arrangement is the strict maximum of its own
+    permutation set -- is tens of points on a 1/n_text grid, and is what
+    Section 5.4 reports after its saturation argument failed.
+
+    The tail is also measured on z, which has no ceiling, as the fraction of
+    causal texts above the non-causal group's own TAIL_Q percentile.  That
+    null is 1 - TAIL_Q by construction, so the statistic needs no grid and
+    no bound, and it answers the obvious objection that the midrank tail is
+    an artefact of the midrank's upper limit.
+    """
+    from scipy.stats import fisher_exact
+
+    if not blk:
+        return
+    models = ar_only({m for m, _ in blk}, kinds)
+    corpora = order_c({c for _, c in blk})
+    if not models:
+        return
+
+    def groups(recs, key):
+        c = [r[key] for k, r in recs.items() if k[0] == "causal" and key in r]
+        n = [r[key] for k, r in recs.items()
+             if k[0] == "noncausal" and key in r]
+        return c, n
+
+    # ---------------------------------------------- the sweep, reported whole
+    sweep = {}
+    for model in models:
+        row = []
+        for t in TAIL_THRESHOLDS:
+            per = []
+            for corpus in corpora:
+                c, n = groups(blk.get((model, corpus), {}),
+                              "percentile_written")
+                if c and n:
+                    per.append(float(np.mean([q > t for q in c]))
+                               - float(np.mean([q > t for q in n])))
+            if per:
+                row.append(float(np.median(per)))
+        sweep[model] = row
+    lo, hi = models[0], models[-1]
+    # A control sequence may contain letters only, so the threshold goes
+    # into the name spelled out.  \\TailSweepLo50 compiles to "Missing
+    # \\begin{document}" with the offending line pointing at macros.tex,
+    # which is a long way from the generator that wrote it.
+    for j, t in enumerate(TAIL_THRESHOLDS):
+        tag = TAIL_TAGS[j]
+        if len(sweep.get(lo, [])) > j and len(sweep.get(hi, [])) > j:
+            mac(f"TailSweepLo{tag}", f"{100 * sweep[lo][j]:.0f}")
+            mac(f"TailSweepHi{tag}", f"{100 * sweep[hi][j]:.0f}")
+    mac("TailSweepNThr", str(len(TAIL_THRESHOLDS)))
+
+    # where the contrast first exceeds one point, so the prose can say
+    # "nothing below X" from a measurement rather than by reading the table
+    first = None
+    for j, t in enumerate(TAIL_THRESHOLDS):
+        vals = [sweep[m][j] for m in models if len(sweep[m]) > j]
+        if vals and min(vals) > 0.01:
+            first = t
+            break
+    if first is not None:
+        mac("TailOnsetThr", f"{first:.2f}")
+        # The threshold is where the WORST evaluator passes one point, so
+        # below it the worst is small and the others need not be.  Four
+        # sentences read it as "no evaluator differs by a point below
+        # here" while the table beside them printed +2 and +3.  The honest
+        # companion is the largest contrast any evaluator shows below the
+        # onset, measured over the same sweep.
+        below = [sweep[m][j] for m in models
+                 for j, t in enumerate(TAIL_THRESHOLDS)
+                 if t < first and len(sweep[m]) > j]
+        if below:
+            mac("TailBelowOnsetMax", f"{100 * max(below):.0f}")
+
+    # ------------------------------------- cell by cell, on both statistics
+    # One row per evaluator, one column per corpus.  The first version gave
+    # a row to each of the 25 cells, which is 25 rows of 7 columns: it fits
+    # no top slot, becomes a float page, and queued behind everything else
+    # already deferred -- cited on page 19 and printed on page 28.  The
+    # per-cell p-values are not lost, they are summarised as counts
+    # (TailNRejecting, TailPMax), which is what the prose uses; what a
+    # reader needs from the table is the spread, and the differences show
+    # it directly.
+    ps_mid, ps_z, diffs, ztail, n_cells = [], [], [], [], 0
+    per_model, grid_mid, grid_z = {}, {}, {}
+    for model in models:
+        dm, zm = [], []
+        for corpus in corpora:
+            recs = blk.get((model, corpus), {})
+            c, n = groups(recs, "is_strict_max")
+            if not c or not n:
+                grid_mid[(model, corpus)] = None
+                grid_z[(model, corpus)] = None
+                continue
+            cc, nn = int(round(sum(c))), int(round(sum(n)))
+            _, p = fisher_exact([[cc, len(c) - cc], [nn, len(n) - nn]])
+            d = 100.0 * (cc / len(c) - nn / len(n))
+            ps_mid.append(p)
+            diffs.append(d)
+            dm.append(d)
+            grid_mid[(model, corpus)] = (d, p)
+            zc, zn = groups(recs, "z_written")
+            zc = [v for v in zc if np.isfinite(v)]
+            zn = [v for v in zn if np.isfinite(v)]
+            grid_z[(model, corpus)] = None
+            if len(zc) > 4 and len(zn) > 4:
+                cut = float(np.quantile(zn, TAIL_Q))
+                k = int(sum(1 for v in zc if v > cut))
+                zt = 100.0 * k / len(zc)
+                exp = int(round((1 - TAIL_Q) * len(zc)))
+                _, pz = fisher_exact([[k, len(zc) - k], [exp, len(zc) - exp]])
+                ps_z.append(pz)
+                ztail.append(zt)
+                zm.append(zt)
+                grid_z[(model, corpus)] = (zt, pz)
+            n_cells += 1
+        if dm:
+            per_model[model] = (float(np.median(dm)),
+                                float(np.median(zm)) if zm else float("nan"))
+
+    # The section says it reports the sweep rather than the threshold that
+    # maximises the contrast.  Quoting four of six thresholds in prose does
+    # not do that, so the sweep goes out as a table and the claim is true.
+    # Which sweep thresholds are the strict-maximum cut in disguise.  For
+    # n = 4 the attainable midranks are (k + 0.5)/24, so the only one above
+    # 0.95 is 23.5/24 and "> 0.95" IS "strict maximum" -- Section 5.3
+    # offered the two as different cuts and the table printed each pair
+    # equal in all five rows.  Dropping the column would strand its
+    # retirement entries, so the duplication is measured and named instead.
+    have = [m for m in models if m in per_model]
+    dupthr = None
+    for j, t in enumerate(TAIL_THRESHOLDS):
+        if not have:
+            break
+        if all(len(sweep.get(m, [])) > j
+               and abs(100 * sweep[m][j] - per_model[m][0]) < 0.5
+               for m in have):
+            dupthr = t
+            break
+    if dupthr is not None:
+        mac("TailSweepDupThr", f"{dupthr:.2f}")
+
+    sw = [r"% generated by make_tables.py -- do not edit",
+          r"\begin{tabular}{l" + "r" * (len(TAIL_THRESHOLDS) + 1) + "}",
+          r"\toprule",
+          "evaluator & "
+          + " & ".join(f"$>{t:.2f}$" for t in TAIL_THRESHOLDS)
+          + r" & strict max \\",
+          r"\midrule"]
+    for model in models:
+        row = sweep.get(model, [])
+        if len(row) < len(TAIL_THRESHOLDS):
+            continue
+        tailv = per_model.get(model, (float("nan"),))[0] \
+            if model in per_model else float("nan")
+        sw.append(f"{model.split('/')[-1]} & "
+                  + " & ".join(f"{100*v:.0f}" for v in row)
+                  + (f" & {tailv:+.0f}" if np.isfinite(tailv) else " & --")
+                  + r" \\")
+    sw += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_sweep.tex"), "w").write(
+        "\n".join(sw) + "\n")
+
+    bon = 0.05 / len(ps_mid) if ps_mid else 1.0
+
+    def cell(v, star):
+        if v is None:
+            return "--"
+        # one math group, not two abutting ones: $+21$$^{*}$ typesets with
+        # a seam between the number and its marker
+        return f"${v:+.0f}" + (r"^{*}" if star else "") + "$"
+
+    lines = [
+        r"% generated by make_tables.py -- do not edit",
+        r"\begin{tabular}{l" + "r" * (len(corpora) + 1) + "}",
+        r"\toprule",
+        "evaluator & " + " & ".join(corpora) + r" & median \\",
+        r"\midrule",
+        r"\multicolumn{" + str(len(corpora) + 2)
+        + r"}{l}{\emph{midrank: points by which more causal than "
+          r"non-causal texts reach the strict maximum}} \\",
+    ]
+    for model in models:
+        row = [cell(None if grid_mid.get((model, c)) is None
+                    else grid_mid[(model, c)][0],
+                    grid_mid.get((model, c)) is not None
+                    and grid_mid[(model, c)][1] < bon)
+               for c in corpora]
+        med = per_model.get(model, (float("nan"),))[0]
+        lines.append(f"{model.split('/')[-1]} & " + " & ".join(row)
+                     + f" & ${med:+.0f}$" + r" \\")
+    lines += [
+        r"\addlinespace",
+        r"\multicolumn{" + str(len(corpora) + 2)
+        + r"}{l}{\emph{$z$, no ceiling: \% of causal texts above the "
+          r"non-causal $" + str(int(round(100 * TAIL_Q)))
+        + r"$th percentile (null $"
+        + str(int(round(100 * (1 - TAIL_Q)))) + r"\%$)}} \\",
+    ]
+    for model in models:
+        row = []
+        for c in corpora:
+            g = grid_z.get((model, c))
+            row.append("--" if g is None
+                       else f"{g[0]:.0f}" + (r"$^{*}$" if g[1] < bon else ""))
+
+        z = per_model.get(model, (0, float("nan")))[1]
+        lines.append(f"{model.split('/')[-1]} & " + " & ".join(row)
+                     + (f" & {z:.0f}" if np.isfinite(z) else " & --")
+                     + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    open(os.path.join(outdir, "tab_tail.tex"), "w").write(
+        "\n".join(lines) + "\n")
+
+    if not n_cells:
+        return
+    bon = 0.05 / len(ps_mid)
+    mac("TailNCells", str(n_cells))
+    mac("TailBonferroni", tex_sci(bon, 1))
+    mac("TailNRejecting", str(sum(1 for p in ps_mid if p < bon)))
+    mac("TailPMax", tex_sci(max(ps_mid), 1))
+    mac("TailDiffMin", f"{min(diffs):+.0f}")
+    mac("TailDiffMax", f"{max(diffs):+.0f}")
+    mac("TailNPositive", str(sum(1 for d in diffs if d > 0)))
+    # The sign is the strong part of the cell-level evidence and the
+    # magnitude is not: 24 of 25 cells positive is a sign test, while only
+    # 8 clear a Bonferroni threshold.  Both are reported, because quoting
+    # either alone misstates what the cells show.
+    from scipy.stats import binomtest
+    mac("TailSignP", tex_sci(binomtest(sum(1 for d in diffs if d > 0),
+                                       len(diffs), 0.5).pvalue, 1))
+    if ps_z:
+        mac("TailZQ", f"{int(round(100 * TAIL_Q))}")
+        mac("TailZNull", f"{int(round(100 * (1 - TAIL_Q)))}")
+        mac("TailZMin", f"{min(ztail):.0f}")
+        mac("TailZMax", f"{max(ztail):.0f}")
+        mac("TailZNRejecting", str(sum(1 for p in ps_z if p < bon)))
+        mac("TailZPMax", tex_sci(max(ps_z), 1))
+    for model, (d, z) in per_model.items():
+        t = TAG.get(model)
+        if t:
+            mac(f"TailDiff{t}", f"{d:+.0f}")
+            if np.isfinite(z):
+                mac(f"TailZ{t}", f"{z:.0f}")
+    # and the ladder trend, by the paper's own within-corpus pairing, which
+    # is NOT the difference of the two medians: the two aggregations give
+    # p = 0.083 and p = 0.033 on this data, and the paired one is the rule
+    # Section 3.4 states.
+    par = [PARAMS[m] for m in models if PARAMS.get(m)]
+    yy = [per_model[m][0] for m in models if PARAMS.get(m) and m in per_model]
+    if len(par) == len(yy) and len(yy) > 3:
+        rho, p, _ = spearman(par, yy)
+        mac("TailTrendRho", f"{rho:+.2f}")
+        mac("TailTrendP", f"{p:.3f}")
+        mac("TailTrendNEval", str(len(yy)))
+    # The same ladder on the ceiling-free tail.  This is the statistic the
+    # paper should lead with: its null is fixed by construction, it has no
+    # bound to saturate against, and more of its cells reject.  On the
+    # measured data it is the midrank tail that fails to reach 0.05 and
+    # this one that reaches the smallest value n = 5 admits.
+    zz = [per_model[m][1] for m in models if PARAMS.get(m) and m in per_model]
+    if len(par) == len(zz) and len(zz) > 3 and all(np.isfinite(zz)):
+        rho, p, _ = spearman(par, zz)
+        mac("TailZTrendRho", f"{rho:+.2f}")
+        mac("TailZTrendP", f"{p:.3f}")
+        # The same correlation on the rungs that share a family, where only
+        # size differs.  The Limitations say the family confound bears
+        # hardest on this one trend; a caveat is the weaker answer when the
+        # subset can simply be measured.  This is NOT a new member of
+        # Section 5.4's family -- it is the same statistic on a subset of
+        # the same points, and TrendNTested is deliberately not incremented
+        # for it.  n = 4 floors at 2/4! = 0.083, which the prose states.
+        fam = [m for m in models if m.startswith("gpt2") and PARAMS.get(m)
+               and m in per_model]
+        if len(fam) > 2:
+            fz = [per_model[m][1] for m in fam]
+            if all(np.isfinite(fz)):
+                frho, fp, _ = spearman([PARAMS[m] for m in fam], fz)
+                mac("TailZFamRho", f"{frho:+.2f}")
+                mac("TailZFamP", f"{fp:.3f}")
+                mac("TailZFamNEval", str(len(fam)))
+                mac("TailZFamFloor", f"{exact_p_floor(len(fam)):.3f}")
+        # Fold the two tail trends into Section 5.4's count, which
+        # trend_macros() could not do because they are measured here.
+        extra = sum(1 for k in ("TailTrendP", "TailZTrendP")
+                    if k in MACROS and _lt(MACROS[k], 0.05))
+        if "TrendNTested" in MACROS:
+            MACROS["TrendNTested"] = str(int(MACROS["TrendNTested"]) + 2)
+            MACROS["TrendNSignificant"] = str(
+                int(MACROS["TrendNSignificant"]) + extra)
+            # HERE, not where TrendNTested is first set: the tail trends are
+            # folded in afterwards, so a threshold computed from the earlier
+            # count would be 0.05/6 printed beside a family of 8.  The
+            # threshold these correlations WOULD be judged against if this
+            # section corrected them the way its cell tests are corrected;
+            # the prose states that it lies below the exact floor rather
+            # than quietly not correcting.
+            MACROS["TrendBonferroni"] = (
+                f"{0.05 / int(MACROS['TrendNTested']):.4f}")
+    print(f"  tab_tail.tex  ({n_cells} cells)")
+
+
+def contrast_macros(blk, kinds, outdir=None):
+    """Is the causal/non-causal separation present in every cell?
+
+    Three sentences -- abstract, introduction, Section 5.3 -- said it is,
+    citing $p < \\BlkPMaxCausal$.  That macro is wrong three times over.
+    Its name says max and \\texttt{pmin = min(pmin, p)} makes it a minimum,
+    so "below it in every cell" is true of no cell but one.  The p it holds
+    is a Wilcoxon of the CAUSAL group against the 0.50 null, which is a
+    different question from whether the two groups differ.  And it is
+    computed for \\texttt{gpt2} alone, in a loop that fixes one model per
+    tag, so "every evaluator" came from one.
+
+    This measures the claim as made: a two-sided Mann-Whitney between the
+    label groups in every (evaluator, corpus) cell of the autoregressive
+    ladder, the count that clears a Bonferroni threshold, and the worst p
+    among them -- which is the number a sentence of that shape needs.
+    """
+    from scipy.stats import mannwhitneyu
+
+    if not blk:
+        return
+    models = ar_only({m for m, _ in blk}, kinds)
+    corpora = order_c({c for _, c in blk})
+    ps, rs = [], []
+    cells = []          # (model, corpus, median Dblock authored, r, p)
+    for model in models:
+        for corpus in corpora:
+            recs = blk.get((model, corpus), {})
+            pc = [r["percentile_written"] for k, r in recs.items()
+                  if k[0] == "causal"]
+            pn = [r["percentile_written"] for k, r in recs.items()
+                  if k[0] == "noncausal"]
+            if len(pc) < 2 or len(pn) < 2:
+                continue
+            u, p = mannwhitneyu(pc, pn, alternative="two-sided")
+            ps.append(float(p))
+            rr = 2.0 * u / (len(pc) * len(pn)) - 1.0
+            rs.append(rr)
+            # The authored median of Dblock in the same cell.  It is the
+            # quantity Section 4.2 quotes a range of and Section 2.1 takes
+            # a ratio of, and it was printed in no table.
+            sw = [r["sigma_written"] for r in recs.values()
+                  if r.get("sigma_written") is not None]
+            cells.append((model, corpus,
+                          float(np.median(sw)) if sw else None,
+                          rr, float(p)))
+    if not ps:
+        return
+    bon = 0.05 / len(ps)
+    # The corpus axis, published so check_corpus_order can compare the
+    # table bodies against it.  A file and not a macro: it is machine-only,
+    # no prose quotes it, and a generated macro with no reader is exactly
+    # what the orphan check exists to report.
+    if outdir:
+        open(os.path.join(outdir, "corpus_order.txt"), "w").write(
+            " ".join(corpus_base(c) for c in corpora) + "\n")
+    mac("ContrastNCells", str(len(ps)))
+    # The cell count is a product and the prose should be able to say so.
+    # Both sets are already fixed above: models is ar_only() of the keys,
+    # corpora is order_c() of them, and len(ps) is one test per pair.  A
+    # reader who cannot see 25 as 5 x 5 cannot check the claim against the
+    # table, which is the hole this paper is about.
+    mac("ContrastNEval", str(len(models)))
+    mac("ContrastNCorpora", str(len(corpora)))
+    mac("ContrastNRejecting", str(sum(1 for q in ps if q < bon)))
+    mac("ContrastBonferroni", tex_sci(bon, 1))
+    mac("ContrastPWorst", tex_p_bare(max(ps)))
+    mac("ContrastPBest", tex_p_bare(min(ps)))
+    mac("ContrastNPositive", str(sum(1 for r in rs if r > 0)))
+    mac("ContrastRMedian", f"{float(np.median(rs)):+.3f}")
+    mac("ContrastRMin", f"{min(rs):+.3f}")
+    mac("ContrastRMax", f"{max(rs):+.3f}")
+    # Per evaluator.  "N of 25" says nothing about whether the cells that
+    # fail are spread over the ladder or stacked on one rung, and Section
+    # 5.4 argues about the ladder for a whole subsection.
+    by_eval = []
+    for model in models:
+        own = [c for c in cells if c[0] == model]
+        if not own:
+            continue
+        by_eval.append(
+            "\\texttt{%s}~%d/%d" % (model.split("/")[-1].replace("_", "-"),
+                                    sum(1 for c in own if c[4] < bon),
+                                    len(own)))
+    if by_eval:
+        # One macro with one reader, spelling out every rung.  Emitting a
+        # pair per evaluator and quoting the two ends left nine generated
+        # numbers nothing read, and still showed the ladder at its ends.
+        mac("ContrastRejectByEval", ", ".join(by_eval))
+    if outdir:
+        lines = [r"% generated by make_tables.py -- do not edit",
+                 r"\begin{tabular}{llrrr}",
+                 r"\toprule",
+                 r"evaluator & corpus & median $\Dblock$ & $r$ & $p$ \\",
+                 r"\midrule"]
+        for model, corpus, sw, rr, p in cells:
+            lines.append(
+                f"{model.split('/')[-1]} & {corpus.replace('fixed_text_', '')}"
+                f" & " + ("--" if sw is None else f"${sw:+.4f}$")
+                + f" & ${rr:+.3f}$ & $" + tex_p_bare(p)
+                # {} and not nothing: tex_p_bare ends in a superscript
+                # below 1e-3, and "10^{-4}^{*}" is the double superscript
+                # that TeX refused 17 times a pass.  The empty group gives
+                # the star an atom of its own and typesets identically.
+                + (r"{}^{*}" if p < bon else "") + r"$ \\")
+        lines += [r"\bottomrule", r"\end{tabular}"]
+        open(os.path.join(outdir, "tab_blkcells.tex"), "w").write(
+            "\n".join(lines) + "\n")
+        print(f"  tab_blkcells.tex  ({len(cells)} cells)")
+
+
 def trend_macros(blk, kinds):
     """Does any component of the decomposition track evaluator capacity?
 
@@ -1313,9 +2337,11 @@ def trend_macros(blk, kinds):
     already the extreme arrangement, while the ceiling-free z share is flat.
     These macros put a rank correlation on each component, so the text states
     what was measured rather than what was expected.
-    """
-    from scipy.stats import spearmanr
 
+    The p-values come from the exact rank null, not from scipy's
+    asymptotic approximation: see spearman() above for why that
+    distinction is not cosmetic at the n of this ladder.
+    """
     ar = [m for m in order_m({m for m, _ in blk})
           if kinds.get(m) == "causal" and PARAMS.get(m)]
     if len(ar) < 4:
@@ -1323,7 +2349,8 @@ def trend_macros(blk, kinds):
     par = [PARAMS[m] for m in ar]
     series = {}
     for m in ar:
-        a_, c_, z_, ceil_ = [], [], [], []
+        a_, c_, z_, ceil_, azs_ = [], [], [], [], []
+        ceiln_ = []
         for corpus in order_c({c for _, c in blk}):
             recs = blk.get((m, corpus), {})
             pc = [r["percentile_written"] for q, r in recs.items()
@@ -1340,10 +2367,19 @@ def trend_macros(blk, kinds):
             # which is what table_saturation uses; comparing the midrank with
             # 1.0 makes the series identically zero and the correlation
             # undefined.
+            # Two sets, two fractions.  Section 5.4 paired its ceiling
+            # evidence with the authored component of Eq. (8), which is
+            # defined on the NON-causal texts, while the fraction it quoted
+            # was computed on the causal ones.  Both are measured here so
+            # the section can use the one that matches and report the other.
             sm = [r["is_strict_max"] for q, r in recs.items()
                   if q[0] == "causal" and "is_strict_max" in r]
+            smn = [r["is_strict_max"] for q, r in recs.items()
+                   if q[0] == "noncausal" and "is_strict_max" in r]
             if sm:
                 ceil_.append(float(np.mean(sm)))
+            if smn:
+                ceiln_.append(float(np.mean(smn)))
             zc = [r["z_written"] for q, r in recs.items() if q[0] == "causal"
                   and np.isfinite(r.get("z_written", np.nan))]
             zn = [r["z_written"] for q, r in recs.items()
@@ -1353,18 +2389,29 @@ def trend_macros(blk, kinds):
                 az = float(np.median(zn))
                 cz = float(np.median(zc)) - az
                 z_.append(cz / (az + cz) if az + cz > 0 else float("nan"))
+                # The authored component itself, in the ceiling-free units.
+                # Only its SHARE was tracked, so the one series that could
+                # corroborate a rise in the bounded authored component --
+                # or fail to -- was never correlated against capacity.
+                azs_.append(az)
         if not a_:
             return
         series.setdefault("authored", []).append(float(np.median(a_)))
         series.setdefault("causal", []).append(float(np.median(c_)))
         series.setdefault("ceiling", []).append(
             float(np.median(ceil_)) if ceil_ else float("nan"))
+        series.setdefault("ceilingn", []).append(
+            float(np.median(ceiln_)) if ceiln_ else float("nan"))
         zz = [v for v in z_ if np.isfinite(v)]
         series.setdefault("sharez", []).append(float(np.median(zz)) if zz
                                                else float("nan"))
+        azz = [v for v in azs_ if np.isfinite(v)]
+        series.setdefault("authoredz", []).append(float(np.median(azz))
+                                                  if azz else float("nan"))
 
     for key, tag in (("authored", "Authored"), ("causal", "Causal"),
-                     ("ceiling", "Ceil"), ("sharez", "ShareZ")):
+                     ("ceiling", "Ceil"), ("ceilingn", "CeilN"),
+                     ("sharez", "ShareZ"), ("authoredz", "AuthoredZ")):
         y = series.get(key)
         if not y or not np.all(np.isfinite(y)):
             continue
@@ -1378,13 +2425,49 @@ def trend_macros(blk, kinds):
         # all-tied treatment.  The resolution that makes this necessary is
         # the subject of the section on the grid.
         yq = np.round(np.asarray(y, float), 12)
-        rho, pv = spearmanr(par, yq)
+        rho, pv, _ = spearman(par, yq)
         mac(f"Trend{tag}NDistinct", str(len(set(yq.tolist()))))
         mac(f"Trend{tag}Rho", f"{rho:+.2f}")
         mac(f"Trend{tag}P", f"{pv:.3f}")
+    # Section 5.4 says the rise in the causal strict-maximum fraction is
+    # carried by the smallest evaluator on its own.  That is a claim
+    # about what is left when it goes, so measure the remainder instead
+    # of describing it.
+    yc = series.get("ceiling")
+    if yc and len(yc) > 3 and np.all(np.isfinite(yc)):
+        yq = np.round(np.asarray(yc, float), 12)
+        i = int(np.argmin(par))
+        keep = [j for j in range(len(par)) if j != i]
+        rho_d, p_d, _ = spearman([par[j] for j in keep],
+                                 [yq[j] for j in keep])
+        mac("TrendCeilNDropRho", f"{rho_d:+.2f}")
+        mac("TrendCeilNDropP", f"{p_d:.3f}")
+        mac("TrendCeilNDropNEval", str(len(keep)))
+    # "The only component with a significant trend" is a claim about all of
+    # them at once, and nothing checked it.  Counting here makes it a number
+    # the self-test can hold the sentence to.
+    # The tail trend of tail_macros() is one of the correlations Section
+    # 5.4 reports, so it belongs in this count; it is emitted later, which
+    # is why the count is taken there instead.  Here we record only the
+    # components this function measured.
+    sig = [t for t in ("Authored", "Causal", "Ceil", "CeilN", "ShareZ",
+                       "AuthoredZ")
+           if f"Trend{t}P" in MACROS and _lt(MACROS[f"Trend{t}P"], 0.05)]
+    tested = [t for t in ("Authored", "Causal", "Ceil", "CeilN", "ShareZ",
+                          "AuthoredZ") if f"Trend{t}P" in MACROS]
+    mac("TrendNTested", str(len(tested)))
+    mac("TrendNSignificant", str(len(sig)))
+    mac("TrendSignificantIs", ", ".join(sig) if sig else "none")
     mac("TrendNEval", str(len(ar)))
+    mac("TrendPFloor", f"{exact_p_floor(len(ar)):.3f}")
     mac("TrendQuantum", "12")
     mac("TrendCapSpan", f"{max(par) / min(par):.0f}")
+    # and the span WITHIN one family, which is a different number: the top
+    # of the ladder is a different model family on a different corpus, and
+    # Section 3.1 called the whole 32-fold span a within-family series.
+    fam = [PARAMS[m] for m in ar if m.startswith("gpt2")]
+    if len(fam) > 1:
+        mac("TrendCapSpanFamily", f"{max(fam) / min(fam):.0f}")
 
 
 def param_macros():
@@ -1428,6 +2511,7 @@ def main():
     # a build failure one can see; a stale one is not.
     for name in ("tab_blkord.tex", "tab_pll.tex", "tab_token.tex",
                  "tab_capacity.tex", "tab_saturation.tex",
+                 "tab_tail.tex", "tab_sweep.tex",
                  "tab_decomposition.tex", "tab_fbrank.tex", "macros.tex"):
         try:
             os.unlink(os.path.join(args.outdir, name))
@@ -1451,7 +2535,9 @@ def main():
     table_fbrank(args.sigfb, args.outdir)
     fb_between_macros(args.fbjson)
     grid_macros(blk, kinds)
+    contrast_macros(blk, kinds, args.outdir)
     trend_macros(blk, kinds)
+    tail_macros(blk, kinds, args.outdir)
     cross_instrument_macros()
     param_macros()
     capacity_ratio_macros()
@@ -1460,34 +2546,85 @@ def main():
     # Every macro the prose may reference is defined even when its measurement
     # is not in yet, so the document always compiles; a missing number shows up
     # as a visible TODO instead of an undefined-control-sequence error.
-    expected = ["FbNTestsCausal", "FbBonferroni", "FbNSurviving",
+    expected = ["NPerGroup",
+                "TrendCeilNDropRho", "TrendCeilNDropP",
+                "TrendCeilNDropNEval",
+                "FbNTestsCausal", "FbBonferroni", "FbNSurviving",
                 "FbNNominal", "FbNExpected", "FbNTestsDisp",
                 "FbDispPMax", "FbDispNSurviving", "FbDispBonferroni",
                 "FbNTestsDispLLaDA", "FbDispPMaxLLaDA",
                 "FbDispNRejectingLLaDA",
                 "FbNTestsDispBertBase", "FbDispPMaxBertBase",
                 "FbDispNRejectingBertBase",
+                "FbStepGap",
                 "FbAuthoredStepsBertBase", "FbCausalStepsBertBase",
                 "FbAuthoredStepsLLaDA", "FbCausalStepsLLaDA",
                 "FbSignPBertBase", "FbSignNegBertBase",
                 "FbSignPLLaDA", "FbSignNegLLaDA",
+                "FbBetweenMinLLaDA", "FbBetweenMaxLLaDA",
+                "FbBetweenNPosLLaDA", "FbBetweenNOfLLaDA",
+                "FbBetweenCausalLLaDA", "FbBetweenNNegOfLLaDA",
+                "FbBetweenMinBertBase", "FbBetweenMaxBertBase",
+                "FbBetweenNPosBertBase", "FbBetweenNOfBertBase",
+                "FbBetweenCausalBertBase", "FbBetweenNNegOfBertBase",
+                "FbBetweenNOpposite", "FbBetweenNCompared",
                 "TrendAuthoredRho", "TrendAuthoredP",
                 "TrendCausalRho", "TrendCausalP",
                 "TrendCeilRho", "TrendCeilP",
                 "TrendShareZRho", "TrendShareZP",
+                "TrendAuthoredZRho", "TrendAuthoredZP",
+                "TrendAuthoredZNDistinct",
                 "TrendNEval", "TrendCapSpan", "TrendQuantum",
+                "TailSweepNThr", "TailOnsetThr", "TailBelowOnsetMax",
+                "TailSweepDupThr",
+                "TailNCells", "TailBonferroni", "TailNRejecting",
+                "TailPMax", "TailDiffMin", "TailDiffMax", "TailNPositive",
+                "TailZQ", "TailZNull", "TailZMin", "TailZMax",
+                "TailZNRejecting", "TailZPMax",
+                "ContrastNCells", "ContrastNEval", "ContrastNCorpora",
+                "ContrastNRejecting",
+                "ContrastBonferroni", "ContrastPWorst", "ContrastPBest",
+                "ContrastNPositive", "ContrastRMedian", "ContrastRMin",
+                "ContrastRMax",
+                "ContrastRejectByEval",
+                "TailTrendRho", "TailTrendP", "TailTrendNEval",
+                "TailZTrendRho", "TailZTrendP", "TailSignP",
+                "TailZFamRho", "TailZFamP", "TailZFamNEval",
+                "TailZFamFloor",
+                "TailSweepLoFifty", "TailSweepHiFifty", "TailSweepLoSixty",
+                "TailSweepHiSixty", "TailSweepLoSeventy", "TailSweepHiSeventy",
+                "TailSweepLoEighty", "TailSweepHiEighty", "TailSweepLoNinety",
+                "TailSweepHiNinety", "TailSweepLoNinetyFive", "TailSweepHiNinetyFive",
+                "TailDiffGPTtwo", "TailDiffGPTtwoMedium",
+                "TailDiffGPTtwoLarge", "TailDiffGPTtwoXL", "TailDiffQwen",
+                "TailZGPTtwo", "TailZGPTtwoMedium", "TailZGPTtwoLarge",
+                "TailZGPTtwoXL", "TailZQwen",
+                "TrendPFloor", "TrendNSignificant", "TrendSignificantIs",
+                "TrendCapSpanFamily",
+                "TrendNTested", "TrendBonferroni",
+                "TrendCeilNRho", "TrendCeilNP", "TrendCeilNNDistinct",
                 "TrendCausalNDistinct", "TrendAuthoredNDistinct",
                 "TrendCeilNDistinct", "TrendShareZNDistinct",
                 "GridStep", "GridK", "CausalCompMin", "CausalCompMax",
                 "CausalCompNEval", "CausalCompStepsMin", "CausalCompStepsMax",
                 "CausalCompNDistinct", "CausalCompCapSpan",
+                "AuthoredCorpSpreadSteps", "AuthoredCorpSpreadMax",
+                "AuthoredCorpNGen",
+                "AuthoredCompStepsMin", "AuthoredCompStepsMax",
+                "AuthoredCompSpanSteps", "AuthoredCompSpan",
                 "CausalCompCapLo", "CausalCompCapHi",
-                "FbNCorpora", "FbNTexts", "FbNCells", "FbDegenTotal",
-                "FbRMin", "FbRMax", "FbNNegative", "FbMaskRateVerdict",
+                "RatioNDistinct", "RatioNDistinctEnds", "RatioNAtEnd",
+                "FbNCorpora", "FbNTexts", "FbNScorings", "FbNCells",
+                "FbDegenTotal",
+                "FbRMin", "FbRMax", "FbNNegative",
                 "FbPctCausalBertBase", "FbPctNoncausalBertBase", "FbRBertBase",
                 "FbAuthoredBertBase", "FbCausalBertBase",
                 "FbPctCausalLLaDA", "FbPctNoncausalLLaDA", "FbRLLaDA",
                 "FbAuthoredLLaDA", "FbCausalLLaDA",
+                "FbCausalBelowBertBase", "FbAuthoredAboveBertBase",
+                "FbNCorporaOfBertBase",
+                "FbCausalBelowLLaDA", "FbAuthoredAboveLLaDA",
+                "FbNCorporaOfLLaDA",
                 "FbBetweenMin", "FbBetweenMax", "FbBetweenNCorpora",
                 "FbBetweenCausal", "FbBetweenNNeg",
                 "AuthoredGPTtwoMedium", "CausalGPTtwoMedium",
@@ -1497,22 +2634,31 @@ def main():
                 "AuthoredGPTtwoXL", "CausalGPTtwoXL",
                 "ShareGPTtwoXL", "ParamsGPTtwoXL",
                 "ShareZMin", "ShareZMax", "ShareZNEval",
+                "ShareFormRho", "ShareFormP", "ShareFormNEval",
+                "ShareFormWorst",
+                "ShareEvalMin", "ShareEvalMax", "ShareEvalNEval",
+                "SwapEval", "SwapAuthored", "SwapCausal",
+                "SwapAuthoredOrig", "SwapCausalOrig",
+                "SwapShareMin", "SwapShareMax", "SwapShareNNeg",
+                "SwapShareNEval",
                 "MedPctCausal", "MedPctNoncausal", "PctVsNullP",
-                "CausalShareMedian", "CausalShareMin", "CausalShareMax",
+                "CausalRatioMedian", "CausalRatioMin", "CausalRatioMax",
                 "NBlkordCells", "NBlocks", "NPerms", "NEval", "NCorp", "CapRatioMedian", "CapRatioMin", "CapRatioMax",
                 "CapNCorpora", "CapNUp", "CapNSign",
                 "CapDeltaLo", "CapDeltaHi", "SigmaCausal",
-                "AuthoredCausal", "CausalCompCausal", "CausalShareCausal",
-                "BlkRMasked", "BlkNSepMasked", "BlkNTotMasked", "BlkPMaxMasked",
+                "AuthoredCausal", "CausalCompCausal", "CausalRatioCausal",
+                "BlkRMasked", "BlkNSepMasked", "BlkNTotMasked", "BlkPBestMasked",
                 "BlkPctCMasked", "BlkPctNMasked",
-                "BlkRCausal", "BlkNSepCausal", "BlkNTotCausal", "BlkPMaxCausal",
+                "BlkRCausal", "BlkNSepCausal", "BlkNTotCausal", "BlkPBestCausal",
                 "BlkPctCCausal", "BlkPctNCausal", "NSepCausal", "NTotCausal",
                 # token reversal, reported only in the between-set table
                 "SigTokRatioMin", "SigTokRatioMax", "NTokLarger", "NTokCells",
                 "NTokNegAR", "NTokNegARTot",
                 "ToyNCap", "ToyDMin", "ToyDMax", "ToyOrdersAbove",
                 "ReproMaxErr", "ReproNCorpora",
-                "AoarOrderDev", "AoarNormDev", "ARSpanRatio", "GapSpreadRatio",
+                "AoarOrderDev", "AoarNormDev", "AoarNormDevInc",
+                "AoarL", "AoarV", "AoarStates", "AoarNOrders",
+                "ARSpanRatio", "GapSpreadRatio",
                 # per-evaluator, for the capacity series in the prose
                 
                 "ParamsBertBase", 
@@ -1521,6 +2667,7 @@ def main():
                 
                 "ParamsLLaDA", 
                 "AuthoredGPTtwo", "CausalGPTtwo", "ShareGPTtwo",
+                "CeilNTexts", "CeilResolution", "CeilRise", "CeilRiseUnits",
                 "ParamsGPTtwo", "CeilGPTtwo", "CeilNGPTtwo",
                 "AuthoredQwen", "CausalQwen", "ShareQwen",
                 "ParamsQwen", "CeilQwen", "CeilNQwen",
@@ -1547,7 +2694,7 @@ def main():
                 "RatioMin", "RatioMax", "RatioNEval", "RatioNCI",
                 "RatioOverlapLo", "RatioOverlapHi",
                 "RatioWidestLo", "RatioWidestHi", "RCausal", "ToySigmaMin", "ToySigmaMax",
-                "ToyCapRatio", "ToySigmaAR", "ToyRmsAR", "ToyL", "ToyV",
+                "ToyCapRatio", "ToyCapMonotone", "ToySpanRatio", "ToySigmaAR", "ToyRmsAR", "ToyL", "ToyV",
                 "ToyStates", "ToyN",
                 "CtrlNWidths", "CtrlDMin", "CtrlDMax",
                 "CtrlSigmaHead", "CtrlSigmaJointMax",
@@ -1556,7 +2703,16 @@ def main():
                 "CtrlSigMin", "CtrlSigMax",
                 "CtrlRhoEP", "CtrlPEP", "CtrlRhoSig",
                 "CtrlPSig", "CtrlRhoXS", "CtrlPXS"]
+    # The retired list travels with the macros, so check_paper.py needs no
+    # import of this file to tell a declared non-use from a dropped number.
     out = [r"% generated by make_tables.py -- do not edit"]
+    for i in range(0, len(RETIRED), 8):
+        out.append("% retired: " + " ".join(RETIRED[i:i + 8]))
+    # Same route as the retired list: check_paper.py reads the declaration
+    # out of macros.tex rather than importing this file.
+    for w, (budget, group, why) in sorted(WITHDRAWN_FROM_PROSE.items()):
+        out.append("%% withdrawn-prose: %s|%s|%s|%s"
+                   % (w, "-" if budget is None else budget, group, why))
     missing = []
     for k in expected:
         if k in MACROS:
@@ -1579,8 +2735,9 @@ def main():
     # make_arxiv.sh refuses to package.
     for name in ("tab_blkord.tex", "tab_pll.tex", "tab_token.tex",
                  "tab_capacity.tex", "tab_saturation.tex",
+                 "tab_tail.tex", "tab_sweep.tex",
                  "tab_decomposition.tex", "tab_fbrank.tex",
-                 "tab_bayesroute.tex"):
+                 "tab_bayesroute.tex", "tab_fbdecomp.tex"):
         path = os.path.join(args.outdir, name)
         if os.path.exists(path):
             continue

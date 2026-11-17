@@ -1,0 +1,106 @@
+INFO:    underlay of /etc/localtime required more than 50 (79) bind mounts
+INFO:    underlay of /usr/bin/nvidia-debugdump required more than 50 (291) bind mounts
+==============================================================================
+1) the ceiling fraction per corpus     (c = causal, nc = non-causal, %)
+==============================================================================
+
+  nc:
+                          Opus46       GPT54       GPT56    Gemini31      Fable5      median
+  gpt2                        14          26          25          18          20          20
+  gpt2-medium                 18          11          14          15          24          15
+  gpt2-large                  10          22          19          16          16          16
+  gpt2-xl                     18          19          15          16          15          16
+  Qwen3-4B-Base               13          13          25          24          15          15
+
+  c:
+                          Opus46       GPT54       GPT56    Gemini31      Fable5      median
+  gpt2                        33          24          31          32          33          32
+  gpt2-medium                 40          28          32          33          32          32
+  gpt2-large                  36          30          33          38          32          33
+  gpt2-xl                     36          37          36          43          34          36
+  Qwen3-4B-Base               47          40          37          44          37          40
+
+  per-corpus trend of the gap (c - nc) against capacity:
+  Opus46       [19, 22, 26, 18, 34]       rho=+0.40  p=0.517  ends +19 -> +34
+  GPT54        [-2, 17, 8, 18, 27]        rho=+0.90  p=0.083  ends -2 -> +27
+  GPT56        [6, 18, 14, 21, 12]        rho=+0.30  p=0.683  ends +6 -> +12
+  Gemini31     [14, 18, 22, 27, 20]       rho=+0.70  p=0.233  ends +14 -> +20
+  Fable5       [13, 8, 16, 19, 22]        rho=+0.90  p=0.083  ends +13 -> +22
+
+==============================================================================
+2) leave-one-out, on the medians over corpora
+==============================================================================
+
+  ceiling nc  full: rho=-0.527 p=0.467   [20, 15, 16, 16, 15]
+      drop gpt2             rho=+0.000 p=1.000
+      drop gpt2-medium      rho=-0.949 p=0.167
+      drop gpt2-large       rho=-0.632 p=0.500
+      drop gpt2-xl          rho=-0.632 p=0.500
+      drop Qwen3-4B-Base    rho=-0.316 p=1.000
+
+  ceiling c  full: rho=+0.975 p=0.033   [32, 32, 33, 36, 40]
+      drop gpt2             rho=+1.000 p=0.083
+      drop gpt2-medium      rho=+1.000 p=0.083
+      drop gpt2-large       rho=+0.949 p=0.167
+      drop gpt2-xl          rho=+0.949 p=0.167
+      drop Qwen3-4B-Base    rho=+0.949 p=0.167
+
+  gap  full: rho=+0.975 p=0.033   [12, 17, 17, 20, 25]
+      drop gpt2             rho=+0.949 p=0.167
+      drop gpt2-medium      rho=+1.000 p=0.083
+      drop gpt2-large       rho=+1.000 p=0.083
+      drop gpt2-xl          rho=+0.949 p=0.167
+      drop Qwen3-4B-Base    rho=+0.949 p=0.167
+
+  dropping a corpus instead (medians recomputed over the rest):
+      drop Opus46       gap rho=+0.900 p=0.083  [10, 18, 15, 20, 21]
+      drop GPT54        gap rho=+1.000 p=0.017  [14, 18, 19, 20, 21]
+      drop GPT56        gap rho=+0.900 p=0.083  [14, 18, 19, 18, 24]
+      drop Gemini31     gap rho=+0.900 p=0.083  [10, 18, 15, 18, 24]
+      drop Fable5       gap rho=+0.975 p=0.033  [10, 18, 18, 20, 24]
+
+==============================================================================
+3) within an evaluator: is the ceiling difference significant?
+    counts pooled over corpora, Fisher exact, two-sided
+==============================================================================
+  gpt2               causal  153/500   non-causal  103/500   p=3.73e-04
+  gpt2-medium        causal  165/500   non-causal   82/500   p=1.39e-09
+  gpt2-large         causal  169/500   non-causal   83/500   p=4.45e-10
+  gpt2-xl            causal  186/500   non-causal   83/500   p=2.09e-13
+  Qwen3-4B-Base      causal  205/500   non-causal   90/500   p=1.44e-15
+
+==============================================================================
+4) the same contrast at midrank thresholds below the ceiling
+    'fraction of texts with midrank above t', c - nc, in points
+==============================================================================
+                         >0.50     >0.60     >0.70     >0.80     >0.90     >0.95  strictmax
+  gpt2                     0.0       2.0       3.0       6.0      17.0      13.0      13.0
+  gpt2-medium              0.0       0.0       0.0       6.0      21.0      18.0      18.0
+  gpt2-large               0.0       0.0       0.0      11.0      17.0      16.0      16.0
+  gpt2-xl                  0.0       0.0       1.0      12.0      25.0      19.0      19.0
+  Qwen3-4B-Base            0.0       0.0       2.0      11.0      28.0      22.0      22.0
+
+  trend of each column against capacity:
+      >0.50       rho=+nan  p=1.000  ends +0.0 -> +0.0
+      >0.60       rho=-0.707  p=0.400  ends +2.0 -> +0.0
+      >0.70       rho=-0.051  p=1.000  ends +3.0 -> +2.0
+      >0.80       rho=+0.791  p=0.133  ends +6.0 -> +11.0
+      >0.90       rho=+0.700  p=0.233  ends +17.0 -> +28.0
+      >0.95       rho=+0.900  p=0.083  ends +13.0 -> +22.0
+      strictmax   rho=+0.900  p=0.083  ends +13.0 -> +22.0
+
+==============================================================================
+5) the tail contrast beside the median contrast
+==============================================================================
+  grid = 1/24 = 0.0417;  ceiling fraction step = 1/100 = 0.01
+
+  evaluator            median diff  in steps   tail diff (pts)  in steps
+  gpt2                      0.0417       1.0              13.0      13.0
+  gpt2-medium               0.0833       2.0              18.0      18.0
+  gpt2-large                0.0417       1.0              16.0      16.0
+  gpt2-xl                   0.0417       1.0              19.0      19.0
+  Qwen3-4B-Base             0.0417       1.0              22.0      22.0
+
+  median diff vs capacity: rho=-0.791 p=0.133
+  tail   diff vs capacity: rho=+0.900 p=0.083
+  the two against each other: rho=-0.632 p=0.267

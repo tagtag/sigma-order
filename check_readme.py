@@ -70,9 +70,25 @@ for rule in io.open("paper/glossary.txt", encoding="utf-8"):
     if rule.startswith("#") or "|" not in rule:
         continue
     pref, rest = rule.split("|", 1)
+    # "[tex]" marks a rule as prose-only.  check_paper.py has honoured that
+    # since the scoping was added; this file did not, so every such rule was
+    # being applied to a document it was never written for -- which is why
+    # "split" was reported here for as long as the marker has existed, and
+    # why this README cannot describe the terminology table without
+    # tripping over every name in it.
+    if pref.strip().startswith("[tex]"):
+        continue
     for bad in rest.split("#")[0].split(","):
         bad = bad.strip()
-        if bad and re.search(r"\b" + re.escape(bad) + r"\b", s, re.I):
+        # A term in backticks is mentioned, not used: the sections that
+        # record which word was banned, and why, have to be able to name it.
+        # Whitespace is collapsed first, because a two-word term that wraps
+        # across a line is invisible to a literal search -- the same hole
+        # that let "permutation construction" sit in main.tex against a rule
+        # naming it.
+        if bad and re.search(r"\b" + re.escape(bad) + r"\b",
+                             re.sub(r"`[^`]*`", " ", " ".join(s.split())),
+                             re.I):
             bad_hits.append((bad, pref.split(",")[0].strip()))
 for bad, pref in bad_hits:
     print(f"  GLOSSARY: '{bad}' appears; this project says '{pref}'")

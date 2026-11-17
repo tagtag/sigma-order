@@ -20,6 +20,33 @@
 \usepackage{graphicx}
 \usepackage{microtype}
 
+% Line numbers for the read-through.  Every revision item so far has been
+% addressed by a main.tex line number, which is not visible to anyone
+% reading the PDF.  \draftlinesfalse before submission; make_arxiv.sh
+% refuses to package while this is true.  The amsmath environments are
+% patched because lineno otherwise loses their numbering.
+\newif\ifdraftlines \draftlinestrue
+\ifdraftlines
+  \usepackage[mathlines]{lineno}
+  \linenumbers
+  \newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+    \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+    \renewenvironment{#1}%
+       {\linenomath\csname old#1\endcsname}%
+       {\csname oldend#1\endcsname\endlinenomath}}%
+  \newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+    \patchAmsMathEnvironmentForLineno{#1}%
+    \patchAmsMathEnvironmentForLineno{#1*}}%
+  \AtBeginDocument{%
+    \patchBothAmsMathEnvironmentsForLineno{equation}%
+    \patchBothAmsMathEnvironmentsForLineno{align}%
+    \patchBothAmsMathEnvironmentsForLineno{gather}%
+    \patchBothAmsMathEnvironmentsForLineno{multline}%
+    \patchBothAmsMathEnvironmentsForLineno{flalign}%
+    \patchBothAmsMathEnvironmentsForLineno{alignat}}
+\fi
+
 % Float placement.  With six tables and three figures all asking for
 % [t], LaTeX's default thresholds ran out of top slots and deferred
 % every figure to the end: in one build Figures 1 and 2 came out AFTER
@@ -35,6 +62,17 @@
 \setcounter{topnumber}{3}
 \setcounter{bottomnumber}{2}
 \setcounter{totalnumber}{4}
+% The fractions above are enough for figures, which fit a top slot.  The
+% cell table of Section~\ref{sec:resolution} has \TailNCells\ rows and fits
+% none, so it becomes a float page and queues behind everything already
+% deferred: it was cited on page 19 and printed on page 28.  A barrier at
+% each section is the fix a fraction cannot be, and it is placed here
+% rather than by hand so no future table has to be noticed first.
+\usepackage[section]{placeins}
+% Numeric citations sorted and compressed: \cite{a,b,c} printed in the
+% order the keys were typed, which gave [2, 4, 3].  Loaded before
+% hyperref, which is where it has to be.
+\usepackage{cite}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
 % A file name set in \texttt is one unbreakable word.  At 11pt the longest
@@ -75,25 +113,41 @@
 % repeatedly while this paper was written, in both directions, so the
 % separation is enforced here rather than left to care:
 %
-%   \Delta        Eq.~(1): one text scored against a DIFFERENT text.  This is
-%                 the published quantity.  It is not an entropy production
-%                 (Section~\ref{sec:notareversal}), and this paper never
-%                 writes it as sigma.  \Dtok and \Dblock are its two
+%   \Delta        Eq.~(1): one text scored against a rearrangement of
+%                 itself.  This is the published quantity.  On a fixed text
+%                 it has no origin (Section~\ref{sec:notareversal}), and
+%                 this paper never writes it as sigma.  \Dtok and \Dblock are its two
 %                 coarse-grainings.
 %   \sigma        Eq.~(5): the SAME text assembled in two directions.  This
 %                 is the entropy production, it is identically zero for any
 %                 model with a joint, and only a masked model can evaluate
 %                 it (Section~\ref{sec:fbdef}).
 %   \sigEP       the entropy production RATE of the Glauber chain induced
-%                 by a model's conditionals (Section~\ref{sec:toy}): a
+%                 by a model's conditionals (Appendix~\ref{sec:toy}): a
 %                 third quantity again, on the toy system.
 \newcommand{\sigEP}{\sigma_{\mathrm{EP}}}
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 
-\title{Authored order dominates fixed-text entropy production:\\
-\large a measure without a zero, and a contrast without a criterion}
+% Three titles.  The first read "Authored order dominates fixed-text
+% entropy production": calling Delta an entropy production in the title
+% adopts the identification the paper spends Section 2.2 withdrawing, and it
+% left the third result -- the identity -- out of the title altogether.  The
+% second, "Authored order, not causal order", was withdrawn when the tail
+% contrast turned out to be present and to grow along the AR ladder: the paper
+% no longer says the causal part is absent, so a title that says it is would
+% be contradicted by Section 5.4.  The present one names the claim no
+% measurement can overturn -- that the comparison is between two sequences
+% and not between a path and its reverse -- and the subtitle carries what
+% each of the two quantities lacks.  Section 1's own note explains why that
+% section still builds to the claim rather than opening with it.
+\title{Reversing the text is not reversing the path:\\
+\large a fixed-text measure without a zero, and an entropy production
+that is identically zero}
 \author{Y.-H. Taguchi\\
-\small Department of Physics, Chuo University, Tokyo, Japan\\
+\small Bioinformatics Center, Institute for Chemical Research, Kyoto
+University, Gokasho, Uji, Kyoto 611-0011, Japan\\
+\small \emph{Permanent address:} Department of Physics, Chuo University,
+Tokyo, Japan\\
 \small \texttt{tag@granular.com}}
 \date{\today}
 
@@ -102,57 +156,139 @@
 
 \begin{abstract}
 For an ensemble of trajectories the fluctuation theorems give the entropy
-production both its meaning and its zero: the exponentiated production averages
-to exactly one, so its mean cannot be negative, and vanishes precisely when the
-dynamics is reversible.
+production $\sigma$ both its meaning and its zero: $\langle e^{-\sigma}
+\rangle = 1$, so $\langle \sigma \rangle \geq 0$ by Jensen's inequality, and
+$\sigma$ vanishes precisely when the dynamics is reversible.
 The same expression has recently been evaluated~\cite{sagawa2026} on a single
 fixed text ---
 $\Delta = [\log P(x) - \log P(\tilde{x})]/L$, for a text $x$ of $L$ tokens and
-its reversal $\tilde{x}$ --- and read as an entropy production separating
-causally ordered prose from prose whose sentence order is arbitrary.  A single
-text is neither a distribution over trajectories nor a dynamics, and no theorem
-fixes where the zero of such a quantity lies.  The expression survives the
-transfer; the zero does not.
+$\tilde{x}$ the same text with its own order reversed --- and read as an
+entropy production separating causally ordered prose from prose whose
+sentence order is arbitrary.  The reported separation is obtained by
+reversing the text's sentence blocks, not its tokens: Ref.~\cite{sagawa2026}
+reports the token reversal to be dominated by a syntactic artifact, and
+coarse-grains to blocks in response to that artifact, and
+Section~\ref{sec:fixedtext} measures both reversals on the same texts.
+A single
+text is neither a distribution over trajectories nor a dynamics.  The
+theorems supply the zero and the sign for an average under the model's own
+distribution, and the texts at issue were produced by other models, not by
+the \emph{evaluator}, the model that scores
+them (Section~\ref{sec:notareversal}).  No theorem
+fixes where the zero of a quantity evaluated on a fixed text lies.  The expression carries
+over from an ensemble of trajectories to a fixed text; its zero does not
+carry over.
+Ref.~\cite{sagawa2026} reads its quantity in two settings, and this paper
+disputes one of them.  In the \emph{ensemble reading}, on trajectories the
+model itself generated, the fluctuation theorem applies and the average is
+non-negative; nothing here disputes it.  Every objection below to the
+quantity is to the \emph{fixed-text reading}, on texts prepared by other
+models, which is the setting applied to the corpora re-measured here.  What
+the labels record is a separate question, about the corpora rather than
+about the quantity, and Section~\ref{sec:construct} weighs it on its own.
 
-We supply a zero from an exact symmetry of another kind.  Score the same
-sentences in all $n!$ orders: reversal carries the order $\pi$ to
+We supply a zero from an exact antisymmetry instead.  Score a text's $n$
+sentences in all $n!$ orders: those values are the text's
+\emph{permutation set}.  From here the reversal rearranges the
+sentence blocks rather than the tokens.  That is the coarse-graining
+Ref.~\cite{sagawa2026} adopts, and every number below is read on it.  Reversal carries the
+order $\pi$ to
 $\pi \circ \mathrm{rev}$, a measure-preserving involution on the symmetric
 group, so $\Delta(\pi) = -\Delta(\pi \circ \mathrm{rev})$ identically and the
-set of values is centred at zero for any score whatever.  The position of the
-authored order within its own set is then unitless, bounded, and exactly
-$0.50$ for a score blind to sentence order; it uses no causal labels.
-Referred to that zero, across an autoregressive ladder spanning
-$\TrendCapSpan$-fold in parameters, a tenth to a fifth of the measured
-distance is attributable to causal order and the rest to the arrangement
-simply being the one a writer chose; per corpus the causal part ranges from
-$\CausalShareMin\%$ to $\CausalShareMax\%$.  The causal part is one or two steps of the $1/n!$ grid
-in every evaluator --- the instrument's resolution --- and it does not vary
-with capacity ($\rho = \TrendCausalRho$, $p = \TrendCausalP$); what rises is
-the fraction of texts already at the ceiling ($\rho = \TrendCeilRho$, $p =
-\TrendCeilP$).  The stronger the evaluator, the less room remains in which
-causal order could be expressed at all.
+set of values is centred at zero for any score whatever.  A text's
+\emph{authored arrangement} is the order it came in; every text here was
+produced by a language model, so the word names an order and not an act of
+authorship.  Its \emph{midrank} --- where its own $\Delta$ falls among the
+$n!$ values --- is then unitless, bounded, and exactly $0.50$ for a score
+blind to sentence order, and it uses no causal labels.  The
+decomposition referred to that $0.50$ null does use them.  Taking them at face
+value --- granting that they record whether the sentences stand in a causal
+sequence --- the decomposition runs across an autoregressive
+(AR) ladder of \TrendNEval\ evaluators, from $\ParamsGPTtwo$ to $\ParamsQwen$ parameters.
+Between $\ShareZMin\%$ and $\ShareZMax\%$ of the median midrank's distance
+from the $0.50$ null is attributable to causal order, and the rest to the
+arrangement simply being the order the passage was produced in.  That figure is in the
+ceiling-free
+normalisation of Section~\ref{sec:resolution}: the distance in standard
+deviations of the permutation set, which has no upper bound and so cannot
+saturate.  The figure this paper quotes for a size is that one.  In midrank
+units the same share is $\ShareEvalMin\%$ to $\ShareEvalMax\%$, which is the
+form the grid argument below is read in.  That
+part separates the two label groups in \ContrastNRejecting\ of the
+\ContrastNCells\ (evaluator, corpus) cells --- \ContrastNEval\ evaluators by
+\ContrastNCorpora\ corpora --- at
+$0.05/\ContrastNCells = \ContrastBonferroni$, worst cell
+$p = \ContrastPWorst$, and is
+\CausalCompStepsMin\ to \CausalCompStepsMax\ steps of the $1/n!$ grid the
+statistic lives on, where one step
+is the smallest non-zero reading it can return, so what the median
+establishes is that the two label groups differ and not by how much.  That part stays
+there at every rung of the AR ladder,
+over a \TrendCapSpan-fold range of parameters.  Nothing we measure shows
+the gap between an authored arrangement's midrank and the ceiling of $1.00$
+--- the fraction of arrangements that still score above it --- narrowing as
+that parameter count grows.  The same contrast read at higher midranks
+behaves differently.  No evaluator separates the groups by more
+than $\TailBelowOnsetMax$ points below a midrank of $\TailOnsetThr$, and
+from there up every one of them does; in the tail, where an
+authored arrangement is the strict maximum over all $n!$, the causal group
+reaches it $\TailDiffGPTtwo$ to $\TailDiffQwen$ points more often than the
+non-causal group, as a median over corpora and across the \TrendNEval\
+evaluators.  A second statistic reads the same contrast in the ceiling-free form.  Take
+the non-causal group's own $\TailZQ$th percentile, and count the share of
+causal texts above it.  Read that way the separation grows monotonically
+along the AR ladder, from
+$\TailZGPTtwo\%$ to $\TailZQwen\%$ against a null of $\TailZNull\%$
+($\rho = \TailZTrendRho$ over \TrendNEval\ evaluators; $p = \TailZTrendP$,
+which is the smallest two-sided value \TrendNEval\ points admit, and is not
+corrected for the other correlations the same section runs).  Higher up the AR ladder an evaluator does not rank the
+median causal text further above its own rearrangements; it puts more
+causal texts at the very top.  All of this is measured on
+Ref.~\cite{sagawa2026}'s own corpora, which are prose that language models
+produced; Section~\ref{sec:authoredspecial} says
+what that provenance leaves open about the authored component, and what it
+leaves untouched.
 
-The thermodynamic reading names a different quantity, and it can be measured.
+The thermodynamic reading names a quantity of a different kind, and for a
+fixed text it can be constructed and measured.
 For a masked model the any-order chain rule gives a genuine log-probability,
 and taking its left-to-right and right-to-left orders for \emph{the same}
 text gives the forward path against its reverse,
-$\sigma = [\log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x)]/L$.  This
-vanishes identically whenever the model's conditionals come from a joint, so
-its value range holds no property of the text --- and an autoregressive
-evaluator, which has such a joint, returns zero identically, its backward
-term being recoverable only from that same joint and so carrying nothing the
-forward term does not.  Measured on two masked evaluators over
+$\sigma = [\log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x)]/L$.  That
+defines $\sigma$ for the class; what this paper measures is $\sigma$ on two
+masked evaluators.  It vanishes identically whenever the model's
+conditionals come from a joint.
+A masked model's conditionals need not come from a joint: it supplies a
+distribution for each unmasking order, and no single one of them covers all
+orders.  That failure to derive from one joint is what we call the
+evaluator's \emph{incompatibility}.  Where the identity holds, $\sigma$ is
+the same number, zero, whatever the text; where it fails, what the range
+carries is that incompatibility.  An
+autoregressive evaluator cannot supply the conditionals on the future this
+comparison asks for, which is why $\Delta$ stands in its place.  Measured on two masked evaluators over
 $\FbNCorpora$ corpora, $\sigma$ places the authored arrangement
 $\FbAuthoredStepsLLaDA$ grid steps from the null under one and
-$\FbAuthoredStepsBertBase$ under the other, on identical texts, while
-$\FbNSurviving$ of $\FbNTestsCausal$ tests of the causal contrast survives a
-correction for multiplicity.  What $\sigma$ reports is the evaluator's
-incompatibility, not the text.
+$\FbAuthoredStepsBertBase$ under the other, on identical texts, while the
+causal contrast keeps the same sign in $\FbNNegative$ of $\FbNCells$ cells
+and reaches significance in $\FbNSurviving$ of them after a correction for
+multiplicity.  The measurement therefore says what the identity predicted
+it would: what $\sigma$ reports is the evaluator, not the text, and a contrast it did show would be a contrast in how much of that
+incompatibility a text exposes.
 
-Neither quantity measures an arrow of time in prose: one is not a path
-reversal, and the other is a path reversal whose value cannot depend on the
-path.  What survives is the construction --- a reference configuration
-supplied by an identity rather than by a theorem --- and the identity itself.
+The question the thermodynamic reading poses is whether a fixed text has an
+entropy production: a number that is a property of the text and has a zero.
+Neither quantity answers it, and for different reasons.  $\Delta$ reverses the text, which moves to another point
+of the same law and leaves a fixed text without an origin.  That much
+follows from the structure of the theorems and needs no measurement.  What
+the measurement adds is that what $\Delta$ does separate is mostly the order
+the passage was produced in.  $\sigma$ reverses
+the path --- the order in which the model assembles the text, with the text
+held fixed --- and Eq.~\eqref{eq:fbzero} gives that an origin, so its value
+reports the evaluator's incompatibility rather than the text; that too
+follows from the identity, before anything is measured.  What survives is the permutation set --- a reference configuration
+supplied by an \emph{antisymmetry} rather than by a theorem --- and the
+identity that makes $\sigma$ vanish wherever the conditionals derive from a
+joint.
 \end{abstract}
 
 % =====================================================================
@@ -165,83 +301,365 @@ supplied by an identity rather than by a theorem --- and the identity itself.
 \label{sec:fixedtext}
 The protocol fixes the text and varies only its order.  Two reversals are used.
 \emph{Token reversal} maps $x_k \mapsto x_{L+1-k}$, giving a sequence with the
-same tokens and no grammar.  \emph{Block reversal} splits the text at sentence
+same tokens and no grammar.  \emph{Block reversal} cuts the text at sentence
 boundaries and reverses the order of the sentences, leaving each sentence
 intact.  A boundary is any token whose decoded text ends in a
 full stop, question mark or exclamation mark --- crude enough to divide an
 abbreviation or a decimal, or to miss a stop inside a closing quotation mark.
-Here every text split into exactly $\NBlocks$ blocks and none was dropped,
-which the build checks.  The corresponding quantities
-are written $\Dtok$ and $\Dblock$.
+Here every text cut into exactly $\NBlocks$ blocks and none was dropped; a
+text that failed to split would not appear in the measurements at all.  The corresponding quantities
+are written $\Dtok$ and $\Dblock$ here and $\sigma_{\mathrm{token}}$ and
+$\sigma_{\mathrm{block}}$ in Ref.~\cite{sagawa2026}.  The letters differ
+because this paper reserves $\sigma$ for Eq.~\eqref{eq:fb}, which is a
+different quantity on a different model class; a statement made about
+$\sigma$ here is never a statement about $\sigma_{\mathrm{block}}$ there,
+and the two can and do have different signs.
 % check_paper: \Dblock reported in Section~\ref{sec:blkord} as a midrank
 % among the n! arrangements, never as a raw value.  That is deliberate:
 % Section~\ref{sec:capacity} shows the raw quantity has no unit, no
 % scale and no origin, so quoting one would be quoting a number with
 % nothing to be large or small relative to.
 
-Only the second bears on sentence order, and the work we re-examine says so
+Only $\Dblock$ bears on sentence order, and Ref.~\cite{sagawa2026} says so
 first: it reports $\Dtok$ to be dominated by ``a syntactic artifact of
 token-order reversal'', and that dominance is what motivates the block-level
-coarse-graining there~\cite{sagawa2026}.  We reproduce that, and add the fact
-that settles the choice.  Both quantities are measured on the same texts, and
-$\Dtok$ is reported in Table~\ref{tab:token}: its median is the larger of the
-two in \NTokLarger\ of the \NTokCells\ evaluator--corpus cells, by a factor of
-\SigTokRatioMin--\SigTokRatioMax, and its causal/non-causal effect size is
-\emph{negative} --- the non-causal texts score higher --- in \NTokNegAR\ of
-\NTokNegARTot\ cells.  A quantity whose sign on the contrast of interest flips
-when the reversal operation is changed is not measuring that contrast, so the
-block-level analysis is the one followed from here on, and $\Dtok$ appears
-only in that table.
+coarse-graining there~\cite{sagawa2026}.  We reproduce that.  Both quantities are measured on the same texts, and
+$\Dtok$ is reported in Table~\ref{tab:token}.  Its median is larger than
+that of $\Dblock$ in \NTokLarger\ of the \NTokCells\ evaluator--corpus
+cells, by a factor of \SigTokRatioMin--\SigTokRatioMax;
+Table~\ref{tab:token} prints the two medians rather than the ratio.
+Its causal/non-causal effect size $r$ --- the rank-biserial correlation of
+Eq.~\eqref{eq:rb}, defined in Section~\ref{sec:blkord} and used throughout
+--- is \emph{negative}, the non-causal texts scoring higher, in
+\NTokNegAR\ of the \NTokNegARTot\ cells; in the other two it is positive
+but small, $+0.050$ and $+0.078$ (Table~\ref{tab:token}).  This effect size is not in
+Ref.~\cite{sagawa2026}; it is what settles which of the two reversals the
+analysis uses from here on.  The texts and the labels are the same; only
+the reversal changes, from blocks to tokens, and the sign of the effect
+size changes with it.  A quantity whose sign on the contrast of interest
+turns over when only the reversal operation is changed is not measuring
+that contrast, so the block-level analysis is the one followed from here
+on, and $\Dtok$ appears only in Table~\ref{tab:token}.
 
 \begin{table}[t]
 \centering
 \input{tables/tab_token}
-\caption{Token reversal, the alternative this section sets aside, on the same
-texts as every other measurement here: the median of
-$\Dtok$ and the rank-biserial effect size $r$ of Eq.~\eqref{eq:rb}.  It is
+\caption{Token reversal and block reversal side by side on the same texts,
+which is the comparison this section makes: the medians of $\Dtok$ and
+$\Dblock$, and the rank-biserial effect size $r$ of Eq.~\eqref{eq:rb} under
+the token reversal.  It is
 shown first because the choice of block reversal, on which everything after it
 depends, rests on it.  Reversing the token order destroys syntax, so $\Dtok$
-is dominated by grammaticality: its median is the larger of the two
-quantities, and $r$ is negative --- the non-causal texts scoring higher --- in
-several cells, which a measure of causal order should not do.  Nothing else in
-this paper reads $\Dtok$.}
+is dominated by grammaticality: its median is larger than that of $\Dblock$
+in \NTokLarger\ of \NTokCells\ cells, and $r$ is negative --- the
+non-causal texts scoring higher --- in \NTokNegAR\ of the
+\NTokNegARTot\ cells of this table, and small and positive in the rest.  Nothing else in this paper reads $\Dtok$.}
 \label{tab:token}
 \end{table}
 
 \subsection{What a reversal of a fixed text is, and is not}
 \label{sec:notareversal}
-A reversal in the sense of stochastic thermodynamics is a \emph{protocol}
-reversal: the same dynamics run with the driving protocol time-reversed, as in
-the Crooks relation.  Reversing a fixed token sequence is not that.  It asks the
-model to account for the same content presented in the opposite order, which is
-a question about the model's conditionals rather than about a physical process.
+A reversal in the sense of stochastic thermodynamics compares a realised
+trajectory with its time reverse under the dynamics that produced it.
+Reference~\cite{sagawa2026} builds a backward process by reusing the same
+emission kernels and deterministic maps in reversed temporal order, in
+explicit analogy with Crooks~\cite[Sec.~III~A]{sagawa2026}.  Restricted to
+the time-homogeneous case~\cite[Eq.~(27)]{sagawa2026}, which it identifies as
+the setting of a pretrained language model and in which it places
+\textsc{gpt-2}, the backward path probability of a block-reversed sequence
+is the forward probability of that sequence under the same
+model~\cite[Eq.~(31)]{sagawa2026}.
+
+Written as measures on sequences, that is
+$P_\leftarrow = P_\to \circ R$, with $R$ the block-reversal map.  The
+terminal-delimiter condition --- that the sequence end at a block boundary,
+so that the reversed sequence segments uniquely --- makes $R$ a bijection,
+and also an involution, on the space it carves out.  The process that
+realises $P_\leftarrow$ can therefore be written in one line: sample a
+sequence from the model, then reverse the order of its blocks.  No second query to the model is
+needed to sample it; the backward measure is a post-processing of forward samples.
+
+That form is not by itself an objection, and we say so before making one.  A
+Crooks comparison under a protocol that does not vary has exactly this shape:
+the backward law of a stationary process is the forward law composed with the
+time-reversal involution, and the entropy production of a non-equilibrium
+steady state is that log-ratio.  Where the sequences are drawn from the model
+itself, Ref.~\cite{sagawa2026} is doing that, and nothing here disputes it.
+Its Section~V~A measures the entropy production of trajectories the model
+actually ran, and the non-negativity and the integral fluctuation theorem it
+derives~\cite[Eqs.~(14),~(19) and~(33)]{sagawa2026} are statements about
+the distribution those trajectories are drawn from.
+
+One functional, read in two settings, and this paper names them apart:
+\begin{align}
+\textit{the ensemble reading:}\quad
+  &\mathbb{E}_{P_c}\!\left[\log \frac{P(x)}{P(Rx)}\right] \;\ge\; 0 ,
+  \label{eq:ensembleread}\\[2pt]
+\textit{the fixed-text reading:}\quad
+  &\log \frac{P(x)}{P(Rx)} \quad \text{for a single } x ,
+   \text{ with no average taken.}
+  \label{eq:fixedtextread}
+\end{align}
+Equation~\eqref{eq:ensembleread} is Ref.~\cite{sagawa2026}'s Section~V~A
+--- the non-negativity just cited --- and nothing in this paper disputes
+it.  Here $P_c$ is the forward measure conditioned on the terminal-delimiter
+condition above, which is the form the theorem takes when the blocks are of
+variable length~\cite[Eq.~(34)]{sagawa2026}, as sentence blocks are.
+Equation~\eqref{eq:fixedtextread} is its Section~V~B and is where every
+objection below to the quantity lies.  It is $L\,\Dblock(x)$, the quantity
+of Eq.~\eqref{eq:delta} before the per-token normalisation, and
+Ref.~\cite{sagawa2026} likewise defines it without that
+normalisation~\cite[Eq.~(32)]{sagawa2026}.  The functional is the same in both
+readings; what differs is the measure, and whether an average is taken at
+all.  The brackets carry the difference, and dropping them is how a
+measured value comes to be read as a theorem: $\mathbb{E}_{P_c}$ is a
+statement about a distribution, and the bare log-ratio is a number read off
+one text.
+
+The corpora at issue are not draws from any evaluator's distribution.
+They are fixed texts, produced
+by other models from prompts and scored by an evaluator that did not
+generate them.  Nothing forbids evaluating $\log P(x)$ there: every sequence
+is in the model's support, which is why the condition
+Ref.~\cite{sagawa2026} states for its theorem is met, and $\Dblock$ is a
+function on
+sequence space, which Ref.~\cite{sagawa2026} reads at the level of a single
+trajectory and says so~\cite[Sec.~V~B]{sagawa2026}.  What does not transfer
+is the ensemble.  The non-negativity and the fluctuation theorem are
+statements about an average under $P_c$, and a corpus is an empirical
+measure that is not $P_c$; Ref.~\cite{sagawa2026} states for exactly this
+case that the averages are not guaranteed to be
+non-negative~\cite[Fig.~4]{sagawa2026}.  Every measurement either paper
+reports on the labelled corpora lives there.  What a single reading means
+has therefore to come from somewhere other than a theorem about averages,
+and the paragraphs below say from where.
+
+The fluctuation theorem does not close that gap, and
+Ref.~\cite{sagawa2026} does not claim it does.  It gives bijectivity as the
+ground of the normalisation and the theorem as following directly from
+it~\cite[Eq.~(33)]{sagawa2026}, and elsewhere describes the theorem as
+automatically satisfied~\cite[Eq.~(19)]{sagawa2026}.  The description is
+exact.  Let $\beta$ be any bijection of the sequence space and write
+$\sigma_\beta(x) = \log P(x) - \log P(\beta(x))$; then
+\begin{equation}
+\mathbb{E}_{P}\!\left[e^{-\sigma_\beta}\right]
+  = \sum_x P(x)\,\frac{P(\beta(x))}{P(x)}
+  = \sum_x P(\beta(x)) = 1 ,
+\label{eq:anybijection}
+\end{equation}
+wherever the support condition Ref.~\cite{sagawa2026} states is met.  Block
+reversal, token reversal and a fixed arbitrary rearrangement of the blocks
+satisfy Eq.~\eqref{eq:anybijection} alike.  The value is defined relative to
+whichever $\beta$ is chosen, and these identities do not select one.  The
+point has most force for the quantity the labelled comparison uses: when the blocks are single tokens the backward measure is derived from the
+protocol
+reversal, and Eq.~(31) of Ref.~\cite{sagawa2026} recovers its
+Eq.~(13), while the longer blocks are introduced as an approach to the
+token-level artifact and are a chosen coarse-graining.
+
+Equation~\eqref{eq:fb} is not a score against the image of a bijection,
+which is the reason it needs a different class of evaluator.  Its two terms score the same $x$, and
+$\log P_{\mathrm{r2l}}$ is not $\log P_{\mathrm{l2r}}$ pulled back by any map
+on sequences.  Its factors are $p_\theta(x_k \mid x_{>k})$: conditionals that
+the left-to-right schedule never asks for, with every token held at its own
+position rather than moved to another.  No rearrangement of forward samples
+produces them, which is why no amount of post-processing substitutes for a
+masked evaluator here.
+
+The zero is of a different character too, and this is the part that does not
+depend on any choice.  Equation~\eqref{eq:fbzero} is stated for the
+left-to-right and right-to-left pair that defines $\sigma$, but what
+Section~\ref{sec:fbdef} proves is more than that: if the conditionals are
+those of a joint then $P_\pi = P$ for \emph{every} unmasking order, so $\log P_\pi(x) - \log P_{\pi'}(x)$ vanishes
+for every text and every pair of orders.  The zero therefore does not depend
+on where the text came from, and does not depend on which pair of schedules
+is compared; taking left-to-right against right-to-left fixes the value but
+not the zero.  In the fixed-text reading, the quantity of
+Ref.~\cite{sagawa2026} has no zero that holds on the text being read.  Its $\Dblock(x) = 0$ is a measurement outcome ---
+that this text is symmetric under the chosen block-reversal map $R$ for
+this model --- and not an origin of the kind $\sigma$ has, the value
+returned whenever there is nothing to report.  Its non-negativity is a
+statement about an average under $P_c$, with equality when $P_c$ is
+invariant under $R$, and no average can be taken over one text.  That is
+the sense in which it has no origin for a single text
+(Section~\ref{sec:capacity}).
+That contrast between the two quantities is what this paper's subtitle
+names, and it is why an \emph{entropy
+production} with a zero on a single text can be put on a masked evaluator
+and nowhere else.  Reversing the text moves to another point of the same
+law, which gives a fixed text no origin; reversing the order of assembly
+holds the point fixed and asks a different schedule, and
+Eq.~\eqref{eq:fbzero} gives that an origin.  Neither the absence of an
+origin under text reversal nor its presence under schedule reversal depends
+on where the text came from.  A third reference point is available without either reversal doing the
+work.  Section~\ref{sec:blkord} supplies
+$\Delta$ with an origin: $\Delta(\pi) = -\Delta(\pi \circ \mathrm{rev})$, so
+the $n!$ values come in pairs and the set is centred at zero.  That holds on
+an autoregressive evaluator and for any score whatever, and it comes from
+the antisymmetry rather than from reversing anything --- an origin, and not
+an entropy production.  What the masked quantity then
+reports is a separate question, and the answer is not what the name
+\emph{entropy production} promises: Section~\ref{sec:fbresult} measures it
+and finds it reporting a property of the evaluator rather than of the text.
+
+Each statement above about Ref.~\cite{sagawa2026} is its own, and we take
+none of them further than it does.  What is not there is their sum.  The
+backward measure is a post-processing of forward samples; the backward run
+holds different latent states from the forward one, which
+Ref.~\cite{sagawa2026} emphasises~\cite[Secs.~III~A and III~C]{sagawa2026};
+the backward initial distribution is chosen for tractability rather than set
+to the forward process's final distribution~\cite[Eqs.~(9)--(10)]{sagawa2026};
+the fluctuation theorem follows from bijectivity and would hold for any
+rearrangement; and the value depends not on the forward path measure alone
+but on the decomposition into kernels and maps, which
+Ref.~\cite{sagawa2026} records and relates to non-Markovian stochastic
+thermodynamics generally.  Taken together, and applied to a text that
+is not a draw from the evaluator's distribution, these leave the log-ratio
+of one model's
+probability for a sequence and for a rearrangement of it.  That is
+$\Delta$, a well-defined quantity, and this paper measures it throughout.
+$\Delta$ is not a quantity with a zero.
+
+Reference~\cite{sagawa2026} poses the same problem in its own terms.  It
+names the clarification of what the entropy production means, once applied
+to a real language model, as a challenge, and presents its experiment on
+externally prepared texts as a first step toward
+it~\cite[Sec.~V~B]{sagawa2026}.  In general it is the theorems placing a
+quantity's zero and its sign that say what it is a quantity of, and in the
+fixed-text reading there are none.  A correlation between $\Delta$ and a
+label, found afterwards, does not supply one: in the ensemble reading the quantity has
+that meaning already, and in the fixed-text reading no correlation with a
+label restores it.  What such a correlation does establish is that the quantity
+varies with whatever the label marks, and how much of it does is a
+measurable question.  That experiment is the labelled
+contrast.  Section~\ref{sec:causal} asks what the step found.
 
 A related point bounds what can be expected.  For a stationary process the
 Shannon entropy rate is invariant under time reversal, so a gap between the
 forward and backward cross-entropy of a fixed corpus is not an informational
-asymmetry in the source.  It is a property of the model and of the order in
-which that model consumes its input --- which is consistent with reading
-$\Delta$ as model-relative, and is one reason its dependence on the evaluator
-(Section~\ref{sec:capacity}) is worth measuring rather than assuming away.
+asymmetry in the source --- the process that produced the text.  It is a
+property of the evaluator and of the order in which the evaluator consumes
+its input.  That is consistent with reading $\Delta$ as a quantity of the
+text and the evaluator together rather than of the text alone, and it is one
+reason its dependence on the evaluator (Section~\ref{sec:capacity}) is worth
+measuring rather than assuming away.
+
+There is, even so, a reason to expect the labelled sets to differ under
+Eq.~\eqref{eq:delta}, and it does not come from thermodynamics.  Causally
+ordered prose has strong forward dependence --- each sentence constrains the
+next --- so a model reading it forwards predicts it better than it predicts
+the reversal, while for arbitrarily ordered prose the two directions are
+closer.  A forward--backward asymmetry of exactly this kind has been
+measured in language before~\cite{arrow}.  Equation~\eqref{eq:delta} is a
+reasonable instrument for that expectation, and
+Section~\ref{sec:resolution} reports what it finds: the direction is
+supported in \ContrastNPositive\ of \ContrastNCells\ cells, and the size
+sits at the resolution of the
+statistic.
+
+None of this makes the framework the wrong one.  What the theorems ask for
+is an ensemble of trajectories drawn from the model's own distribution, not
+one fixed text prepared outside it.  Applied where its
+hypotheses hold --- to the dynamics a model's own conditionals induce, and to
+an actual forward path against its reverse --- the same framework is what
+Appendix~\ref{sec:toy} and Section~\ref{sec:fbdef} use, and what turns the
+question into an identity.
 
 This is why the two quantities are written differently throughout.  We
-reserve $\sigma$ for the entropy production of Eq.~\eqref{eq:sigmaintro} ---
-one text weighed against its own reversal --- and write $\Delta$ for
-Eq.~\eqref{eq:delta}, a text weighed against a different text.  The
-distinction is not notational fastidiousness and the choice of letter is an
-argument: a quantity that compares two states is not a quantity that compares
-a path with its reverse, and giving both the same symbol is what allows the
-second to be read as the first.  Section~\ref{sec:blkord} exhibits a model
-for which $\sigma$ vanishes identically while $\Delta$ does not, which is as
+reserve $\sigma$ for the entropy production of Eq.~\eqref{eq:fb} --- the
+same sequence read under two assembly orders, both terms scoring the same
+$x$
+--- and write $\Delta$ for Eq.~\eqref{eq:delta}, whose two terms score two
+\emph{different} sequences, $x$ and $\tilde{x}$.  The distinction is not
+notational fastidiousness, and the choice of letter is an argument.  On a
+fixed text the two differ in what each supplies: $\sigma$ has a zero there
+and $\Delta$ has none.  Writing both as $\sigma$ is what lets $\Delta$ be
+read as though it had $\sigma$'s zero.
+
+Those two sequences carry the same material: $\tilde{x}$ is $x$ read
+backwards, so the tokens, the length and the vocabulary are identical and
+only their arrangement differs.  Section~\ref{sec:blkord} uses the same
+fact one level up, comparing the $n!$ arrangements of one text's own
+sentences, where topic and style are held fixed as well.  The pair stand in
+two relations at once and this paper uses both, which is why they do not
+compete: as sequences they are distinct, which is why what $\Delta$
+reverses is the text itself, where $\sigma$ reverses the order of assembly
+with the text held fixed; as
+material they are matched --- same tokens, same length, same vocabulary ---
+which is why a difference between them can be attributed to order and to
+nothing else.  Together they say what $\Delta$ is: a comparison between two
+sequences matched in everything but order.  $\Delta$ picks up differences in
+order, because any difference between the two can only come from order; and
+$\Delta$ has no origin on the text it is read from, because the two are
+different sequences and no reference point lies on the text itself.  Equation~\eqref{eq:fbzero} of
+Section~\ref{sec:fbdef} makes $\sigma$ identically zero for a masked
+evaluator whose conditionals derive from one joint, while $\Delta$ on an
+autoregressive evaluator, whose factorisation always supplies one, is not
+identically zero and takes a value that varies from text to text --- as
 sharp a separation as two quantities can have.
 
 The two also apply to disjoint model classes, and that is forced rather than
-chosen.  $\Delta$ needs the joint $P$ of Eq.~\eqref{eq:delta}, which an
-autoregressive factorisation supplies and a masked model does not
-(Section~\ref{sec:scope}); $\sigma$ needs a conditional on the future, which
-a masked model supplies and causal attention cannot.  Neither quantity is
+chosen.  $\Delta$ needs its two terms to come from \emph{one} joint $P$.  An
+autoregressive factorisation supplies one; a masked model supplies one for
+each $\pi$ and none that Eq.~\eqref{eq:delta} can be written in without
+choosing a $\pi$ the model does not single out, so the shape of
+Eq.~\eqref{eq:delta} can be evaluated there but the result is not $\Delta$
+(Section~\ref{sec:scope}).  $\sigma$ needs a conditional on the future,
+which a masked model supplies and an autoregressive evaluator cannot.  Neither quantity is
 evaluable on the other's class.  Nothing in this paper compares a reading
 from one with a reading from the other.
+
+The paper asks the reader to hold the two apart for its whole length, so
+here they are together once.
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+ & $\Delta$, Eq.~\eqref{eq:delta} & $\sigma$, Eq.~\eqref{eq:fb} \\
+\midrule
+compares            & two \emph{different} sequences
+                      built from the same tokens
+                    & one sequence under
+                      two assembly orders \\
+requires            & its two terms to come from
+                      \emph{one} joint $P$
+                    & a conditional on the future \\
+evaluators          & autoregressive only
+                    & masked only \\
+its reference point & the permutation antisymmetry,
+                      Eq.~\eqref{eq:antisym}
+                    & the compatibility identity,
+                      Eq.~\eqref{eq:fbzero} \\
+responds to         & the order the text was produced in
+                    & the evaluator's incompatibility \\
+\addlinespace
+a separation under  & that the sets differ in authored
+                    & that the sets expose different \\
+\quad it would mean & \quad order and in whatever the
+                    & \quad amounts of the evaluator's \\
+                    & \quad prompts induced
+                    & \quad incompatibility \\
+\addlinespace
+what was measured   & significant in \ContrastNRejecting\ of
+                      \ContrastNCells\ cells,
+                    & the same sign in \FbNNegative\ of \\
+                    & \quad \CausalCompStepsMin--\CausalCompStepsMax\ steps
+                      of the grid
+                    & \quad \FbNCells, \FbNSurviving\ surviving \\
+                    &
+                    & \quad the correction for multiple \\
+                    &
+                    & \quad comparisons \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The last two rows are the ones most easily collapsed.  Neither quantity is
+claimed to be unable to separate the sets --- $\Delta$ separates them in the
+same direction in \ContrastNPositive\ of \ContrastNCells\ cells and
+significantly in \ContrastNRejecting\ --- and the ``a separation under it
+would mean'' row says what may and may not be concluded from a separation.  Section~\ref{sec:fbresult} returns to this once both have been
+measured.
 
 % =====================================================================
 \section{Methods}
@@ -256,7 +674,7 @@ gives the reason the sets cannot overlap; here is what is in them.
 model & parameters & direction & role \\
 \midrule
 \texttt{gpt2}~\cite{gpt2}                 & $\ParamsGPTtwo$ & autoregressive & $\Delta$: the published evaluator \\
-\texttt{gpt2-medium}~\cite{gpt2}          & $\ParamsGPTtwoMedium$ & autoregressive & $\Delta$: capacity series \\
+\texttt{gpt2-medium}~\cite{gpt2}          & $\ParamsGPTtwoMedium$ & autoregressive & $\Delta$: parameter-count series \\
 \texttt{gpt2-large}~\cite{gpt2}           & $\ParamsGPTtwoLarge$ & autoregressive & \quad within one family \\
 \texttt{gpt2-xl}~\cite{gpt2}              & $\ParamsGPTtwoXL$ & autoregressive & \\
 \texttt{Qwen/Qwen3-4B-Base}~\cite{qwen3}   & $\ParamsQwen$ & autoregressive & $\Delta$: the published re-evaluation \\
@@ -274,63 +692,93 @@ a table row can carry both.  In this paper ``causal'' and ``non-causal'' refer
 only to the text labels; a model class is always called masked or
 autoregressive, never causal.
 
-The autoregressive set is a capacity series within one family, spanning
-$\TrendCapSpan$-fold in parameters from $\ParamsGPTtwo$ to $\ParamsQwen$, so a
-trend across it is attributable to capacity rather than to architecture or
-training recipe.  The masked pair differs in the one thing that bears on
-Section~\ref{sec:maskrate}: \texttt{bert-base} is trained at a single masking
-rate and \texttt{LLaDA} at a rate drawn uniformly, so the chain rule asks the
-first for conditionals it never saw and the second only for conditionals it
-did.
+The five autoregressive evaluators, ordered by parameter count, are what
+this paper calls the \emph{autoregressive (AR) ladder}, and a \emph{rung}
+of it is one of them.  Four of the five differ in parameter count within one
+family, the four \textsc{gpt-2} rungs, spanning $\TrendCapSpanFamily$-fold from
+$\ParamsGPTtwo$ to $\ParamsGPTtwoXL$; the fifth, \texttt{Qwen3-4B-Base},
+extends the AR ladder to $\TrendCapSpan$-fold but is a different family
+pretrained on different data under a different recipe, so a
+trend across the whole AR ladder is not attributable to parameter count alone
+(Section~\ref{sec:limitations} returns to this).  The masked pair differs in
+exactly the way that matters for Section~\ref{sec:maskrate}:
+\texttt{bert-base} is trained at a single masking rate and \texttt{LLaDA} at
+a rate drawn uniformly, so the chain rule asks \texttt{bert-base} for
+conditionals it never saw in training and \texttt{LLaDA} only for
+conditionals it saw.
 
-No evaluator appears in both sets, and none could.  An earlier version of
-this work ran the masked evaluators through the $\Delta$ instrument as well,
-scoring them with a pseudo-log-likelihood, and compared the two classes on
-the result.  Section~\ref{sec:scope} says why that comparison had nothing in
-it: the quantity being compared does not exist on one side of it.
+No evaluator appears in both sets, and none could: $\Delta$ exists for the
+autoregressive evaluators and $\sigma$ for the masked ones
+(Section~\ref{sec:scope}).
 
 \subsection{Scores, and the scope of what is being measured}
 \label{sec:scope}
 The score in Eq.~\eqref{eq:delta} is the exact $\log P(x)$, with one
 beginning-of-sequence token prepended so that every content token is scored
 once.  That is available for an autoregressive evaluator and for no other
-kind, and the reason decides which evaluators appear in which half of this
-paper.
+kind.  The rest of this subsection says why, and the same reason decides
+which evaluators appear in which half of this paper.
 
-A masked model's conditionals do not in general correspond to any consistent
-joint distribution, a failure certified directly for modern masked
-models~\cite{rectangle}: there need be no $P$ whose conditionals they are.
-Each $p_\theta(x_k \mid x_{-k})$ is learned on its own, with nothing requiring
+A masked model's conditionals $p_\theta(x_k \mid x_{-k})$ do not in general
+correspond to any consistent joint distribution, a failure certified directly
+for modern masked models~\cite{rectangle}: there need be no $P$ whose
+conditionals they are.  Each is learned on its own, with nothing requiring
 the set of them to be the conditionals of one distribution, and the
-compatibility conditions for that are restrictive.  \textbf{The $P$ of
-Eq.~\eqref{eq:delta} therefore does not exist for a masked model}, and with
-it neither does $\Delta$: there is nothing to take the logarithm of, and the
-identification $\Delta = \KL(P_{\rightarrow} \,\|\, P_{\leftarrow})$, in
-which $P_{\rightarrow}$ and $P_{\leftarrow}$ are the distributions the model
-assigns to a sequence read forwards and backwards, has no referent.
+compatibility conditions for that are restrictive.
+
+That is a statement about one family of conditionals, and it does not say a
+masked model has no joint.  The any-order chain rule, Eq.~\eqref{eq:aoar},
+conditions on a revealed prefix rather than on every other position, and for
+a fixed unmasking order $\pi$ it does define a distribution over sequences.
+That holds for any conditionals whatever, consistent or not: with $\pi$
+fixed the product telescopes over the tree of prefixes, so $\sum_x
+P_\pi(x) = 1$ --- the sum running over all $V^L$ sequences of the fixed
+length $L$ --- provided only that each
+$p_\theta(\cdot \mid \text{prefix})$ sums to one over the vocabulary.  Consistency decides whether the different
+$\pi$ agree, not whether each one normalises.  The accompanying self-test
+checks our implementation of Eq.~\eqref{eq:aoar}, not either masked
+evaluator: it runs on a system small enough to enumerate ($L = \AoarL$
+sites, $V = \AoarV$ symbols, $\AoarStates$ sequences) and feeds it two sets
+of conditionals, an \emph{oracle} --- conditionals read off a joint
+distribution written down in advance, so that they are consistent by
+construction --- and a set built to belong to no joint.  On both,
+$\bigl|1 - \sum_x P_\pi(x)\bigr|$ is at most $\AoarNormDev$ and
+$\AoarNormDevInc$ respectively.
+\textbf{What a masked model does not supply is \emph{one} such
+distribution.}  It supplies one $P_\pi$ of Eq.~\eqref{eq:aoar} for each
+unmasking order $\pi$.  What $\sigma$ measures is how far two of them stand
+apart: $\sigma \neq 0$ is exactly a certificate that they do not coincide.  Section~\ref{sec:fbdef}
+defines it and Section~\ref{sec:fbresult} measures it.
+Equation~\eqref{eq:delta} asks for $P(x)$ and $P(\tilde{x})$ from a single
+distribution, so writing it for a masked evaluator requires choosing $\pi$,
+and the model does not single out one.  The identification $\Delta =
+\KL(P_{\rightarrow} \,\|\, P_{\leftarrow})$ inherits the same choice.
 
 This is not an omission in the framework we build on~\cite{sagawa2026}: that
-framework is formulated for autoregressive models, which do supply a
-factorised joint, and it never claimed otherwise.  $\Delta$ is an
-autoregressive quantity, and Sections~\ref{sec:authored}
-and~\ref{sec:causal} report it only there.
+framework is formulated for autoregressive models, whose factorisation
+supplies exactly one joint, and it never claimed otherwise.  We therefore
+report $\Delta$ only on autoregressive evaluators
+(Sections~\ref{sec:authored} and~\ref{sec:causal}), because a masked
+reading of it would be indexed by a
+choice, and because how much that choice can move the number is the subject
+of Section~\ref{sec:fbdef}, not a detail to be set aside here.
 
 One may of course evaluate the \emph{shape} of Eq.~\eqref{eq:delta} on a
-masked model by substituting some other number for $\log P$ --- a
-pseudo-log-likelihood is the usual choice --- and an earlier version of this
-work did exactly that, for three masked evaluators, and compared the result
-with the autoregressive readings.  The construction of
-Section~\ref{sec:blkord} does not notice, because it is score-agnostic: it
-asks only for a number per token sequence.  But the paragraph above says
-plainly that the quantity so obtained is not $\Delta$, so a comparison
-between it and $\Delta$ compares two different things and concludes about
-neither.  Those measurements are retained in the repository and are not
-reported here.
+masked model by substituting some other number for $\log P$.  The
+construction of Section~\ref{sec:blkord} does not notice the substitution,
+because it is score-agnostic: it asks only for a number per token sequence.  But the
+quantity so obtained is not $\Delta$: $\Delta$ asks for $\log P$ from one
+distribution, and a masked model supplies no single distribution.  A
+comparison between it and $\Delta$ compares two different things and
+concludes about neither.  The substitution also takes a quantity devised to
+work around the absence of a backward process and applies it to masked
+models, the only class for which a backward process exists.
 
-What a masked model does supply is the thing $\Delta$ was standing in for.
+What a masked model does supply is $\sigma$, the quantity $\Delta$ was
+standing in for.
 Section~\ref{sec:fbdef} takes it up.
 
-\subsection{The permutation construction, and the zero it supplies}
+\subsection{The permutation set, the midrank, and what each supplies}
 \label{sec:blkord}
 Let the text consist of $n$ sentence blocks and let $x_\pi$ be the same blocks
 concatenated in the order $\pi$.  Block reversal of $x_\pi$ is exactly
@@ -341,42 +789,70 @@ Writing the definition out at both members of that pair, for any score $S$ ---
 the evaluator's score of Section~\ref{sec:scope}, or any other function of a
 token sequence ---
 \begin{equation}
-\Delta(\pi) = \frac{S(x_\pi) - S(x_{\pi\circ\mathrm{rev}})}{L},
+\Delta_S(\pi) = \frac{S(x_\pi) - S(x_{\pi\circ\mathrm{rev}})}{L},
 \qquad
-\Delta(\pi\circ\mathrm{rev})
+\Delta_S(\pi\circ\mathrm{rev})
   = \frac{S(x_{\pi\circ\mathrm{rev}}) - S(x_\pi)}{L} ,
 \label{eq:pair}
 \end{equation}
 which are the same two numbers subtracted in the opposite order.  The two
 lines of Eq.~\eqref{eq:pair} therefore give
 \begin{equation}
-\Delta(\pi) \;=\; -\,\Delta(\pi\circ\mathrm{rev}).
+\Delta_S(\pi) \;=\; -\,\Delta_S(\pi\circ\mathrm{rev}).
 \label{eq:antisym}
 \end{equation}
+When $S$ is the exact $\log P$ of one joint distribution --- which
+Section~\ref{sec:scope} says is available for an autoregressive evaluator
+and for no other kind --- $\Delta_S$ is the $\Delta$ of
+Eq.~\eqref{eq:delta}, and the two are written interchangeably from here on.
+% Naming convention, kept throughout: this is the ANTISYMMETRY, and "the
+% identity" without qualification always means sigma = 0 of Eq. (fbzero).
+% The paper has two exact results and the abstract once called both of them
+% "an identity ... and the identity itself", where the definite article made
+% the second read as the first and dropped the sigma result out of the
+% closing sentence.
 Nothing in this depends on what $S$ is.  It need not be a log-probability, need
-not be normalised, and need not come from a consistent joint distribution: it
-need only return a number for a token sequence.  The $n!$ values of $\Delta$
-thus come in pairs $\{d, -d\}$ for any evaluator whatever.
+not be normalised, and need not derive from a consistent joint distribution: it
+need only return a number for a token sequence.  The $n!$ values of $\Delta_S$
+thus come in pairs: writing $d = \Delta_S(\pi)$, the partner arrangement
+$\pi\circ\mathrm{rev}$ contributes $-d$, for any evaluator whatever.
 Since $\pi \mapsto \pi\circ\mathrm{rev}$ is a measure-preserving involution on
-the symmetric group, the distribution of $\Delta$ over a uniformly drawn $\pi$
+the symmetric group, the distribution of $\Delta_S$ over a uniformly drawn $\pi$
 is \emph{exactly} symmetric about zero --- whatever the model, the text, or its
-content.  This is the construction's point.  Equation~\eqref{eq:delta} has no
+content.  That is what the set is for.  Equation~\eqref{eq:delta} has no
 reference configuration; Eq.~\eqref{eq:antisym} supplies one, because the
-set $\{\Delta(\pi)\}$ is centred at zero by identity.
+set $\{\Delta_S(\pi)\}$ is centred at zero by construction.
 
-Equation~\eqref{eq:antisym} also disqualifies the control we reached for
-first.  Comparing the authored order against a shuffled one compares it against
-the \emph{centre} of a symmetric set, which is zero by construction; such a
-comparison can only restate $\Delta(\mathrm{id}) > 0$, which is already
-known.  We ran it before noticing, obtained a large effect size and a very
-small $p$, and retracted it; the identity above is what makes the result
+Two stages are involved and they are not the same stage, so this paper names
+them separately.  The \emph{permutation set} is the $n!$ arrangements of one
+text and the values $\Delta_S(\pi)$ they produce; it creates a reference where
+Eq.~\eqref{eq:delta} had none, and Eq.~\eqref{eq:antisym} fixes its centre at
+$\Delta = 0$.  That is an origin and it is only an origin: within the set,
+$\Delta$ is still measured in whatever units the evaluator's
+log-probabilities carry.  The \emph{midrank} of
+Eq.~\eqref{eq:midrank} below is the second stage: where $\Delta(\mathrm{id})$ falls within that set, and it is the stage that disposes of the unit, because a rank is unchanged by any strictly monotone rescaling of
+the score.  Stopping after the first stage would leave the scale exactly
+where it was.
+
+Equation~\eqref{eq:antisym} also disqualifies the obvious control, which is
+to compare the authored arrangement against a shuffled one.  That compares
+it against the \emph{centre} of a symmetric set, and with $\pi$ drawn
+uniformly Eq.~\eqref{eq:antisym} puts that centre at zero exactly, for any
+model and any text.  The shuffle arm therefore supplies a zero and some
+noise, and the test collapses to asking whether $\Delta(\mathrm{id})$ sits
+above zero.  The measured values of $\Delta(\mathrm{id})$ answer that by
+themselves, with no permutations run at all, and what they answer is a
+measurement and not a property of the construction
+(Section~\ref{sec:capacity}).  The antisymmetry is what makes that control
 empty, and it does so whatever the model or the text.  What is not forced
 is the \emph{rank} of $\Delta(\mathrm{id})$ among all $n!$ orders, and that is
-the statistic used here.  With $n = 4$ for every text in these corpora the
+the statistic used here.  With $n = \NBlocks$ for every text in these corpora the
 enumeration is exact rather than sampled.
 
-The rank must split ties.  A score that cannot distinguish the block orders at
-all gives $\Delta(\pi) = 0$ for every $\pi$, and a count of
+Arrangements that produce the same value of $\Delta$ must share a rank.  A
+score that returns the same number for every arrangement of one text ---
+$S(x_\pi)$ independent of $\pi$ --- gives $\Delta_S(\pi) = 0$ for every
+$\pi$.  A count of
 $\#\{\Delta \le \Delta(\mathrm{id})\}$ would then report $n!/n! = 1.00$ ---
 ``the most forward-costly arrangement there is'' --- for a model that cannot
 tell the arrangements apart.  The midrank
@@ -392,9 +868,20 @@ that the permutation set is closed under reversal, that the $n!$ values of
 $\Delta$ sum to zero as Eq.~\eqref{eq:antisym} requires, and that the midrank
 is free to take any value in its range under an arbitrary score.
 
-Because the comparison is within each text, length, vocabulary, style and topic
-are identical across it, and the between-set differences noted in Section~1 do
-not arise.
+Because every arrangement in the set is built from one text's own
+sentences, length, vocabulary, style and topic are identical across that
+comparison, so a midrank cannot be moved by them.  This does not make the
+contrast between the two label groups a within-text one.
+Equation~\eqref{eq:caus} compares the median midrank of one set of texts
+with the median of another, and the sets differ in more than their labels
+(Section~\ref{sec:construct}); what the within-text normalisation buys is
+that those differences cannot enter through the \emph{scale} of $\Delta$,
+because each text is scored against its own arrangements before any
+comparison is made.  Section~\ref{sec:notareversal} said that the
+arrangements being compared are different sequences, which is why $\Delta$
+is not a path against its reverse.  They are also the same material: length, vocabulary, style and topic are held
+fixed across the arrangements of one text, which a comparison between the two
+label groups cannot do, since those are different texts.
 
 Effect sizes between the two label groups are reported as the
 rank-biserial correlation
@@ -402,25 +889,33 @@ rank-biserial correlation
 r \;=\; \frac{2U}{n_1 n_2} - 1 ,
 \label{eq:rb}
 \end{equation}
-with $U$ the Mann--Whitney statistic and $n_1, n_2$ the group sizes, so that
+with $U$ the Mann--Whitney statistic and $n_1, n_2$ the group sizes --- here
+$n_1 = n_2 = \NPerGroup$ texts per label group in each corpus
+\cite{sagawa2026} --- so that
 $r = 0$ is no separation and $r = \pm 1$ is complete separation.  It is a
 rank statistic, which is what makes it comparable across evaluators whose
 scores are in different units (Section~\ref{sec:capacity}).
 
 \subsection{Decomposition}
 \label{sec:decomp}
-One term has to be fixed before the equations.  The \emph{authored order} of a
-text is the arrangement that text is actually in, the one scored as
-$\Delta(\mathrm{id})$.  Every text has one, whether or not its sentences
+One term has to be fixed before the equations.  The \emph{authored arrangement} of a
+text is the arrangement that text is actually in: the identity arrangement
+$\mathrm{id}$ of its $n$ blocks, scored here as $\Delta(\mathrm{id})$.  It is
+a property of the text and not of any score, which is why
+Section~\ref{sec:fbrank} can score the same arrangement under $\sigma$.  Every text has one, whether or not its sentences
 stand in a causal sequence; the word carries no implication that the order is
-causal, only that someone settled on it.  Section~\ref{sec:authored} measures
-how far the authored order of a \emph{non-causal} text sits from the null, and
-Eq.~\eqref{eq:auth} calls that distance the \emph{authored component},
-because the only thing it can reflect is that a writer chose an order at all.
+causal, only that the text is in it.  Section~\ref{sec:authored} measures
+how far the authored arrangement of a \emph{non-causal} text sits from the null,
+and Eq.~\eqref{eq:auth} calls that distance the \emph{authored component},
+because the only thing it can reflect is that the text is in some order at
+all.  Every text in these corpora was produced by a language model
+(Section~\ref{sec:construct}), so ``authored'' names the order a text came
+in and not an act of authorship; Section~\ref{sec:authored} returns to what
+that leaves open.
 
-The non-causal texts have a sentence order that is arbitrary but still the one
-a writer settled on.  Their distance from the $0.50$ null therefore measures
-how far \emph{any} authored order moves a text; whatever the causal texts show
+The non-causal texts have a sentence order that is arbitrary but still the
+one the passage came in.  Their distance from the $0.50$ null therefore measures
+how far \emph{any} authored arrangement moves a text; whatever the causal texts show
 beyond that is the part attributable to causal order alone:
 \begin{align}
 \text{authored} &= \mathrm{med}\big(\mathrm{pct}_{\text{non-causal}}\big) - 0.50,
@@ -432,29 +927,60 @@ beyond that is the part attributable to causal order alone:
 Both medians are over the texts of one corpus, scored by one evaluator, so
 each pair of components is formed within a corpus; a figure reported for an
 evaluator is the median of that pair over the $\NCorp$ corpora, which is why
-the two components need not sum to the median total.  Only
-Eq.~\eqref{eq:caus} uses the labels.  Equation~\eqref{eq:auth} is computed
-on one text set and one null, and is therefore independent of whether the
-labelling of that set as ``non-causal'' is correct; all it assumes is that each
-passage was written in some order, which is not a judgement.
+the two components need not sum to the median total.  Both equations use the labels, and it is worth being exact about how,
+because the two use them differently.
+Equation~\eqref{eq:auth} uses them to \emph{select} its reference set, and
+selecting the causal group instead is a different measurement: with the
+causal and non-causal labels exchanged, \texttt{\SwapEval} returns an authored component of
+$\SwapAuthored$ in place of $\SwapAuthoredOrig$ and a causal component of
+$\SwapCausal$ in place of $\SwapCausalOrig$, and the share of
+Eq.~\eqref{eq:caus} changes sign --- it runs $\SwapShareMin\%$ to
+$\SwapShareMax\%$ under the exchange, negative in $\SwapShareNNeg$ of
+$\SwapShareNEval$ evaluators.  A label-independent quantity does not do
+that.
 
-Because the midrank is confined to a grid of width $1/n!$ and bounded above, a
-strong evaluator can saturate it.  We therefore report the same decomposition
+What does not depend on the labels is the apparatus underneath: the null at
+$0.50$ of Eq.~\eqref{eq:midrank}, which follows from the antisymmetry of
+Eq.~\eqref{eq:antisym} for any score whatever; the midrank itself; the
+two-sample test of Section~\ref{sec:blkord}, whose $p$ is unchanged by an
+exchange that only flips the sign of the effect; and the identity of
+Section~\ref{sec:fbdef}.  The decomposition is not on that list, and no
+number derived from it is.
+
+One thing survives the exchange, and Section~\ref{sec:authored} rests on
+it.  Both sets are authored in this sense --- each passage came in
+some order --- so either choice of reference yields an authored component, and the two
+differ by exactly Eq.~\eqref{eq:caus}, which
+Section~\ref{sec:resolution} measures at \CausalCompStepsMin\ to
+\CausalCompStepsMax\ steps of the grid.
+
+Because the midrank is confined to a grid of width $1/n!$ and bounded above,
+an evaluator that ranks authored arrangements highly can saturate it
+(Section~\ref{sec:window} fixes what ``highly'' is measured by).  We therefore report the same decomposition
 on $z = \Delta(\mathrm{id})\,/\,\mathrm{sd}\{\Delta(\pi)\}$, whose null is
 $z = 0$ for the same reason and which has no ceiling, and we report directly
-how often the authored order is already the single most costly arrangement.
+how often the authored arrangement is already the strict maximum over its
+$n!$ arrangements.
 
 % =====================================================================
-\section{Results I: the authored component, without reference to causality}
+\section{Results I: the authored component, on either group}
 \label{sec:authored}
 
-This section uses only the texts whose sentence order is arbitrary, and the
-null of Eq.~\eqref{eq:midrank}.  It makes no use of the causal labels.
+This section reports Eq.~\eqref{eq:auth} against the null of
+Eq.~\eqref{eq:midrank}.  It is computed on the texts labelled non-causal,
+which is a use of the labels; what it does not use is any claim that the
+label is right.  Section~\ref{sec:decomp} gives what the exchange does to
+the number; the statements below survive it: that the authored arrangement sits far above the
+null, and that it stays there across the AR ladder.  That is the sense in which this section comes
+before the causal question: not that the labels are absent, but that
+exchanging them changes nothing it says.
 
-\subsection{The authored order is special, at every scale measured}
-Table~\ref{tab:decomposition} and Figure~\ref{fig:blkord} give the position of
-the authored order among all orders of the same text.  Across the
-autoregressive ladder the authored component of Eq.~\eqref{eq:auth} runs
+\subsection{The authored arrangement is special, at every scale measured}
+\label{sec:authoredspecial}
+Figure~\ref{fig:blkord} gives the midrank of the authored arrangement among
+all arrangements of the same text, and Table~\ref{tab:decomposition} gives
+that midrank split by Eq.~\eqref{eq:auth} into its two components.  Across the
+AR ladder the authored component of Eq.~\eqref{eq:auth} runs
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
@@ -468,81 +994,132 @@ autoregressive ladder the authored component of Eq.~\eqref{eq:auth} runs
 \bottomrule
 \end{tabular}
 \end{center}
-The authored order is already near the top of its own permutation set at
-$\ParamsGPTtwo$, and stays there.  Over the $\TrendCapSpan$-fold span the
-component rises slightly, $\rho = \TrendAuthoredRho$ ($p =
-\TrendAuthoredP$, Spearman, $n = \TrendNEval$), which is the saturation of
-Section~\ref{sec:window} appearing in the component itself rather than in
-the fraction at the ceiling.
+The authored component is bounded above by $+0.50$, the value a text would
+take if its authored arrangement were the strict maximum in every text of
+the group.  At $\ParamsGPTtwo$ it already stands at $\AuthoredGPTtwo$, and
+over a $\TrendCapSpan$-fold span of parameter count it ends at
+$\AuthoredQwen$: the whole range of the component is $\AuthoredCompSpan$,
+which is \AuthoredCompSpanSteps\ step of the $1/n! = 1/\NPerms$ grid.  Ranked against parameter count, the component
+establishes no trend ($\rho = \TrendAuthoredRho$, $p = \TrendAuthoredP$,
+exact rank null over \TrendNEval\ evaluators).  At that $n$ the smallest
+attainable two-sided $p$ is $\TrendPFloor$, so the only $p$ this AR ladder
+can put below $0.05$ is $\TrendPFloor$ itself: a result here either reaches
+that value or establishes nothing.
+Section~\ref{sec:window} looks for saturation in the count of texts whose
+authored arrangement is the strict maximum, which is the statistic without
+this one's grid and bound.  Counted on the non-causal group, that fraction
+is $\CeilNGPTtwo\%$ at the bottom of the AR ladder and $\CeilNQwen\%$ at
+the top, and establishes no trend either way
+(Section~\ref{sec:window}).
 
-Nothing in this uses the causal labels: the component is the median position
-of the \emph{non}-causal texts, whose sentence order is arbitrary.  What it
-says is that an evaluator ranks a text's own arrangement above almost every
-rearrangement of the same sentences, long before any question about causal
-structure is asked.
+The component is the median midrank of the texts labelled
+\emph{non}-causal.  What it says is that an
+evaluator ranks a text's own arrangement above most rearrangements of the
+same sentences, and that this is so whichever group is asked, long before
+any question about causal structure is settled.  Across the
+\TrendNEval\ autoregressive evaluators the median midrank is
+$\MedPctNoncausal$ on the non-causal texts and $\MedPctCausal$ on the causal
+ones, against a null of $0.50$; these are medians of medians and their
+difference is not any evaluator's component.
 
-Why an autoregressive evaluator should find this easily is not a measurement
-but an observation about the construction: its factorisation runs in the
-order under test, so the authored arrangement is the one its context windows
-were built for.  We do not compare that against a masked evaluator, because
-$\Delta$ does not exist for one (Section~\ref{sec:scope}).  An earlier
-version of this work did make that comparison, reading the authored component
-as a property of capability rather than of model class; the comparison was
-between $\Delta$ and a pseudo-log-likelihood difference, which is not
-$\Delta$, and the reading is withdrawn.
+Why an autoregressive evaluator should rank the authored arrangement above
+most rearrangements is not a measurement but an observation about how
+$\Delta$ is built: the evaluator's factorisation runs in the order under
+test, so the authored arrangement is the one its conditionals condition on.
+
+The same applies to the model that produced the text, as against the one
+scoring it.  Every passage in these corpora was emitted left to right
+by a language model, so the arrangement being scored is one an
+autoregressive sampler produced.  An autoregressive evaluator may rank it
+above rearrangements because that is the kind of order such models emit,
+and not because of anything a writer did --- these corpora cannot
+distinguish the two.  What the data can say is how far the component
+depends on which model did the emitting.  Each of the \AuthoredCorpNGen\ corpora came
+from a different generator, so holding the evaluator fixed and reading
+across corpora varies the generator and nothing else; the spread
+read this way is across corpora, where Table~\ref{tab:decomposition} reports
+movement along the AR ladder.  Taken over the corpora, the authored
+component of a single evaluator spans \AuthoredCorpSpreadSteps\ steps of
+the $1/n!$ grid for the median evaluator and \AuthoredCorpSpreadMax\ for
+the worst.  A component that is much the
+same whichever model produced the text is what the sampling account
+predicts, so the spread just reported is not evidence against that
+account.  We therefore state this
+section's result as a fact about text a language model produced, and
+Section~\ref{sec:limitations} records the control that would settle it.
+
+This reaches the authored component and stops there.  The causal component
+is a difference between two groups produced the same way, so an effect
+common to both subtracts out of it.
 
 \begin{table}[t]
 \centering
 \input{tables/tab_decomposition}
 \caption{Decomposition of the within-text distance from the $0.50$ null into
-the part any authored order contributes (Eq.~\ref{eq:auth}; computed without
-reference to the causal labels) and the part attributable to causal order alone
+the part any authored arrangement contributes (Eq.~\ref{eq:auth}; computed
+on the texts labelled non-causal, which uses the labels to choose its
+reference set and not to measure anything, in the sense
+Section~\ref{sec:decomp} sets out) and the part attributable to causal order
+alone
 (Eq.~\ref{eq:caus}). Each entry is the median over all $\NCorp$ corpora of the
-per-corpus quantity, so the two components are paired within a corpus and need
-not sum to the median total; a share above $100\%$ means the authored component
-is slightly negative. Reported in midrank units and in
-$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$, which has no ceiling: their
-agreement is what shows the midrank bound is not driving the split.}
+per-corpus quantity, so the two components are paired within a corpus and
+need not sum to the median total.  Reported in midrank units and in
+$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$, which has no ceiling.
+The two forms put the share in overlapping ranges of one order ---
+$\ShareEvalMin$--$\ShareEvalMax\%$ in midrank units and
+$\ShareZMin$--$\ShareZMax\%$ in $z$ --- which is what shows the midrank's
+bound is not what makes it small.  The $z$ column is the one the paper
+quotes as a size, for the reason Section~\ref{sec:resolution} gives.  They are not interchangeable
+evaluator by evaluator: one differs between the forms by a factor of
+$\ShareFormWorst$.  Across the $\ShareFormNEval$ of them the two columns
+rank-correlate at $\rho = \ShareFormRho$ ($p = \ShareFormP$), which settles
+nothing either way at that $n$.  Section~\ref{sec:resolution} is where that
+belongs: a quantity sitting at the resolution of its statistic does not have
+a share that survives renormalisation.}
 \label{tab:decomposition}
 \end{table}
 
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=\textwidth]{fig1_block_order.pdf}
-\caption{Where the authored order sits among all orders of the same text, by
-evaluator in order of capacity.  Causal texts are the blue circles, non-causal
+\caption{Where the authored arrangement sits among all orders of the same text, by
+evaluator in AR ladder order.  Causal texts are the blue circles, non-causal
 the vermillion squares; the marker shapes differ so the two series remain
 distinguishable in greyscale and under the common colour-vision deficiencies.
 The dashed line at $0.50$ is the null: a score that cannot distinguish the
 arrangements of a text lands there exactly.  The non-causal series is the one
-Section~\ref{sec:authored} reads --- it is already near the ceiling at
-$\ParamsGPTtwo$ and rises slightly across the ladder.  The vertical
-separation between the two series narrows as that happens, to $\GapQwen$ for
-the evaluator that has saturated most (\texttt{Qwen3-4B-Base});
-Section~\ref{sec:contrast} takes this up, because
-the narrowing follows saturation rather than parameter count, and the rank
-statistic computed on the same data does not narrow at all.  Bars are
-bootstrap $95\%$ intervals of the median.}
+Section~\ref{sec:authored} reads: it is already near the ceiling at
+$\ParamsGPTtwo$, and over the whole AR ladder its range is
+\AuthoredCompSpanSteps\ step of the $1/n!$ grid.  The vertical separation
+between the two series is the causal component of Eq.~\eqref{eq:caus}, and
+it does not close as the AR ladder is climbed --- it is $\CausalGPTtwo$ at
+\texttt{gpt2} and $\CausalQwen$ at \texttt{Qwen3-4B-Base},
+\CausalCompStepsMin--\CausalCompStepsMax\ steps
+of that same grid at every evaluator (Section~\ref{sec:resolution}).  The gap between the non-causal series and the ceiling of $1.00$ goes from $\RoomGPTtwo$ to $\RoomQwen$, which is \AuthoredCompSpanSteps\ step of the same grid, so it does not measurably close either (Section~\ref{sec:window}).  Bars are bootstrap $95\%$ intervals of the median.}
 \label{fig:blkord}
 \end{figure}
 
-\subsection{$\Delta$ has neither a stable scale nor an origin}
+\subsection{$\Delta$ has neither a stable scale, nor a sign, nor an origin}
 \label{sec:capacity}
-Two independent deficiencies, neither of which involves the labels.  They are
-usually run together under ``no zero'', and they should not be: only the
-second is an origin, and only the second is what the permutation construction
-repairs.
+Three independent deficiencies, none of which involves the labels.  They are
+usually run together under ``no zero'', and they should not be: one of them
+concerns the unit a reading is in, one its sign, and only one an origin.  Section~\ref{sec:blkord} answers the first and the last, and in two separate stages: the permutation set supplies the origin, by
+Eq.~\eqref{eq:antisym}, and the midrank within it disposes of the scale, by
+being a rank.  Neither stage answers the second.  Together they give the sign
+a reference rather than a guarantee: an authored arrangement may sit on
+either side of $0.50$, and which side it sits on stays a measurement.
 
 \emph{No stable scale: it is not comparable between evaluators.}  Across the
-ladder, from \texttt{gpt2} to \texttt{Qwen3-4B-Base} --- a factor of
+AR ladder, from \texttt{gpt2} to \texttt{Qwen3-4B-Base} --- a factor of
 $\TrendCapSpan$ in parameters --- the median $\Dblock$ of the authored
-arrangement moves from $\CapDeltaLo$ to $\CapDeltaHi$ on identical texts.
+arrangement --- the raw value of Eq.~\eqref{eq:delta}, not a midrank ---
+moves from $\CapDeltaLo$ to $\CapDeltaHi$ on identical texts
+(Table~\ref{tab:blkcells} prints it for every cell).
 Per corpus that is a change in magnitude by a median factor of
 $\CapRatioMedian$, spanning $\CapRatioMin$ to $\CapRatioMax$ over
-$\CapNCorpora$ corpora, larger at the top of the ladder in $\CapNUp$ of them,
-with the sign differing between the two ends in $\CapNSign$.  A larger model
-has sharper conditionals and treats an arrangement and its reverse more
-differently, so the size of $\Delta$ carries the evaluator as well as
+$\CapNCorpora$ corpora, larger at the top of the AR ladder than at the
+bottom in $\CapNUp$ of them,
+with the sign differing between the two ends in $\CapNSign$.  So the size of $\Delta$ carries the autoregressive evaluator as well as
 whatever property of the text is of interest, and a single reading does not
 separate them.
 
@@ -552,30 +1129,446 @@ obvious repair: divide it out.  The repair is not available.  A calibration
 constant has to be fixed against something whose $\Delta$ is known, and the
 only arrangement with a known value is the one supplied by an
 identity rather than by the texts --- the permutation set of
-Section~\ref{sec:blkord}, which removes the scale instead of estimating it,
-and which is what this paper uses.  Fitting the constant on the texts
+Section~\ref{sec:blkord}, whose midrank removes the scale instead of
+estimating it, and which is what this paper uses.  Fitting the constant on the texts
 themselves would make the quantity depend on which texts were chosen, and so
 reintroduce in the denominator the dependence it was meant to remove.
 
-\emph{No origin: it is not anchored for a single text.}  This is the one the
-subtitle names, and the one Section~\ref{sec:blkord} repairs.  In the setting
+\emph{No sign: nothing makes it non-negative.}  For an entropy production
+$\langle e^{-\sigma} \rangle = 1$ forces $\langle \sigma \rangle \geq 0$.
+Equation~\eqref{eq:antisym} puts the $n!$ values of a text in pairs $\{d,
+-d\}$, so half of the arrangements of any text score negative under
+$\Delta$ and nothing distinguishes the sign of the authored one in advance.
+That it comes out positive here is a measurement.
+
+\emph{No origin: $\Delta$ has no origin for a single text.}  The missing origin is what the
+title names, and what the antisymmetry of Section~\ref{sec:blkord} answers
+directly.  In the setting
 the expression comes from, the origin is fixed by a theorem: an entropy
 production is a functional of a distribution over trajectories, and detailed
 balance makes it vanish.  Equation~\eqref{eq:delta} is evaluated on one text,
-which is neither a distribution nor a trajectory, so no theorem places its
-zero, and it offers no reference arrangement of its own.  The permutation
-construction supplies one, and the remainder of this paper uses it; without it,
+and what a theorem places is the zero of an average rather than of one
+reading, so no theorem places the zero of a single text, and the expression
+offers no reference arrangement of its own.  The permutation set
+supplies one, and the remainder of this paper uses it; without it,
 a value of $\Delta$ is large or small relative to nothing.
 
-An earlier version of this section counted a third deficiency, the absence of
-a common unit between model classes, measured as the ratio between a masked
-evaluator's score and an autoregressive one's.  That ratio is between a
-pseudo-log-likelihood and a log-probability, which is to say between a number
-and a different number (Section~\ref{sec:scope}); it is withdrawn together
-with the comparison it was drawn from.
+A fourth candidate, the absence of a common unit between the two model
+classes, is not on the list: $\Delta$ exists for autoregressive evaluators
+and $\sigma$ for masked ones (Section~\ref{sec:scope}), so there is no
+reading of one to put beside a reading of the other.
 
-\subsection{What a masked evaluator reports when the answer is fixed by
-construction}
+
+% =====================================================================
+\section{Results II: the labelled contrast}
+\label{sec:causal}
+
+Section~\ref{sec:notareversal} named Ref.~\cite{sagawa2026}'s own first
+step.  What $\Delta$ means is settled there and in
+Section~\ref{sec:truesigma}; this section re-measures that step and reads it
+for what it separates, across an AR ladder of \TrendNEval\ evaluators.  The labelling comes
+first, because the labels enter every measurement below only as a grouping
+of ranks, and every figure derived from that grouping is reported as
+conditional on it.
+
+\subsection{What the labels record, and what they do not}
+\label{sec:construct}
+What the labels record is a question Ref.~\cite{sagawa2026} raises about its
+own corpora before we do~\cite[Sec.~V~B]{sagawa2026}.
+
+The labels record that a language model, given a prompt asking for a short
+passage
+whose sentences stand in a causal sequence, produced one; and that the same
+model, given a prompt asking for a passage whose sentences are arranged
+arbitrarily, produced the other.  That is the entire basis.  No operational
+definition of causal dependence is applied at any point.  Nothing is
+intervened on, no counterfactual is evaluated, and the passages are not checked
+against any specified causal structure.  ``Causal'' here is the name of a
+prompt, not the result of a measurement.
+
+What the non-causal label records is an arrangement, and not a defect in the
+writing.  Those passages are coherent discourse: their topic continues,
+their pronouns resolve backwards, their connectives are in place.  Their
+sentence order is simply not causal.  The lengths of the two sets are not
+controlled either.
+
+Two features might be read as validation --- one of the corpus design, one
+of our own analysis.  Neither is, and it is worth saying why.  What would
+be at stake is \emph{construct validity}: whether the labels pick out a
+causal ordering of the sentences, rather than something else the two
+prompts induced along with it.
+
+First, the $\NCorp$ corpora, and the $\NCorp$ models that generated them,
+are Ref.~\cite{sagawa2026}'s~\cite[Sec.~V~B]{sagawa2026}; we re-score them
+and did not design them.  They are $\NCorp$ different models, though not
+$\NCorp$ independent lineages: two pairs among them are
+successive models of one family.  Their agreement therefore rules out an
+idiosyncrasy of one model, and not an idiosyncrasy shared within a
+family.  It does not
+bear on construct validity at all, because the \emph{prompt pair is the
+constant across all five} --- what varies is the generator, not the definition.
+Five applications of one undefined construct do not define it.
+
+Second --- and this one is ours, not the corpus design's --- our
+within-text design removes the length, vocabulary, style and topic differences that separate the two label groups, but it removes them \emph{within} a
+text, across its arrangements.  The comparison between the sets still runs
+between texts written to different prompts.  Anything those prompts induced
+systematically --- connective density, register, clause structure, sentence
+length profile --- remains available to $\Delta$ and is indistinguishable from
+causal order in these data.
+
+The consequence is not that the contrast is spurious.  It is that the contrast
+has no established referent: $\Delta$ separates two sets of texts, and what
+distinguishes those sets is unknown.  An effect size, however large and however
+stable, cannot supply the missing construct.  We therefore report the contrast
+as a contrast between prompt-defined sets and nowhere describe it as a
+measurement of causality.
+
+The labels are used asymmetrically as well.  The decomposition of
+Section~\ref{sec:decomp} is defined against the non-causal group, and its
+share changes sign if the two groups are exchanged.  Every figure derived
+from it is therefore conditional on the labelling and not on the texts
+alone.
+
+A text set generated from an explicitly specified causal structure --- a graph
+fixed in advance, with the ordering determined by that graph and not by a
+prompt --- would supply the construct and make the question answerable.  We
+regard that as the experiment this one points to.
+
+\input{sec_decomp}
+
+% ====================================================================
+\input{sec_truesigma}
+
+% =====================================================================
+\section{Discussion}
+
+This paper's conclusion is negative in two ways, one for each quantity
+(Section~\ref{sec:fbresult}).  Under $\Delta$ a reading on a fixed text
+cannot be interpreted, and these corpora cannot decide whether what it
+separates is causal structure; under $\sigma$ a non-zero reading reports
+the masked evaluator's incompatibility and not the text.  The first of the two has three parts, and the rest of
+this section takes them in turn.  These are three readings of $\Delta$: as a
+reversal, as a quantity, and as a test.  They are not a restatement of the
+three consequences of
+Eq.~\eqref{eq:fbzero} that Section~\ref{sec:introduction} draws, which are
+about $\sigma$ and about what was computed in its place; nor of the three
+deficiencies of Section~\ref{sec:capacity}, which are properties of
+$\Delta$ as a number.  The first names what the comparison is and needs no
+measurement; the second measures what follows from it on these corpora; the
+third is independent of both.  The three should not be conflated.
+
+As a \emph{reversal}, Eq.~\eqref{eq:delta} reverses the text and not the
+path.  Reversing the text moves to another point of the model's own law;
+what Eq.~\eqref{eq:fb} reverses instead is the order in which a model
+assembles a text, with the text held fixed, and only $\sigma$ has a zero
+that holds on the text being read (Section~\ref{sec:notareversal}).  In the
+ensemble reading, where the sequences are drawn from the model itself,
+Ref.~\cite{sagawa2026} supplies a zero and a sign by a theorem, about an
+average and not about one text, and nothing here disputes that.  The distinction above is not about
+that average: it holds whether or not the text came from the model, because
+it is about whether a single reading has an origin at all
+(Section~\ref{sec:notareversal}).  The corpora at issue are not such draws,
+so here the theorem does not reach even that average, and
+Ref.~\cite{sagawa2026} states for that case that the averages are not
+guaranteed to be non-negative.  The
+comparison therefore has no origin; Section~\ref{sec:blkord} supplies an
+origin by the antisymmetry instead, and
+Section~\ref{sec:truesigma} measures the comparison that has one of its
+own.
+
+As a \emph{quantity}, $\Delta$ cannot be interpreted, and the reasons are
+partly structural and partly measured.  It has no stable scale and no
+origin
+(Section~\ref{sec:capacity}); the origin is the one a theorem would normally
+supply, and no theorem reaches a single fixed text.  What it responds to is
+whether a text stands in its authored arrangement, not whether that order is
+causal: $\ShareZMin\%$ to $\ShareZMax\%$ of its magnitude is attributable
+to the labels in ceiling-free $z$ units
+($z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$,
+Section~\ref{sec:resolution}; $\ShareEvalMin\%$ to
+$\ShareEvalMax\%$ in midrank units), and the rest to the authored component
+of Eq.~\eqref{eq:auth} --- the bare fact that the passage came in some
+order.  Read on the median, the causal component of Eq.~\eqref{eq:caus}
+sits at \CausalCompStepsMin--\CausalCompStepsMax\ steps of the grid at
+every rung of the AR ladder and does not move along it
+(Section~\ref{sec:window}).  Read in the tail it leaves the
+grid floor and moves along the AR ladder.  No autoregressive evaluator
+separates the labelled groups by more than
+$\TailBelowOnsetMax$ points below a midrank of $\TailOnsetThr$, and every
+one of them does above it.
+In the tail the causal group reaches the strict maximum
+$\TailDiffGPTtwo$ to $\TailDiffQwen$ points more often than the non-causal
+group, as a median over corpora.  In
+ceiling-free $z$ units that separation grows monotonically along the AR ladder
+($\rho = \TailZTrendRho$, $p = \TailZTrendP$).  On the
+\TailZFamNEval\ \textsc{gpt-2} rungs, where only parameter count differs, it
+keeps the same ordering (Section~\ref{sec:window}; with $n = \TailZFamNEval$
+the smallest attainable two-sided $p$ is $\TailZFamFloor$, so this is an
+ordering and not a second trend).  We found nothing that shows the gap between an authored arrangement's
+midrank and the ceiling of $1.00$ narrowing as the autoregressive
+evaluator's parameter count grows.  All of this is established regardless of what the causal and non-causal
+labels actually represent.
+
+As a \emph{test for causal structure}, $\Delta$ cannot be read as one
+here.  It does separate the two prompt-defined sets, in a fixed
+direction in \ContrastNPositive\ of \ContrastNCells\ cells, and
+significantly in \ContrastNRejecting\ of the \ContrastNCells; but the
+sets were never characterised except by the prompt that produced them, so
+the separation has no established referent.  Ref.~\cite{sagawa2026} says as
+much for its own corpora: the labels are fixed by the generation prompt
+rather than by a formal criterion, and a prompt-independent definition of
+causal ordering would be needed to do better~\cite[Sec.~V~B]{sagawa2026}.  Nor is its size resolved: the component is
+\CausalCompStepsMin--\CausalCompStepsMax\ steps of the
+$1/n!$ grid in every evaluator (Section~\ref{sec:resolution}), which is the
+smallest non-zero value the statistic can return, so a difference between
+two evaluators is a difference between adjacent representable numbers.  What
+the median establishes is that the sets differ and not by how much.  The
+tail is a different statistic of the same contrast and does give a size,
+which is why Section~\ref{sec:window} reports it; the resolution argument is
+about the median and we do not extend it past that.  What neither statistic
+supplies is an answer to what the difference is a difference in: whether
+what it separates is causal structure at all.  This is not a weakness of the
+statistic.  It is a missing construct, and no refinement of the measurement
+supplies one.
+
+The second and third readings rest on different things from the case
+about $\sigma$, and the difference matters more than it looks.  Those two
+are empirical: a share that is small and unresolved, and sets with no
+criterion.  (The reading as a reversal is not, which is the point of
+putting it first.)  On a fixed
+text no identity is available for it, and none is claimed: $\Delta$ is a
+log-ratio between a
+text and its reversal, and nothing drives that to zero as a model improves.  The case about $\sigma$ is the opposite: it is settled by
+Eq.~\eqref{eq:fbzero} before any corpus is scored, and the measurements in
+Section~\ref{sec:fbresult} confirm rather than establish it.  Reading either
+argument into the other would be a mistake in both directions, and
+Section~\ref{sec:fbresult} says so where both are in view.
+
+The practical consequences are narrow and concrete.  A bare value of
+$\Delta$ should not be reported as an interpretable measurement of a text,
+nor compared between evaluators: on a fixed text it has neither an origin
+nor a stable scale (Section~\ref{sec:capacity}).  Both are of course
+computable; what is missing is what they would mean.  Where a reference is
+needed, the permutation set of the text itself supplies one, and the midrank
+within it is unitless, at a cost of $n!$ scores rather than two.  An
+autoregressive evaluator should have parameters enough that the authored
+arrangement is not at the null, and that lower end --- the parameter count at
+which its midrank first clears $0.50$ --- should be checked rather than
+assumed.  We looked for an upper end as well, since the midrank is bounded
+by $1.00$ and a parameter count at which most authored arrangements are
+already the strict maximum would leave it nowhere to go; we found none, the
+fraction of non-causal texts at the strict maximum establishing no trend
+across the AR ladder (Section~\ref{sec:window}).  And a contrast between text sets should not
+be reported as a measurement of a property those sets were never shown to
+differ in.
+
+Finally, on scope.  The framework under re-examination here --- the
+stochastic-thermodynamic framework of Ref.~\cite{sagawa2026} --- is built
+for autoregressive models, and the quantity it defines requires a single
+joint, which an autoregressive factorisation supplies and a masked model
+leaves to a choice of unmasking order.  The apparatus of this paper is not
+so restricted: the permutation set and the midrank apply to any score, and
+Section~\ref{sec:fbrank} uses them on masked evaluators.  That is not a gap
+to be filled with a substitute score: what a masked model supplies instead is
+a comparison with a zero on the text it is read from
+(Section~\ref{sec:fbdef}), and what that reports is a property of the masked
+evaluator rather than of the text (Section~\ref{sec:fbresult}).  The
+framework's empirical claim survives our re-measurement.  Its central
+quantity is unanchored in the fixed-text reading, and the quantity it was
+standing in for is not evaluable on an autoregressive evaluator at all
+(Section~\ref{sec:truesigma}): an autoregressive evaluator cannot supply
+the conditionals Eq.~\eqref{eq:aoar} asks for, so it is not a case of
+Eq.~\eqref{eq:fbzero} either way.  On a masked evaluator $\sigma$ is
+defined, and Section~\ref{sec:fbresult} measures what it reports there: a
+property of the masked evaluator, not of the text.
+
+It may be asked what was gained by introducing $\sigma$ at all, if it does
+not separate the two label groups.  That a non-zero $\sigma$
+reads the masked evaluator's incompatibility does not settle whether its
+value also happens to separate the causal and non-causal groups; nothing
+fixes that in advance, so it had to be measured.  What Section~\ref{sec:fbresult}
+returned is that on these two masked evaluators only \FbNSurviving\ of
+\FbNTestsCausal\ cells survives correction --- which is a statement about
+these two and not about masked evaluators in general.  And $\sigma$, not
+$\Delta$, is what the thermodynamic reading extends to directly, so how it
+behaves on real text is worth knowing in its own right.
+
+% =====================================================================
+\section{Limitations}
+\label{sec:limitations}
+
+\emph{The labels.}  Treated in Section~\ref{sec:construct} rather than here,
+because it is not a caveat on the result but a limit on what the result can be
+about.  Ref.~\cite{sagawa2026} raises it for its own corpora first: the
+labels are fixed by the generation prompt rather than by a formal criterion,
+and it claims no general quantitative measure of causal structure on that
+basis~\cite[Sec.~V~B]{sagawa2026}.  Section~\ref{sec:authored} uses them to choose which texts it
+reads and nothing beyond that, so what it says is unchanged when the two
+labels are exchanged; what Section~\ref{sec:causal} says is not, and no
+measurement on these corpora
+can make it so.
+
+\emph{The authored component is not decomposed.}  The non-causal passages are
+coherent discourse, so what the authored component picks up mixes topical
+continuity, backward pronoun resolution and the placement of new
+information.  Separating these would need text sets built for the purpose.
+This is a fact about the corpora and not about either quantity: it holds for
+the component read under $\Delta$ and for the one read under $\sigma$
+alike.
+
+\emph{The authored component is a property of a text \emph{and} an evaluator.}
+The midrank within the permutation set removes the evaluator's unit; it does
+not make the measurement independent of the evaluator.  It is not: the same
+texts give $\AuthoredGPTtwo$ at $\ParamsGPTtwo$ and $\AuthoredQwen$ at
+$\ParamsQwen$, and under $\sigma$ the dependence is far larger still
+(Section~\ref{sec:fbresult}).  Every statement here about an authored arrangement is a
+statement about where an evaluator places it among the rearrangements of
+the same sentences.  That placement is above the null under some
+evaluators and below it under others ($\FbAuthoredLLaDA$ under
+\texttt{LLaDA}, Table~\ref{tab:fbdecomp}), and it is part of the
+measurement rather than a nuisance to be removed.
+
+\emph{The text-independent part of $\sigma$ is characterised only in the
+exactly solvable system.}  A masked evaluator returns a non-zero $\sigma$
+because its conditionals derive from no single joint, and that is a property
+of the evaluator rather than of the text.  Part of what it contributes is
+therefore common to every arrangement of one text, and a rank taken within
+that text cancels it --- which is why the text results here are reported as
+midranks and not as magnitudes.  How large that common part is, is measured
+only in the exactly solvable system of Appendix~\ref{sec:toy}, where the
+conditionals can be enumerated.  Two controls on text would bound it: a
+corpus of sentences drawn from unrelated documents, which removes topical
+continuity, and a word-shuffled corpus, which removes syntax as well.  We
+have not computed them: it is not obvious how to build controls whose
+$\sigma$ bounds it in a meaningful way.
+
+\emph{Enumeration.}  Every text here has exactly $\NBlocks$ sentence blocks, so
+the $\NBlocks! = \NPerms$ enumeration is exact.  Longer texts require sampling the permutation
+set, and the sample must be closed under reversal: if $\pi$ is drawn then
+$\pi\circ\mathrm{rev}$ has to be drawn too.  Otherwise the sampled values
+no longer come in the pairs $\{d, -d\}$ of Eq.~\eqref{eq:antisym}, the set
+is not symmetric about zero, and the origin the construction exists to
+supply is lost.
+
+\emph{When its conditionals are incompatible, a masked model has no single
+joint accounting for all unmasking orders} (Section~\ref{sec:scope}).
+Equation~\eqref{eq:delta} requires its two terms to be $\log P(x)$ and
+$\log P(\tilde{x})$ under one and the same joint $P$ --- a different $P$ for
+each text is no obstacle, but two values read off two different
+distributions are not a $\Delta$.  A masked model offers one $P_\pi$ per
+unmasking order and does not single out which, so $\Delta$ has no masked
+counterpart and none is reported here.  The any-order chain rule does give a
+log-probability, at the price of an unmasking order that the framework does
+not fix; that is the instrument of Section~\ref{sec:fbdef}, and it answers a
+different question.
+
+\emph{No human-written control.}  All $\FbNTexts$ passages were produced
+by language models from prompts (Section~\ref{sec:construct}), so every
+``authored arrangement'' in this paper is an order a left-to-right sampler
+emitted.  Section~\ref{sec:authoredspecial} sets out why that matters: the
+authored component may be reporting that the text was generated in that
+order rather than that it was composed in it.  Deciding between the two
+needs texts a person wrote, scored the same way, and we have none; adding
+them is the single most useful extension of this work.  The causal
+component and the identity of Section~\ref{sec:fbdef} do not depend on the
+answer, for the reasons given in Section~\ref{sec:authoredspecial}.
+
+\emph{No extrapolation, and no trend we cannot see.}  One quantity rises
+monotonically over the range measured --- the labelled contrast in the
+tail, in ceiling-free $z$ units (Table~\ref{tab:tail}, second block: a median
+of $\TailZGPTtwo$ at \texttt{gpt2} and $\TailZQwen$ at the top of the
+AR ladder) --- and we state it as that and nothing more.  Every other component establishes no trend, which with \TrendNEval\
+rungs and an exact floor of $\TrendPFloor$ is a statement about what this
+AR ladder can resolve and not about the world: we make no claim either way
+about how the median share behaves beyond this range, only that it is one
+or two grid steps at each size we measured
+(Section~\ref{sec:window}).  Nor do we extrapolate the one trend we do
+report: five points establish a direction over the range covered and
+nothing about where it goes.
+
+\emph{Parameter count and family are not fully separated.}  The $\NEval$ evaluators
+of the AR ladder span $\ParamsGPTtwo$ to $\ParamsQwen$, a factor of
+$\TrendCapSpan$, but four of them are one \textsc{gpt-2} family and the fifth
+a later model trained on a different corpus under a different recipe, so the
+top of the AR ladder changes more than the size.  Everything stated against
+parameter count is stated over the AR ladder as a whole and we do not separate the
+two effects --- which bears hardest on the one trend this paper reports,
+the tail contrast of Section~\ref{sec:window}, since the evaluator at the
+top of that AR ladder is also the one that differs most in everything but
+size.  The partial answer is in Section~\ref{sec:window}: that contrast is
+read again on the \TailZFamNEval\ \textsc{gpt-2} rungs, where it keeps
+the same ordering.  It covers $\TrendCapSpanFamily$-fold rather than
+$\TrendCapSpan$ and cannot establish a trend at that $n$, so it narrows the
+objection without settling it.  A series that varies size
+alone under one objective, over a wider range, would separate them and is the
+control this work most obviously wants next.  The same caveat applies with
+more force to $\sigma$, where the two masked evaluators differ in objective,
+architecture and scale at once (Section~\ref{sec:fbresult}).
+
+% =====================================================================
+\section*{Reproducibility}
+
+All code and all measured values are available at \repoline, including the
+per-text JSON behind every table, the self-tests described below, and the
+scripts that build this document.  The same files are attached to this
+submission as ancillary material.
+
+Every number in this paper, in the tables and in the running text alike, is
+generated by \fn{make_tables.py} from the measurement JSON files, and every
+figure by \fn{make_figures.py}; no figure is typed into the source, so
+rerunning the measurements regenerates the prose.
+
+The measurement scripts carry self-tests that run without model weights.
+For the any-order machinery, the first of these runs
+Eq.~\eqref{eq:aoar} against an oracle that returns the exact
+subset-marginal conditionals of a known joint --- a pairwise field on $L =
+\AoarL$ sites over $V = \AoarV$ symbols, whose $\AoarStates$ states are
+enumerated.  It has the same shape as the system of
+Appendix~\ref{sec:toy} and is not it: this oracle returns the exact subset
+marginals of its own joint, which is what the test needs and what the
+appendix's measurement would have nothing to measure on.  There
+order-independence holds by construction, so agreement across
+$\AoarNOrders$ unmasking orders to within $\AoarOrderDev$ is a statement
+about the
+masking, the order handling and the indexing in the code --- not about any
+trained model, whose order-\emph{dependence} is the measurement of
+Section~\ref{sec:fbresult}.  The test is not vacuous: a second provider
+with deliberately perturbed conditionals is order-dependent, as it must be.
+Normalisation for a fixed order is checked on both providers: $\sum_x
+P_\pi(x)$ departs from $1$ by at most $\AoarNormDev$ on the oracle and
+$\AoarNormDevInc$ on the perturbed conditionals.  For the
+permutation set and the midrank they verify that the set is closed under
+reversal,
+that the $n!$ values of $\Delta$ sum to zero, that the midrank is free to take
+any value in its range under an arbitrary score, and --- the check that matters
+most --- that an order-blind score yields a midrank of exactly $0.50$ while
+an unadjusted $\le$ count would yield $1.00$.  The statistical layer of the
+work we build on is reproduced independently before any of the above is run:
+\fn{reproduce_sagawa_stats.py} recomputes $\Delta$ for every text of all
+$\ReproNCorpora$ corpora from the released values, agreeing to within
+$\ReproMaxErr$, and \fn{compare_repro.py} checks the statistics it
+obtains against the ones the source repository ships.
+
+Two runs in the exactly solvable system are separate from those, because they
+train small models rather than scoring text: \fn{capacity_sweep.py} produces
+Table~\ref{tab:capacity} and \fn{bayes_route_control.py} produces
+Table~\ref{tab:bayesroute}, the latter rebuilding the masked models of
+\fn{capacity_sweep.py} from the same seed and reproducing its $\sigEP$
+column exactly before giving each of them the second route.
+
+% =====================================================================
+% The toy system was Section 4.3 of the main text.  It is evidence, not
+% result: it shows that the instrument returns zero for a model whose
+% conditionals come from a joint, that the floor rises with capacity,
+% and that the reading belongs to the conditionals a model emits rather
+% than to the route by which rates were built from them.  None of the
+% paper's claims rest on it, and carrying a third quantity on a
+% different system through the main line cost the reader more than the
+% evidence was worth there.
+\appendix
+\section{What a masked evaluator reports on a system where compatibility
+is known by construction}
 \label{sec:toy}
 This section measures a \emph{different quantity} from the rest of the paper,
 and the distinction matters enough to make before anything else.  Everywhere
@@ -607,81 +1600,129 @@ which is zero exactly when that chain is reversible.  $\sigEP$ and $\Delta$
 are not the same object and are never compared.
 
 Equation~\eqref{eq:glauber} is not complete until one says where
-$p_\theta(\cdot \mid x_{-k})$ is obtained, and the answer differs between the
-two model classes because only one of them has a choice.  A masked model
-emits this conditional directly, in one forward pass: it is what the training
-objective asks of it, and what sampling from it uses.  An autoregressive
-model emits no such thing --- no position of it attends to both sides --- so
-for that class the conditional has to be recovered from the joint, by scoring
-the $V$ complete sequences that differ at site $k$ alone and normalising.
-Table~\ref{tab:capacity} uses the emitted conditionals for its masked rows
-and recovered ones for its autoregressive row.  The asymmetry is forced, and
-it leaves a question the table cannot answer on its own: does a non-zero
-reading belong to the masked model, or to the route by which its rates were
-built?
+$p_\theta(\cdot \mid x_{-k})$ is obtained, and the answer differs between a
+masked model and an autoregressive one, because only the masked one has more
+than one route to it.  A masked model emits this conditional directly, in one
+forward pass: it is what the training objective asks of it, and what sampling
+from it uses.  An autoregressive model emits no such thing --- no position of
+it attends to both sides --- so for that class the conditional has to be
+recovered from the joint, by scoring the $V$ complete sequences that differ
+at site $k$ alone and normalising.  Table~\ref{tab:capacity} uses the
+emitted conditionals for its masked rows and recovered ones for its
+autoregressive row.  In physical terms the asymmetry reads as follows.  A
+masked model emits exactly the conditional a heat-bath (Glauber) update calls
+for, in one forward pass.  An autoregressive model does not, so the
+conditional has to be assembled by an explicit local normalisation over the
+$V$ states at site $k$ --- the step a Metropolis rule avoids by working with
+ratios.  The asymmetry is forced, and it leaves a question the table cannot
+answer on its own: does a non-zero reading belong to the masked model, or to
+the route by which its rates were built?
 
 The system is a dense pairwise Markov random field on $L = \ToyL$ sites with
-$V = \ToyV$ symbols, whose $\ToyStates$ states can be enumerated, trained on
-$N = \ToyN$ samples; $\sigEP$ and the cycle
-affinities~\cite{schnakenberg} are then
-computed on the full transition matrix with no estimator and no sampling
-error.  A cycle affinity $A$ is the log of the product of transition rates
-around a closed cycle of states divided by the product around the same cycle
-reversed; all of them vanish exactly when the chain is reversible, so
-$\mathrm{rms}|A|$ in Table~\ref{tab:capacity} is a second, independent reading
-of the same failure.  Model size is varied through the transformer width $d$.
+$V = \ToyV$ symbols, whose $\ToyStates$ states can be enumerated, and the
+models are trained on $N = \ToyN$ samples drawn from it.  A \emph{cycle
+affinity} $A$~\cite{schnakenberg} is the log of the product of transition
+rates around a closed cycle of states divided by the product around the same
+cycle reversed; all of them vanish exactly when the chain is reversible, so
+$\mathrm{rms}|A|$ in Table~\ref{tab:capacity} is a second, independent
+reading of the same failure.  Both $\sigEP$ and the affinities are computed
+from the full transition matrix: the rates are exact and no quantity here is
+estimated from samples, though the affinities are summarised over a finite
+chosen set of cycles rather than over all of them.  Model size is varied
+through the transformer width $d$.
 
-What the construction fixes is this.  If a model's conditionals are those of
+The two model classes here are architectures, not the evaluators of the main
+text: these are small models trained on this toy system
+(Table~\ref{tab:capacity}), and nothing below bears on the AR ladder of
+Section~\ref{sec:methods}.  They share a backbone --- a three-layer,
+four-head transformer encoder --- and differ in the attention mask and the
+training objective.  The masked one leaves attention unrestricted and is
+trained to predict a single masked site from the other $L-1$; the
+autoregressive one uses an upper-triangular attention mask and is trained to
+predict the next site from those before it, with a beginning-of-sequence
+token prepended.  Width, depth, optimiser and seed are the same for both.
+Because the two objectives differ, the \emph{loss} column of
+Table~\ref{tab:capacity} is not comparable between the two rows.
+
+What the toy system fixes is this.  If a model's conditionals are those of
 some joint distribution, the induced chain is reversible with respect to it and
-$\sigEP = 0$ identically.  An autoregressive model always defines such a joint,
-so it returns zero \emph{whatever its accuracy}: $\sigEP = \ToySigmaAR$ with
-root-mean-square cycle affinity $\ToyRmsAR$ (Table~\ref{tab:capacity}).  That
+$\sigEP = 0$ identically.  An autoregressive model always defines such a joint
+(Section~\ref{sec:scope}) --- a factorisation determines one, which is a
+mathematical fact and so carries over to the small model trained here --- so
+it returns zero \emph{whatever its accuracy}: $\sigEP = \ToySigmaAR$ with
+root-mean-square cycle affinity $\ToyRmsAR$ (Table~\ref{tab:capacity},
+autoregressive row, whose rates are built by the recovered route, that class
+having no emitted one).  That
 zero is therefore not evidence that the model has recovered anything.  It is
 the control, and it shows that $\sigEP$ tests \emph{consistency, not accuracy}.
 
-Masked conditionals are in general not those of any joint, and the measurement
-shows the consequence: $\sigEP$ runs from $\ToySigmaMin$ to $\ToySigmaMax$,
-more than $\ToyOrdersAbove$ orders of magnitude above the autoregressive value
-(Figure~\ref{fig:capacity}), and it does not
-fall as capacity rises --- it grows, by a factor of $\ToyCapRatio$ over
-$\ToyNCap$ widths from $d = \ToyDMin$ to $d = \ToyDMax$.  This is a statement
-about the masked instrument and about nothing else.  It is the reason the text
-results in this paper rest on within-text ranks, where such a floor cancels
-between the permutations of one text, rather than on the magnitude of $\Delta$.
+Masked conditionals need not be those of any one joint
+(Section~\ref{sec:scope}).  The certificate cited there is for modern masked
+language models and does not carry over to a model of this size, so whether
+it holds here is a measurement.  This is it: $\sigEP$ runs from
+$\ToySigmaMin$ to $\ToySigmaMax$, more than $\ToyOrdersAbove$ orders of
+magnitude above the autoregressive value (Figure~\ref{fig:capacity};
+Table~\ref{tab:capacity}, masked rows, whose rates are built from the
+conditionals the model emits).  At $d = \ToyDMax$ it is not smaller than at
+$d = \ToyDMin$ but larger, by a factor of $\ToyCapRatio$.
+The $\ToyNCap$ widths are not monotone in it
+(Table~\ref{tab:capacity}), so that factor compares the two endpoints and
+not the whole sweep: across all $\ToyNCap$ widths the largest $\sigEP$
+exceeds the smallest by $\ToySpanRatio$.  This is a statement
+about the masked instrument and about nothing else.  What it shows is that
+the part of a reading that comes from the instrument rather than from the
+text can be large, and that is why the text results in this paper rest on
+within-text ranks rather than on the magnitude of $\Delta$: a part common to
+every arrangement of one text cancels when the arrangements are ranked
+against each other.
 
-\begin{table}[t]
-\centering
-\input{tables/tab_bayesroute}
-\caption{The route, controlled for.  One masked model at each width of
-Table~\ref{tab:capacity}, with its Glauber rates built both ways: from the
-conditionals it emits, and from conditionals recovered out of a joint.  Three
-joints are used --- $\exp(\mathrm{PLL})$ normalised over the state space, and
-the any-order chain rule taken left to right and right to left --- and the
-\emph{recovered} column is the largest $|\sigEP|$ of the three.  $J$ is the
-mean symmetrised Kullback--Leibler divergence between the emitted
-conditionals and the recovered ones, smallest and largest over the three
-joints.  The last column is the quantity of
-Section~\ref{sec:fbdef}, $\sigma = [\log P_{\mathrm{l2r}} - \log
-P_{\mathrm{r2l}}]/L$, averaged in magnitude over all $\ToyStates$ states.
-The emitted column reproduces Table~\ref{tab:capacity} exactly, same seed and
-same training call, so the comparison is within one model rather than between
-two.}
-\label{tab:bayesroute}
-\end{table}
 
-The reading therefore belongs to the conditionals the model emits, and not to
-the route.  Table~\ref{tab:bayesroute} gives the same model both routes at
-every width.  Every route through a joint returns zero, to
-$\CtrlSigmaJointMax$; the emitted conditionals do not.  That zero is not
-evidence about the model --- Eq.~\eqref{eq:sigep} vanishes for any
-conditionals that descend from a joint, so a route through one cannot report
-anything else --- but it is what makes the asymmetry harmless: the two routes
-coincide exactly when a joint exists, so the difference in construction can
-produce a difference in value only where the property under test fails.
+Computing $\sigEP$ needs conditionals, and from a masked model there are two
+ways to get them.  Let $x$ and $y$ differ at site $k$ alone, so that
+$x_{-k} = y_{-k}$.  The \emph{emitted} route takes what one forward pass
+with site $k$ masked returns,
+\begin{equation}
+w_{\mathrm{emit}}(x \to y) \;=\; \frac{1}{L}\, p_\theta(y_k \mid x_{-k}) ,
+\label{eq:wemit}
+\end{equation}
+and the \emph{recovered} route builds a joint $Q$ over whole sequences from
+the same model and renormalises it at site $k$,
+\begin{equation}
+w_{\mathrm{rec}}(x \to y) \;=\; \frac{1}{L}\, p_Q(y_k \mid x_{-k}) ,
+\qquad
+p_Q(y_k \mid x_{-k}) \;=\;
+  \frac{Q(x_{-k}, y_k)}{\sum_{v} Q(x_{-k}, v)} .
+\label{eq:wrec}
+\end{equation}
+An autoregressive model has no emitted route, so the autoregressive row of
+Table~\ref{tab:capacity} is built the second way --- which leaves open
+whether that table's contrast is a property of the models or of the route.
 
-What the control does measure is how far the recovered conditionals are from
-the model's own: $J$ runs from $\CtrlJeffreysMin$ to $\CtrlJeffreysMax$ at
-the widest model, \emph{depending on which joint was recovered from}.  The
+Table~\ref{tab:bayesroute} closes it.  At each width it takes \emph{one}
+trained masked model and builds its Glauber rates both ways, recovering from
+three different joints $Q$, which Table~\ref{tab:bayesroute} names.
+The two readings are of the same model, so any
+difference between them is the route and nothing else.  Every recovered
+route returns zero, to $\CtrlSigmaJointMax$; the emitted one does not.
+
+That zero is not evidence about the model.  Equation~\eqref{eq:sigep}
+vanishes for any rates built from a joint, as Eq.~\eqref{eq:wrec} shows
+directly: $Q(x)\,w_{\mathrm{rec}}(x \to y)$ equals
+$\tfrac{1}{L}\,Q(x_{-k}, x_k)\,Q(x_{-k}, y_k) / \sum_{v} Q(x_{-k}, v)$,
+which is symmetric under exchanging $x_k$ and $y_k$ and therefore equals
+$Q(y)\,w_{\mathrm{rec}}(y \to x)$.  Detailed balance holds with respect to
+$Q$ and $\sigEP$ vanishes identically, so a route through a joint cannot
+report anything else.  What makes the asymmetry harmless is that the two
+routes coincide exactly when a joint exists, so a difference in construction
+can produce a difference in value only where the property under test fails.
+For the emitted route of Eq.~\eqref{eq:wemit} there is no such
+cancellation: $p_\theta(\cdot \mid x_{-k})$ does not take the shape $Q(x_{-k}, \cdot) / \sum_{v} Q(x_{-k}, v)$
+for any single $Q$, and that is what is being measured.
+
+What the control does measure is how far $p_Q$ is from $p_\theta$: a
+Jeffreys divergence $J$ between the two runs from $\CtrlJeffreysMin$ to
+$\CtrlJeffreysMax$ at the widest model, \emph{depending on which joint $Q$
+was recovered from}.  The
 three are not interchangeable and none is canonical.  ``Normalise it and the
 problem goes away'' therefore names a different model rather than repairing
 this one.
@@ -689,30 +1730,45 @@ this one.
 The last column of Table~\ref{tab:bayesroute} is the quantity
 Section~\ref{sec:fbdef} measures on text, read here on the same models.  The
 two chain-rule joints above are its two terms, so no extra computation is
-involved.  Both quantities are non-zero at every width, which is the identity
-seen twice.  Their sizes behave differently: $\sigEP$ rises with capacity
-($\rho = \CtrlRhoEP$, $p = \CtrlPEP$, Spearman, $n = \CtrlNWidths$) while
-$\langle|\sigma|\rangle$ does not ($\rho = \CtrlRhoSig$, $p = \CtrlPSig$),
-and the two do not track each other across the sweep ($\rho = \CtrlRhoXS$,
-$p = \CtrlPXS$).  They are different functionals of one failure, and neither
-magnitude is the amount of it.  This is the same point Section~\ref{sec:capacity}
+involved.  Both $\sigEP$ and $\sigma$ are non-zero at every width.  Each would have to
+vanish if the conditionals derived from one joint --- $\sigEP$ by
+Eq.~\eqref{eq:sigep}, $\sigma$ by Eq.~\eqref{eq:fbzero} --- so neither zero
+is available to this model; that the measured values are non-zero is a
+measurement and not a prediction of either identity.  One failure, read in
+two quantities rather than one.  Their sizes behave differently, and the honest form of that is a pair of
+levels rather than a pair of trends.  Over the sweep $\sigEP$ differs by a
+factor of $\ToyCapRatio$ between its endpoints, while
+$\langle|\sigma|\rangle$ stays between $\CtrlSigAbsMin$ and
+$\CtrlSigAbsMax$ at every width.  Ranked against width the two give $\rho =
+\CtrlRhoEP$ and $\rho = \CtrlRhoSig$, and ranked against each other $\rho =
+\CtrlRhoXS$.
+None of the three is significant and none can be: with $n =
+\CtrlNWidths$ widths the smallest two-sided $p$ the exact rank null
+can return is $\CtrlPFloor$, and these give $\CtrlPEP$, $\CtrlPSig$ and
+$\CtrlPXS$.  What the sweep establishes is therefore the factor and the
+contrast between the two quantities, not a trend test.  They are different
+functionals of one failure, and neither magnitude is the amount of it.  This is the same point Section~\ref{sec:capacity}
 makes about $\Delta$, established here on a system where the failure is
 known exactly rather than inferred.
 
-The permutation null of Section~\ref{sec:blkord} is untouched by this, and it
-is worth saying so where the floor is introduced.  Equation~\eqref{eq:antisym}
+The permutation set and the midrank of Section~\ref{sec:blkord} are untouched
+by this, and it is worth saying so here, where $\sigEP$ has just been shown
+not to vanish at any of the $\ToyNCap$ widths measured.
+Equation~\eqref{eq:antisym}
 requires only that $S$ be a deterministic function of the token sequence; it
 does not require $S$ to be a log-probability, nor the conditionals behind it to
-come from any joint.  The incompatibility that gives $\sigEP$ its floor is
-exactly the property Eq.~\eqref{eq:antisym} does not call on, so it cannot
-reach the rank statistic the rest of this paper uses.
+derive from any joint.  What makes $\sigEP$ non-zero --- that the masked
+conditionals are those of no single joint --- is exactly the property
+Eq.~\eqref{eq:antisym} does not call on, so it cannot reach the rank
+statistic the rest of this paper uses.
 
-The size of that floor is not arbitrary: it equals an average Jeffreys
+The size of that non-zero value is not arbitrary: it equals an average Jeffreys
 divergence between the conditionals the model was trained to produce and those
 of the distribution its sampler actually converges to, so it vanishes exactly
 when the two coincide.  That identity, and what follows from it, are the
 subject of separate work; nothing in this paper depends on them, and we quote
-it here only so that the floor is not mistaken for an unexplained artefact.
+it here only so that a non-zero $\sigEP$ is not mistaken for an unexplained
+artefact.
 
 \begin{figure}[tbp]
 \centering
@@ -722,11 +1778,13 @@ it here only so that the floor is not mistaken for an unexplained artefact.
 \caption{$\sigEP$ of Eq.~\eqref{eq:sigep}, the entropy production of the chain
 induced by a model's own conditionals, in the exactly solvable system.  An
 autoregressive model sits on zero by construction, to within $\ToySigmaAR$,
-whatever its accuracy; the masked values are the floor of that instrument, and
-it rises with capacity rather than falling.  An earlier version of this figure
-carried a second panel, $\Delta$ for the two \textsc{bert} evaluators against
-parameter count.  That reading is a pseudo-log-likelihood difference rather
-than $\Delta$ (Section~\ref{sec:scope}) and is not reported.}
+whatever its accuracy; the masked values are what the instrument returns
+when no joint accounts for its conditionals, and the widest model's value is
+$\ToyCapRatio$ times the narrowest's.
+No $\Delta$
+readings for masked evaluators are shown beside these: what was measured
+for them was not $\Delta$ (Section~\ref{sec:scope}), and it is withdrawn
+with the comparison it belonged to.}
 \label{fig:capacity}
 \end{figure}
 
@@ -741,204 +1799,44 @@ root-mean-square cycle affinity over the sampled cycles.  The column
 $\sigEP$ is Eq.~\eqref{eq:sigep}, the entropy production of the chain induced
 by each model's conditionals --- not $\Delta$ of Eq.~\eqref{eq:delta}. An
 autoregressive model's conditionals come from a joint, so its chain is
-reversible and $\sigEP$ vanishes identically, independently of the loss column
-beside it; the masked rows are the floor imposed by conditionals that belong
-to no joint.}
+reversible and $\sigEP$ vanishes identically, whatever the loss it reaches;
+the \emph{loss} column is not comparable between the two rows, the two
+objectives differing in what they condition on; the masked rows are what conditionals belonging to no joint
+produce instead.}
 \label{tab:capacity}
 \end{table}
 
-% =====================================================================
-\section{Results II: the labelled contrast}
-\label{sec:causal}
+% Placed after the capacity table, not before it: LaTeX fills float
+% slots in source order, and this one sitting first pushed
+% Table~\ref{tab:capacity} three pages past its first citation.
+\begin{table}[t]
+\centering
+\input{tables/tab_bayesroute}
+\caption{The route, controlled for.  One masked model at each width of
+Table~\ref{tab:capacity}, with its Glauber rates built both ways: from the
+conditionals it emits, and from conditionals recovered out of a joint.  Three
+joints are used --- the exponentiated pseudo-log-likelihood normalised over
+the state space, and the any-order chain rule taken left to right and right
+to left --- and the \emph{recovered} column is the largest $|\sigEP|$ of the
+three.  Normalising it is possible here and not for text, because it needs a
+sum over every state and this system has $\ToyStates$ of them; it enters as a
+candidate joint to recover conditionals from, and not as a score.  $J$ is the
+mean symmetrised Kullback--Leibler divergence between the emitted
+conditionals and the recovered ones, smallest and largest over the three
+joints.  The last column is the quantity of
+Section~\ref{sec:fbdef}, $\sigma = [\log P_{\mathrm{l2r}} - \log
+P_{\mathrm{r2l}}]/L$, averaged in magnitude over all $\ToyStates$ states.
+The emitted column reproduces Table~\ref{tab:capacity} exactly, same seed and
+same training call, so the comparison is within one model rather than between
+two.}
+\label{tab:bayesroute}
+\end{table}
 
-\subsection{What the labels record, and what they do not}
-\label{sec:construct}
-Everything in this section uses the causal/non-causal labels, so it is worth
-being exact about what those labels are.
 
-They record that a language model, given a prompt asking for a short passage
-whose sentences stand in a causal sequence, produced one; and that the same
-model, given a prompt asking for a passage whose sentences are arranged
-arbitrarily, produced the other.  That is the entire basis.  No operational
-definition of causal dependence is applied at any point.  Nothing is
-intervened on, no counterfactual is evaluated, and the passages are not checked
-against any specified causal structure.  ``Causal'' here is the name of a
-prompt, not the result of a measurement.
-
-Two features of the corpus design might be read as validation.  Neither
-is, and it is worth saying why.
-
-First, the $\NCorp$ corpora were generated by $\NCorp$ different models.  Their
-agreement therefore rules out an idiosyncrasy of one generator.  It does not
-bear on construct validity at all, because the \emph{prompt pair is the
-constant across all five} --- what varies is the generator, not the definition.
-Five applications of one undefined construct do not define it.
-
-Second, our within-text design removes the length, vocabulary, style and topic
-differences that separate the two sets, but it removes them \emph{within} a
-text, across its permutations.  The comparison between the sets still runs
-between texts written to different prompts.  Anything those prompts induced
-systematically --- connective density, register, clause structure, sentence
-length profile --- remains available to $\Delta$ and is indistinguishable from
-causal order in these data.
-
-The consequence is not that the contrast is spurious.  It is that the contrast
-has no established referent: $\Delta$ separates two sets of texts, and what
-distinguishes those sets is unknown.  An effect size, however large and however
-stable, cannot supply the missing construct.  We therefore report the contrast
-as a contrast between prompt-defined sets and nowhere describe it as a
-measurement of causality.
-
-A text set generated from an explicitly specified causal structure --- a graph
-fixed in advance, with the ordering determined by that graph and not by a
-prompt --- would supply the construct and make the question answerable.  We
-regard that as the experiment this one points to.
-
-\input{sec_decomp}
-
-% ====================================================================
-\input{sec_truesigma}
-
-% =====================================================================
-\section{Discussion}
-
-Our conclusion is negative in two independent ways, and the two should not be
-conflated.
-
-As a \emph{quantity}, $\Delta$ cannot be interpreted, and the reasons are
-structural rather than statistical.  It has no stable scale and no origin
-(Section~\ref{sec:capacity}); the origin is the one a theorem would normally
-supply, and no theorem reaches a single fixed text.  What it responds to is
-whether a text stands in its authored order, not whether that order is
-causal: most of its magnitude is
-attributable to the bare fact that a writer settled on an order, and that
-fraction grows with the capability of the evaluator.  The construction that does supply a zero, the
-permutation set, is approaching its own ceiling at current model sizes.  All of
-this is established without reference to any judgement about causality.
-
-As a \emph{test for causal structure}, $\Delta$ is not evaluable on these
-corpora at all.  It does separate the two prompt-defined sets, in a fixed
-direction and at every evaluator on the ladder; but the sets were never characterised
-except by the prompt that produced them, so the separation has no established
-referent.  Nor is the separation stable in size: only its direction and its
-rank effect size survive a change of evaluator, while its magnitude is fixed
-by how far that evaluator has saturated rather than by anything about the
-texts (Section~\ref{sec:contrast}), so even taken at face value it does not
-quantify anything.  This is not a weakness of the statistic.  It is a missing construct,
-and no refinement of the measurement supplies one.
-
-The practical consequences are narrow and concrete.  A value of $\Delta$ should
-not be quoted for a text, or compared between models.  Where a reference is
-needed, the permutation set of the text itself supplies one that is unitless and
-model-independent, at a cost of $n!$ scores rather than two.  An evaluator should
-be chosen inside the capability window of Section~\ref{sec:window}, with both
-ends checked rather than assumed.  And a contrast between text sets should not
-be reported as a measurement of a property those sets were never shown to
-differ in.
-
-Finally, on scope.  The framework these measurements belong to is built for
-autoregressive models, and the quantity it defines requires a factorised
-joint, which masked models do not supply.  That is not a gap to be filled with
-a substitute score: what a masked model supplies instead is the entropy
-production itself (Section~\ref{sec:fbdef}), and what that reports is the
-evaluator rather than the text (Section~\ref{sec:fbresult}).  The framework's
-empirical claim survives our re-measurement.  Its central quantity is
-unanchored, and the quantity it was standing in for is identically zero
-wherever it can be defined at all.
-
-% =====================================================================
-\section{Limitations}
-\label{sec:limitations}
-
-\emph{The labels.}  Treated in Section~\ref{sec:construct} rather than here,
-because it is not a caveat on the result but a limit on what the result can be
-about.  Section~\ref{sec:authored} is constructed to be independent of the
-labels; Section~\ref{sec:causal} is not, and no measurement on these corpora
-can make it so.
-
-\emph{The authored component is not decomposed.}  The non-causal passages are
-coherent discourse, so what we call authored order mixes topical continuity,
-anaphoric dependence and given--new ordering.  Separating these would need text
-sets built for the purpose.
-
-\emph{The authored component is a property of a text \emph{and} an evaluator.}
-The permutation construction removes the evaluator's unit and scale; it does
-not make the measurement independent of the evaluator.  It is not: the same
-texts give $\AuthoredGPTtwo$ at $\ParamsGPTtwo$ and $\AuthoredQwen$ at
-$\ParamsQwen$, and under $\sigma$ the dependence is far larger still
-(Section~\ref{sec:fbresult}).  Every statement here about authored order is a
-statement about what a model trained on text finds likely, and the capability
-of that model is part of the measurement rather than a nuisance to be
-removed.
-
-\emph{The masked floor is characterised only in the exactly solvable system.}
-Two controls on text remain: a corpus of sentences drawn from unrelated
-documents, which removes topical continuity, and a word-shuffled corpus, which
-removes syntax as well.  Their $\sigma$ would bound the part of the masked
-reading that no ordering of the content can explain.
-
-\emph{Enumeration.}  Every text here has exactly $\NBlocks$ sentence blocks, so
-the $\NBlocks! = \NPerms$ enumeration is exact.  Longer texts require sampling the permutation
-set, and the sampled set must be closed under reversal for
-Eq.~\eqref{eq:antisym} to hold.
-
-\emph{The pseudo-log-likelihood is not a log-probability}
-(Section~\ref{sec:scope}), so $\Delta$ has no masked counterpart and none is
-reported here.  The any-order chain rule does give a log-probability, at the
-price of a free unmasking order with no counterpart in the physics; that is
-the instrument of Section~\ref{sec:fbdef}, and it answers a different
-question.
-
-\emph{No extrapolation.}  The trends in Sections~\ref{sec:contrast}
-and~\ref{sec:window} are monotone over the range measured and we state them as
-such.  Whether the causal share continues to fall, and whether saturation
-becomes total, is not something this data settles.
-
-\emph{Capacity and family are not fully separated.}  The $\NEval$ evaluators
-of the $\Delta$ ladder span $\ParamsGPTtwo$ to $\ParamsQwen$, a factor of
-$\TrendCapSpan$, but four of them are one \textsc{gpt-2} family and the fifth
-a later model trained on a different corpus under a different recipe, so the
-top of the ladder changes more than the size.  The trends of
-Sections~\ref{sec:contrast} and~\ref{sec:window} are stated over the ladder as
-a whole and we do not separate the two effects.  A series that varies size
-alone under one objective, over a wider range, would separate them and is the
-control this work most obviously wants next.  The same caveat applies with
-more force to $\sigma$, where the two evaluators differ in objective,
-architecture and scale at once (Section~\ref{sec:fbresult}).
-
-% =====================================================================
-\section*{Reproducibility}
-
-All code and all measured values are available at \repoline, including the
-per-text JSON behind every table, the self-tests described below, and the
-scripts that build this document.  The same files are attached to this
-submission as ancillary material.
-
-Every number in this paper, in the tables and in the running text alike, is
-generated by \fn{make_tables.py} from the measurement JSON files, and every
-figure by \fn{make_figures.py}; no figure is typed into the source, so
-rerunning the measurements regenerates the prose.
-
-The measurement scripts carry self-tests that run without model weights.  For
-the any-order machinery these verify order-independence of the chain rule to
-$\AoarOrderDev$ and normalisation to $\AoarNormDev$.  For the
-permutation test they verify that the permutation set is closed under reversal,
-that the $n!$ values of $\Delta$ sum to zero, that the midrank is free to take
-any value in its range under an arbitrary score, and --- the check that matters
-most --- that an order-blind score yields a midrank of exactly $0.50$ while
-an unadjusted $\le$ count would yield $1.00$.  The statistical layer of the
-work we build on is reproduced independently before any of the above is run:
-\fn{reproduce_sagawa_stats.py} recomputes $\Delta$ for every text of all
-$\ReproNCorpora$ corpora from the released values, agreeing to
-$\ReproMaxErr$, and \fn{compare_repro.py} checks the statistics it
-obtains against the ones the source repository ships.
-
-Two runs in the exactly solvable system are separate from those, because they
-train small models rather than scoring text: \fn{capacity_sweep.py} produces
-Table~\ref{tab:capacity} and \fn{bayes_route_control.py} produces
-Table~\ref{tab:bayesroute}, the second rebuilding the first's masked models
-from the same seed and reproducing its $\sigEP$ column exactly before
-giving each of them the second route.
+% The appendix's own floats were deferred past the bibliography:
+% LaTeX holds them until a page has room, and the reference list gave
+% it none.  Flush them before the list starts.
+\clearpage
 
 \bibliographystyle{unsrt}
 \begin{thebibliography}{9}

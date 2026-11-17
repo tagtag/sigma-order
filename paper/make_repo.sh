@@ -62,6 +62,13 @@ done
 # for glossary.txt, which check_paper.py reads.
 cp "$SRC/paper"/*.tex "$SRC/paper"/*.py "$SRC/paper"/*.sh "$REPO/paper/"
 cp "$SRC/paper"/*.txt "$REPO/paper/" 2>/dev/null || true
+# The measurement logs README.md names in its Layout.  Not *.log: that
+# would take build.log and the arXiv logs with it.  Named one by one, so
+# that a log added later and listed in the README fails check_readme.py
+# here rather than reaching a reader as a dangling line.
+for f in ceiling_resolution.log ceiling_gap.log; do
+    [ -f "$SRC/paper/$f" ] && cp "$SRC/paper/$f" "$REPO/paper/"
+done
 # top-level scripts that belong to the repository rather than to one subtree
 for f in check_readme.py; do
     [ -f "$SRC/$f" ] && cp "$SRC/$f" "$REPO/"
@@ -93,6 +100,15 @@ __pycache__/
 # copied into the tree and then ignored, so check_readme.py found them and
 # a reader who cloned the repository did not.
 paper/*.log
+# ...except the one measurement log that lives in paper/.  It records
+# whether the ceiling fraction Section 5.4 rests on is clear of its own
+# 1/n resolution, which is the question that decides whether that section
+# has evidence at all; check_readme.py names it and would fail if it were
+# ignored.
+!paper/ceiling_resolution.log
+# ...and the one beside it, which records what the rise in the
+# ceiling-fraction gap is made of.  README.md names both.
+!paper/ceiling_gap.log
 paper/main.pdf
 # the preview of the arXiv build, kept by make_arxiv.sh for checking
 paper/arxiv_main.pdf

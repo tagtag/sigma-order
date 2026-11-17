@@ -60,7 +60,8 @@ follow at once.
 
 An autoregressive evaluator cannot be placed here at all: it has a joint, so
 its `sigma` is zero by construction, and the backward term asks for
-`P(x_1 | x_2..x_L)`, which causal attention cannot supply. For the evaluators
+`P(x_1 | x_2..x_L)`, which a model attending only to what precedes cannot
+supply. For the evaluators
 of the work re-examined, the quantity its thermodynamic reading names is
 simultaneously trivial and unevaluable. `Delta` is what can be computed in its
 place.
@@ -321,7 +322,10 @@ rerunning the measurements regenerates the prose.
 ```
 order-intervention/
   aoar_core.py              any-order chain rule, reversals, block arrangements
-  aoar_selftest.py          order-independence and normalisation checks
+  aoar_selftest.py          implementation checks on a synthetic consistent
+                            system, and normalisation on an inconsistent one
+  aoar_selftest.json        their measured tolerances, read by make_tables.py
+  aoar_selftest.log         its output
 
   block_order_pll.py        instrument 1: the authored order's rank under Delta
   block_order_selftest.py   its correctness checks, no weights required
@@ -389,10 +393,137 @@ paper/
   check_paper.py            the relations a built PDF cannot show
   check_paper_selftest.py   proof that it catches each of them
   glossary.txt              terms this paper settled on, and the banned ones
+  apply_terms.py            the terminology table, applied once; kept so the
+                            replacements are auditable rather than a diff
   make_figures.py           every figure
+  ceiling_resolution.py     Section 5.4 withdrew one statistic because a
+                            change of one 1/n! grid step is not a measured
+                            size, and rests instead on the fraction of
+                            texts at the ceiling.  That fraction has a grid
+                            of its own, 1/n over the texts it counts, and
+                            the same objection reaches it unless n is
+                            large.  This measures it instead of letting the
+                            paper claim a proportion is exempt: n = 100 per
+                            corpus, so the step is 1 point and the measured
+                            rise of 8 points is 8 of them.  Run by
+                            build_paper.sh, which stops if the verdict ever
+                            comes back the other way; --selftest pins the
+                            arithmetic with no data
+  ceiling_resolution.log    its output
+  ceiling_gap.py            what the rise in the ceiling-fraction GAP is made
+                            of: per corpus, leave-one-out, a within-evaluator
+                            exact test, the same contrast at midrank
+                            thresholds below the ceiling, and the tail
+                            contrast beside the median one.  Reports and
+                            draws no conclusion; run when deciding what
+                            Section 5.4 should say
+  ceiling_gap.log           its output
   build_paper.sh            measurements -> tables -> figures -> PDF
   make_arxiv.sh             assemble the arXiv bundle and verify it builds alone
 ```
+
+## Corrections made during revision
+
+These were all caught by a person reading the text. The paper carries the
+claim that stands; the history is here, because a submission is not a
+changelog. Where measurements exist and are not reported, the paper says so
+and says why — those are withdrawals, not edits, and they stayed in it.
+
+* **p-values at n = 5.** Every rank correlation in the paper is over five
+  evaluators or five widths. `scipy.stats.spearmanr` returns a
+  t-approximation at any n, and at n = 5 it gave p = 0.005 for a value no
+  exact test can produce: the floor is 2/5! = 0.0167. Now computed from the
+  exact rank null, with a self-test that refuses any reported p below that
+  floor.
+* **One grid step read two ways.** The causal component is 1–2 steps of the
+  1/n! grid and §5.3 declines to read that as a size. The authored
+  component's change across the ladder is also one step and §5.4 called it
+  a rise. Both now get the same ruler.
+* **The ceiling fraction was measured on the wrong set.** The authored
+  component is defined on the non-causal texts; the saturation evidence was
+  counted on the causal ones. Both are measured now, and the matching one
+  leads. `tab_saturation.tex` was generated and never printed, which is why
+  nobody could see the mismatch from the paper — it is in §5.4 now.
+* **"Independent of the labelling".** Eq. (8) selects the non-causal set;
+  swapping the labels moves the authored component by the causal component
+  and turns the share negative. The paper now measures the swap instead of
+  claiming an independence it does not have.
+* **σ_EP used to argue about σ.** §6.3 inferred from the toy system's σ_EP
+  rising that σ is not approaching its compatible limit. The appendix
+  measures that the two do not track each other and says so three times.
+  Macros reporting σ_EP's magnitude are now confined to the appendix by a
+  check.
+* **A trend verb on a non-significant correlation**, in both directions:
+  "rises" at p = 0.2 and "does not vary" at p = 0.56. A ladder of five can
+  establish a trend and cannot establish the absence of one; the paper now
+  states levels where it used to state absences.
+* **Three equations displayed twice**, so σ was Eq. (3) in one place and
+  Eq. (12) in another, and a comparison table cited the second.
+* **"Section 3.3 exhibits a model for which σ vanishes."** §3.3 is the
+  permutation set and has no σ in it. `\ref` resolved, so nothing noticed.
+* **"normalises to 4.4e-16."** It normalises to 1, with that deviation.
+* **`a writer chose`.** Every passage was generated by a language model.
+  See the section below — the wording was the smaller half.
+* **"the vertical separation narrows"** in Figure 1's caption, four lines
+  before the same caption said the statistic on its own axis does not
+  narrow.
+* **The self-test cited for the wrong claim.** `aoar_selftest.py` checks an
+  implementation against a consistent oracle; §3.2 cited it as evidence
+  about an inconsistent model. A normalisation test on inconsistent
+  conditionals was added, which is the case that section is about.
+
+Each of these now has a check in `make_tables_selftest.py` or
+`check_paper.py` that fails if it comes back.
+
+## One object, one word
+
+Nine objects in the paper had between two and five names each. The table
+was built by counting the current text, not from memory, and applied with
+`paper/apply_terms.py`; `paper/glossary.txt` now carries a rule for each so
+a near-synonym cannot come back three revisions later.
+
+| object | names it had | kept |
+|---|---|---|
+| the arrangement a text is in | authored order 24, authored arrangement 18, sentence order 5, block order 1 | **authored arrangement** |
+| where a value sits in its set | midrank 43, position 7, percentile 1 | **midrank** |
+| a token index | position 3 | **position** |
+| distance of that from the null | authored component, distance from the null, displacement 4 | **distance from the null** |
+| the 1/n! step | grid step 9, step ~34, quantum 1 | **grid step** |
+| a stage of a two-stage construction | step 7 | **stage** |
+| one of the n! | arrangement 44, permutation 6, ordering 1 | **arrangement** |
+| the n! set | permutation set 16, permutation range 1 | **permutation set** |
+| the causal / non-causal groups | the two sets 6, label groups 7, text set 1 | **label groups** |
+
+Four of the words keep a second sense and the rules are written so it
+survives: `position` is a token index, `step` is the grid quantum, `set` is
+a set of texts, and `order` in "causal order" and "sentence order" is an
+attribute of a passage rather than one of its arrangements. The title
+contrasts "authored order" with "causal order" in that attribute sense and
+is excluded from the check.
+
+Finding this also turned up a hole in the check itself: **a banned term
+that wrapped across a line was invisible**, to this check and to `grep`
+alike. `permutation construction` and `permutation range` were both sitting
+in `main.tex` against a rule naming the first. Whitespace is collapsed
+before matching now, and a self-test pins it. Any multi-word rule written
+before today could have been defeated by the line length of whoever typed
+the sentence.
+
+## The control this work does not have
+
+Every passage in these corpora was produced by a language model from a
+prompt — that is how Ref. [sagawa2026] built them, and it is stated in the
+paper's §5.1. So every "authored order" measured here is an order a
+left-to-right sampler emitted, and the authored component of §4 may be
+reporting that fact rather than anything about composition. The paper used
+to call it "the order a writer chose" in eight places, which is both wrong
+and the reason the question went unasked for a long time.
+
+The doubt reaches the authored component and stops there. The causal
+component is a difference between two groups produced the same way, so an
+effect common to both subtracts out; the identity of §6.1 holds whatever
+produced the text. What would settle it is human-written passages scored
+the same way, and that is the first thing to add.
 
 ## Self-tests
 
@@ -425,10 +556,29 @@ the reason to trust the numbers rather than the code's appearance:
   corpora — every text split into exactly 4 blocks and none was dropped — but
   the rule had no test at all, and a mis-split is silent: it only changes the
   size of the permutation set.
-* `aoar_selftest.py` — order-independence of the any-order chain rule to
-  1.8e-15 and normalisation to 4.4e-16. It writes those two tolerances to
-  `aoar_selftest.json`, which is where the paper's text gets them; they used
-  to be typed in.
+* `aoar_selftest.py` — a test of the **implementation**, on a synthetic
+  system where the answer is known. It builds a pairwise field on L=6 sites
+  over V=4 symbols (4096 states, enumerable) and an oracle that returns its
+  exact subset-marginal conditionals. Those are consistent by construction,
+  so the any-order chain rule must give the same log-probability for every
+  unmasking order; agreement to within 1.8e-15 across 7 orders says the
+  masking,
+  the order handling and the indexing are right. It says nothing about a
+  trained model — a real masked model is order-*dependent*, and measuring
+  that is the paper's §6. A second provider with perturbed conditionals is
+  order-dependent, so the test is not passing vacuously.
+
+  Normalisation for a fixed order is checked twice: `sum_x P_pi(x)` departs
+  from 1 by at most 4.4e-16 on the consistent oracle and 3.6e-15 on
+  conditionals built to belong to no joint. The second is the one §3.2 needs, because that section argues
+  about an inconsistent model; the paper used to cite the first. It holds
+  for a reason unrelated to consistency — with the order fixed the product
+  telescopes over the prefix tree — and the point of measuring it is that
+  the implementation agrees.
+
+  All of these, plus L, V and the state count, go to `aoar_selftest.json`,
+  which is where the paper's text gets them; they used to be typed in, and
+  one of them was once taken from the appendix's toy system instead.
 * `bundle_check.py` — a tarball that is about to be sent somewhere is
   extracted into an **empty** directory and every self-test and every module
   in it is run with `python3 -I`, so nothing can be satisfied by a file that

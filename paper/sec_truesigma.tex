@@ -5,118 +5,121 @@
 %
 % \input{sec_truesigma} after Section "Results II".
 
-\section{Results III: the entropy production itself}
+\section{Results III: $\sigma$, on masked evaluators}
 \label{sec:truesigma}
 
-Everything so far measures $\Delta$, the quantity Sagawa defines: a text
-scored against a \emph{different} text.  Section~\ref{sec:notareversal} gave
-the reason that is not an entropy production.  This section measures the
-quantity that is.
+Everything so far measures $\Delta$: a text scored against a rearrangement
+of itself, which is the fixed-text reading of
+Ref.~\cite{sagawa2026}~\cite[Sec.~V~B]{sagawa2026}.
+Section~\ref{sec:notareversal} gave the reason it has no origin on the text
+it is read from.  This section measures a comparison that has one.
 
 \subsection{The estimator, and the identity that constrains it}
 \label{sec:fbdef}
 
-For a token sequence $x = x_1 \ldots x_L$ and an unmasking order $\pi$, the
-any-order chain rule
-\begin{equation}
-\log P_\pi(x) \;=\; \sum_{t=1}^{L}
-   \log p_\theta\!\left( x_{\pi(t)} \,\middle|\, x_{\pi(1)}, \ldots,
-                         x_{\pi(t-1)} \right)
-\label{eq:aoar}
-\end{equation}
-is a genuine log-probability: it normalises to one over sequences, for any
-fixed $\pi$.  Taking $\pi$ to be the left-to-right and the right-to-left
-order of the same text gives
-\begin{equation}
-\sigma(x) \;=\; \frac{1}{L}\Bigl[ \log P_{\mathrm{l2r}}(x)
-                                - \log P_{\mathrm{r2l}}(x) \Bigr].
-\label{eq:fb}
-\end{equation}
-Both terms score the same $x$.  What differs is the direction in which the
+The estimator is Eq.~\eqref{eq:fb}: the any-order chain rule of
+Eq.~\eqref{eq:aoar} evaluated at $\pi = $ left-to-right and again at $\pi
+= $ right-to-left on the same text.  Equation~\eqref{eq:aoar} is a genuine
+log-probability --- it normalises to one over sequences, for any fixed
+$\pi$ --- and both of its evaluations score the same $x$.  What differs is the direction in which the
 model assembles it: forward, one token at a time from the left, against
 backward, one token at a time from the right.  That is the forward path
-against its reverse, which is what the stochastic-thermodynamic $\sigma$ is.
+against its reverse, which is what the stochastic-thermodynamic definition
+asks for.
 
-Equation~\eqref{eq:fb} carries an identity that decides how it can be read.
-If the model's conditionals are those of some joint distribution $P$, then
-every term of Eq.~\eqref{eq:aoar} telescopes and $\log P_\pi(x) = \log P(x)$
-for every $\pi$; the two terms of Eq.~\eqref{eq:fb} are then equal and
-\begin{equation}
-\sigma(x) = 0 \qquad\text{for every } x, \text{ causal or not.}
-\label{eq:fbzero}
-\end{equation}
-The value range of $\sigma$ contains no property of the text.  Whatever
-non-zero reading appears is a measure of the evaluator's \emph{in}compatibility
---- the failure of its conditionals to descend from any joint --- as exposed
+Equation~\eqref{eq:fb} carries an identity that decides how it can be read,
+stated as Eq.~\eqref{eq:fbzero} and proved here.  If the model's
+conditionals are those of some joint distribution $P$, then every term of
+Eq.~\eqref{eq:aoar} telescopes and $\log P_\pi(x) = \log P(x)$ for every
+$\pi$; the two terms of Eq.~\eqref{eq:fb} are then equal, and $\sigma(x) =
+0$ for every $x$, causal or not.  The size of a non-zero $\sigma$ is therefore
+not a property of the text.  Where one arrangement of a text falls among
+the rearrangements of that same text is a separate question, and
+Section~\ref{sec:fbrank} is where it is asked.  Whatever
+non-zero reading appears is a measure of the masked evaluator's \emph{in}compatibility
+--- the failure of its conditionals to derive from any joint --- as exposed
 by that text.  This is not an empirical finding to be checked; it is what
 Eq.~\eqref{eq:aoar} says.
 
 Two consequences follow immediately.
 
-An autoregressive evaluator has nothing to report here.  It has a joint, so
-Eq.~\eqref{eq:fbzero} applies and its $\sigma$ is zero by construction.  The
-backward term asks for $p_\theta(x_1 \mid x_2 \ldots x_L)$.  Causal attention
-cannot emit that conditional: position $1$ attends to nothing after it.  It
-can be recovered from the joint by Bayes --- score the $V$ sequences that
-differ only at position $1$ and normalise, which is what
-Section~\ref{sec:toy} does in a system small enough to afford $V$ forward
-passes per position --- but a conditional recovered that way is a function of
-the same joint, and that is precisely the hypothesis of
-Eq.~\eqref{eq:fbzero}.  The recovery therefore reproduces the zero instead of
-escaping it.  The absence is not of a number but of an independent one: a
-masked model's backward term is new information because its conditionals
-descend from no joint, and an autoregressive model's is not.  The
-quantity Sagawa names is, for the evaluators Sagawa uses, simultaneously
-trivial and unevaluable.  That explains the substitution of $\Delta$ for
-$\sigma$; it does not license it.
+An autoregressive evaluator has nothing to report here, and it is worth
+being exact about why, because the two available answers are different.  The
+backward term of Eq.~\eqref{eq:fb} is $\log P_{\mathrm{r2l}}(x)$, and each of
+its factors
+conditions on a suffix while the prefix is still unknown, and a model that
+attends only to what precedes emits none of them.  Equation~\eqref{eq:fb}
+is well defined; what an autoregressive evaluator cannot do is supply the
+conditionals it asks for.  So $\sigma$ is not evaluable on the
+autoregressive evaluators Ref.~\cite{sagawa2026} uses.  What is absent is
+not a number but an independent number: a masked model's backward term is
+new information because its conditionals derive from no joint, and an
+autoregressive model's conditionals derive from one.  That explains the
+substitution of $\Delta$ for $\sigma$; it does not license reading $\Delta$
+as $\sigma$.
 
 A masked evaluator can be placed here, and is the only kind that can.  It
-supplies every conditional Eq.~\eqref{eq:aoar} asks for, in any order, and
-its conditionals come from no joint, so Eq.~\eqref{eq:fbzero} does not bind
-it.  Section~\ref{sec:toy} measured that incompatibility directly, as a
-Kolmogorov cycle affinity on a system small enough to enumerate, and
-Table~\ref{tab:bayesroute} reads $\sigma$ itself on those same models: both
-quantities are non-zero for every one of them, and their sizes do not track
-each other.  Here $\sigma$ is read off real text, where the first of those
-two facts is what the identity predicts and the second is a warning against
-reading its magnitude as an amount.
+supplies every conditional Eq.~\eqref{eq:aoar} asks for, in any order.  That
+is also the scope of Eq.~\eqref{eq:fbzero}: it says that $\sigma$ vanishes
+for an evaluator whose conditionals derive from one joint, and an evaluator
+that cannot supply those conditionals is not a case of it either way.  For a
+masked evaluator no \emph{one} joint need account for all of the unmasking
+orders --- that is what incompatibility is --- and where none does,
+Eq.~\eqref{eq:fbzero} does not force $\sigma$ to zero.
+Appendix~\ref{sec:toy} measured that incompatibility directly, as the
+entropy production $\sigEP$ on a system small enough to enumerate, and
+Table~\ref{tab:bayesroute} reads $\sigma$ itself on those same models:
+$\sigEP$ and $\sigma$ are both non-zero at every width of that sweep, and
+nothing in it relates their sizes (Section~\ref{sec:fbresult} gives the rank
+correlation and the $n$ it rests on).  Here $\sigma$ is read off real text.
+What the identity fixes is what a non-zero reading means --- that the
+conditionals behind it derive from no single joint --- and not what the
+value moves with.  Whether it also happens to separate the two label groups
+is therefore not settled in advance, and has to be measured.
 
-\subsection{Where the authored order sits}
+\subsection{Where the authored arrangement sits}
 \label{sec:fbrank}
 
-A single $\sigma(x)$ says how much incompatibility one text exposes.  The
-question is whether \emph{causal order} exposes more of it, and for that the
-text has to be compared with itself.  Taking the same block arrangements as
+A single non-zero $\sigma(x)$ says that the conditionals behind it derive
+from no single joint, and nothing more; it is not an amount of anything.
+The question this section asks is narrower: whether the value $\sigma$
+returns is nevertheless higher on the arrangement a text came in than on its
+rearrangements, and for that the text has to be compared with itself.  Taking the same block arrangements as
 Section~\ref{sec:blkord} --- the $n!$ orders of the same $n$ sentences --- and
-writing $x_p$ for the text with its blocks in order $p$, we score
+writing $x_\pi$ for the text with its blocks in order $\pi$, we score
 \begin{equation}
-f(p) \;=\; \sigma(x_p)
+f(\pi) \;=\; \sigma(x_\pi)
 \label{eq:fbperm}
 \end{equation}
-for every $p$, and record the midrank of $f(\mathrm{id})$, the authored order,
+for every $\pi$, and record the midrank of $f(\mathrm{id})$, the authored arrangement,
 among the $n!$ values.  Length, vocabulary, topic and style are identical
 across the arrangements by construction, so the between-set confounds of
 Section~\ref{sec:construct} cannot act.
 
-The null is $0.50$, but for a different reason than in
-Section~\ref{sec:blkord}.  There it followed from the antisymmetry
-$\Delta(p) = -\Delta(p \circ \mathrm{rev})$, which made the $n!$ values
-symmetric about zero.  Equation~\eqref{eq:fbperm} has no such symmetry:
-reversing the block order changes which text is scored, and does not negate
-$\sigma$.  The null here is the ordinary permutation-test null --- under the
-hypothesis that the authored order is one arrangement among $n!$, its rank is
-uniform, so the midrank has expectation $0.50$.  Nothing is assumed about the
-shape of the $f$ distribution.
+The null is $0.50$, but only one of the two stages of Section~\ref{sec:blkord} carries over.  There the permutation set itself had
+a centre, fixed at zero by the antisymmetry $\Delta(\pi) = -\Delta(\pi \circ
+\mathrm{rev})$.  Equation~\eqref{eq:fbperm} has no such symmetry: reversing the arrangement changes which text is scored and does not negate $\sigma$,
+so the set of $f(\pi)$ is not centred and supplies no origin of its own.  What survives is the second stage.  Under the hypothesis that the authored arrangement
+is one arrangement among $n!$, its rank is uniform, so the midrank has
+expectation $0.50$ whatever the shape of the $f$ distribution.
 
 Two situations make the $n!$ values coincide, and both must be reported at
-the null rather than ranked.  A compatible evaluator gives $f(p) = 0$ for
-every $p$ by Eq.~\eqref{eq:fbzero}; in floating point those values differ by
-$\sim\!10^{-16}$, and ranking them would manufacture a percentile out of
+the null rather than ranked.  A masked evaluator whose conditionals derive
+from one joint gives $f(\pi) = 0$ for every $\pi$ by
+Eq.~\eqref{eq:fbzero}; in floating point those values differ by
+$\sim\!10^{-16}$, and ranking them would manufacture a midrank out of
 rounding noise.  A text whose sentences are identical strings has
 arrangements that are literally the same token sequence.  Values within
 $10^{-12}$ are therefore treated as tied, that text is flagged degenerate,
 and its midrank is set to $0.50$ exactly.  Table~\ref{tab:fbrank} reports how
-many texts that was: \FbDegenTotal\ of \FbNTexts.
+many scorings that was: \FbDegenTotal\ of \FbNScorings, over
+\FbNTexts\ texts read by each of the two masked evaluators used here,
+\texttt{bert-base-uncased} and \texttt{LLaDA-8B-Base}.
+
+This is the \emph{within-text reading}: one text, its $n!$ arrangements
+scored by Eq.~\eqref{eq:fbperm}, and the authored arrangement's midrank
+among them.  Section~\ref{sec:fbresult} also reads $\sigma$ a second way,
+without rearranging anything, and keeps the two apart throughout.
 
 
 \subsection{What the measurement says}
@@ -126,77 +129,231 @@ many texts that was: \FbDegenTotal\ of \FbNTexts.
 \centering
 {\small\input{tables/tab_fbrank}}
 \caption{The forward/backward entropy production of
-Eq.~\eqref{eq:fb}, read as the position of the authored arrangement among
-the $n!$ arrangements of the same text's own sentences.  Columns: $n$ texts,
-how many were degenerate (all $n!$ values tied, hence reported at the null
-and excluded from $r$), the median midrank in each label group with a
-signed-rank test of that group against the $0.50$ null, and the
-rank-biserial effect size between the groups with its two-sided
-Mann--Whitney $p$.  Masked evaluators only: an autoregressive model has a
-joint, so Eq.~\eqref{eq:fbzero} makes its $\sigma$ zero, and it cannot
-supply the backward term in any case.}
+Eq.~\eqref{eq:fb}, read as the midrank of the authored arrangement among
+the $n!$ arrangements of the same text's own sentences.  Columns from the
+left: the masked evaluator; the corpus; $n$, the texts in that cell; how
+many were degenerate (all $n!$ values tied, hence reported at the null and
+excluded from $r$); the median midrank of the causal group and of the
+non-causal group; $p_{c}$ and $p_{nc}$, the two-sided Wilcoxon signed-rank
+$p$ of each group against the $0.50$ null; $r$, the rank-biserial
+correlation of Eq.~\eqref{eq:rb} between the two groups, negative when the
+causal group ranks lower; and its two-sided Mann--Whitney $p$.  The two
+signed-rank columns answer a different question from the last one: whether
+each group is displaced from the null at all, as against whether the groups
+differ from each other.  Masked evaluators only
+(Section~\ref{sec:truesigma}).}
 \label{tab:fbrank}
 \end{table}
 
-Table~\ref{tab:fbrank} gives, for each evaluator and corpus, the median
-midrank of the authored arrangement in each label group, a signed-rank test of
-each group against the $0.50$ null, and the effect size between them.  Two
-readings come out of it, and they are of different kinds.
+Table~\ref{tab:fbrank} gives, for each masked evaluator and corpus, the median
+midrank of the authored arrangement in each label group, the two-sided
+Wilcoxon signed-rank $p$ of each group against the $0.50$ null in the
+$p_{c}$ and $p_{nc}$ columns, and the effect size between the groups.  Two
+readings come out of it, and they are of different kinds: where the authored
+arrangement sits, which turns out to be a property of the masked evaluator
+rather than of the text, and what the causal label adds to that, which turns
+out to be almost nothing.
 
-\paragraph{The authored arrangement's position is a property of the
-evaluator.}
-Under \texttt{LLaDA} the authored arrangement sits far below the null ---
-$\FbAuthoredLLaDA$, or $\FbAuthoredStepsLLaDA$ steps of the
-$1/\GridK = \GridStep$ grid --- and it does so in every corpus and in both
-label groups: all \FbNTestsDispLLaDA\ of its displacement tests reject at
-$p < \FbDispPMaxLLaDA$, against a Bonferroni threshold of
-$\FbDispBonferroni$ for the $\FbNTestsDisp$ displacement tests this section
-reports.  Under
+\begin{table}[tbp]
+\centering
+\input{tables/tab_fbdecomp}
+\caption{The same measurement as Table~\ref{tab:fbrank}, summarised per
+masked evaluator.  Columns from the left: the masked evaluator; the authored
+component $\mathrm{med}(\mathrm{pct}_{\text{non-causal}}) - 0.50$, as a
+median over the \NCorp\ corpora; that component in steps of the
+$1/\GridK = \GridStep$ grid; the causal component of Eq.~\eqref{eq:caus},
+likewise a median over corpora; that component in grid steps; and $r$, the
+median over the \NCorp\ corpora of the rank-biserial correlation
+Table~\ref{tab:fbrank} prints cell by cell, negative when the causal group
+ranks lower.  These are the
+numbers the text quotes; Table~\ref{tab:fbrank} is where they come from, one
+corpus at a time.}
+\label{tab:fbdecomp}
+\end{table}
+
+\paragraph{The authored arrangement's midrank is a property of the
+masked evaluator.}
+Equation~\eqref{eq:auth} is defined on midranks and says nothing about
+which quantity produced them, so it reads under $\sigma$ exactly as it does
+under $\Delta$.  Under \texttt{LLaDA} the authored component so read is
+$\FbAuthoredLLaDA$: the authored arrangement sits that
+far below the null, or $\FbAuthoredStepsLLaDA$ steps of the
+$1/\GridK = \GridStep$ grid (Table~\ref{tab:fbdecomp}).  It is far from the null in both
+label groups: \FbDispNRejectingLLaDA\ of its \FbNTestsDispLLaDA\
+distance-from-null tests clear a Bonferroni threshold of
+$\FbDispBonferroni$, set for the $\FbNTestsDisp$ such tests this section
+reports, the largest of them at $p = \FbDispPMaxLLaDA$.  Those tests are
+two-sided, so they establish that it is not at the null and not which side of it; the
+direction is the sign of $\FbAuthoredLLaDA$ itself.  Under
 \texttt{bert-base} the same texts give $\FbAuthoredBertBase$, which is
-$\FbAuthoredStepsBertBase$ steps, and its displacement tests clear that
+$\FbAuthoredStepsBertBase$ steps, and its distance-from-null tests clear that
 threshold in $\FbDispNRejectingBertBase$ of $\FbNTestsDispBertBase$ cases.
 
-The two readings differ by about thirteen grid steps on identical input.
-Nothing about the texts changed between them; only the evaluator did.  A
-quantity whose reading moves that far when the model is replaced is
-reporting the model.
+The two readings stand $\FbStepGap$ grid steps apart on identical input.
+Nothing about the texts changed between them; only the masked evaluator
+changed.  A
+quantity whose reading moves that far when the masked evaluator is replaced
+is reporting a property of that evaluator.
+
+The two masked evaluators do agree on one thing, and it is worth separating from
+the disagreement.  The causally labelled group sits below the null in
+$\FbCausalBelowBertBase$ of $\FbNCorporaOfBertBase$ corpora under
+\texttt{bert-base} and in $\FbCausalBelowLLaDA$ of $\FbNCorporaOfLLaDA$
+under \texttt{LLaDA}: where the causal group sits \emph{relative to the
+null} is the same under both.  That is not a statement about the two groups'
+order, which does reverse in one cell: \texttt{LLaDA} on \textsc{Opus46},
+the only cell of Table~\ref{tab:fbrank} where $r$ is positive
+($r = \FbRMax$).  The
+\emph{level} both sit at is not, and the same two counts taken on the
+non-causal group show it --- that group is above the null in
+$\FbAuthoredAboveBertBase$ corpora under \texttt{bert-base} and in
+$\FbAuthoredAboveLLaDA$ under \texttt{LLaDA}.  It is the level that moves by
+$\FbStepGap$ steps.
 
 \paragraph{The causal label does essentially nothing.}
-Of the \FbNTestsCausal\ evaluator--corpus tests of causal against non-causal,
+Of the \FbNTestsCausal\ masked-evaluator--corpus tests of causal against non-causal,
 \FbNSurviving\ survives a Bonferroni threshold of \FbBonferroni;
 \FbNNominal\ fall below $0.05$ on their own, against \FbNExpected\ expected
-by chance.  Within each evaluator the sign is not consistent either:
-\texttt{LLaDA} gives \FbSignNegLLaDA\ negative ($p = \FbSignPLLaDA$, exact
-binomial) and \texttt{bert-base} \FbSignNegBertBase\ ($p =
-\FbSignPBertBase$).  The one surviving cell is \texttt{bert-base} on
-\textsc{Gemini31} --- which is also the corpus where \texttt{LLaDA}'s
-displacement from the null is largest, so it is more plausibly a property of
+by chance.  The sign is nonetheless the same in \FbNNegative\ of
+\FbNCells\ cells, and we report it rather than only the failures: within
+each masked evaluator, \texttt{LLaDA} gives \FbSignNegLLaDA\ negative ($p =
+\FbSignPLLaDA$, exact binomial) and \texttt{bert-base}
+\FbSignNegBertBase\ negative ($p = \FbSignPBertBase$).  Neither reaches
+$0.05$ and neither could.  Under the null each corpus is an independent coin,
+so the most extreme outcome --- all $\FbNCorporaOfLLaDA$ on one side --- has
+probability $1/2^{\FbNCorporaOfLLaDA}$, and the two-sided $p$ of that
+outcome is $2/2^{\FbNCorporaOfLLaDA} = \FbSignPBertBase$: the smallest the
+test can return at this $n$, and the value \texttt{bert-base} takes.  Pooling the
+\FbNCells\ cells would be the wrong test: both masked evaluators score the
+\emph{same} texts, so the cells are not independent, and the corpus is the
+unit that is.  The one surviving cell is \texttt{bert-base} on
+\textsc{Gemini31} --- which is also the corpus where \texttt{LLaDA}'s distance from the null is largest, so it is more plausibly a property of
 that corpus than of the label.
 
-Taken together: $\sigma$ separates the authored arrangement from its
-rearrangements by an amount that depends on which masked evaluator is used,
-and does not separate causally ordered texts from arbitrarily ordered ones at
-all.  This is Eq.~\eqref{eq:fbzero} seen from the measurement side.  The
-identity says the value range of $\sigma$ contains no property of the text;
-what the measurement adds is that the range it does contain --- the
-evaluator's incompatibility --- is large enough to dominate everything else.
+Taken together: the authored component under $\sigma$ moves
+$\FbStepGap$ grid steps when the masked evaluator is changed, while
+exchanging the causal and non-causal labels leaves \FbNSurviving\ of
+\FbNCells\ cells surviving correction.  The separation between causally and
+arbitrarily ordered texts that $\Delta$ shows in \ContrastNRejecting\ of
+\ContrastNCells\ cells does not reappear here.  This is
+Eq.~\eqref{eq:fbzero} seen from the measurement side.  The identity says
+that where the conditionals derive from a joint there is no value range at
+all; what the measurement adds is that where they do not --- which is the
+case for \texttt{bert-base} and \texttt{LLaDA} alike --- what moves inside
+the range that opens is the evaluator and not the label.
 
-The between-set reading agrees in sign and in kind.  Scoring each text once
-in each direction, without permutations, the median $\sigma$ is positive in
-every corpus (\FbBetweenMin\ to \FbBetweenMax\ per token): the evaluator
-assembles text more probably forwards than backwards, which for a model with
-a joint would be exactly zero.  Its causal component is \FbBetweenCausal,
-negative in \FbBetweenNNeg\ of \FbBetweenNCorpora\ corpora --- the same side
-of zero as the within-text reading, and the same failure to reach
-significance.
+\begin{table}[tbp]
+\centering
+\input{tables/tab_fbbetween}
+\caption{The unrearranged reading of Eq.~\eqref{eq:fb}: each text scored
+once in each direction, in the arrangement it came in, with no permutation
+set and no midrank.  \emph{Upper block}: the median $\sigma$ over all of a
+cell's texts, both label groups together, per token.  It is not the authored
+component of Eq.~\eqref{eq:auth}, which is a midrank against a null of
+$0.50$; the null here is $\sigma = 0$.  \emph{Lower block}: the causal
+component of this reading --- the median $\sigma$ of the causally labelled
+texts less that of the non-causal ones --- which shares its name with
+Eq.~\eqref{eq:caus} but is a difference of raw $\sigma$ values rather than
+of midranks.  For a masked evaluator whose conditionals derive from a joint
+every entry of both blocks would be exactly zero by Eq.~\eqref{eq:fbzero}.
+None is, and on \FbBetweenNOpposite\ of the \FbBetweenNCompared\ corpora
+the two masked evaluators give the upper block's median $\sigma$ opposite
+signs.}
+\label{tab:fbbetween}
+\end{table}
 
-These two constructions are implemented separately, in
-\fn{order_intervention.py} and \fn{block_sigma_fb.py}, and share
-no code beyond the chain rule itself.  On the authored arrangement they agree
-to the printed precision in all \FbBetweenNCorpora\ corpora, which is the
-check that the rank construction measures what the direct one does.
+A second reading makes the same point more directly.  Call it the
+\emph{unrearranged reading}: Eq.~\eqref{eq:fb} evaluated as it stands, on
+the text in the arrangement it came in, with no permutation set behind it.
+Across cells the median $\sigma$
+runs $\FbBetweenMinLLaDA$ to $\FbBetweenMaxLLaDA$ per token under
+\texttt{LLaDA} and $\FbBetweenMinBertBase$ to $\FbBetweenMaxBertBase$ under
+\texttt{bert-base}, positive in \FbBetweenNPosLLaDA\ of
+\FbBetweenNOfLLaDA\ corpora under the first and \FbBetweenNPosBertBase\ of
+\FbBetweenNOfBertBase\ under the second (Table~\ref{tab:fbbetween}).  On
+\FbBetweenNOpposite\ of the \FbBetweenNCompared\ corpora the two give that
+median opposite signs.  The texts are identical; what differs is which masked
+evaluator computed $\sigma$.  What Eq.~\eqref{eq:fbzero} settles before any
+corpus is scored is that a non-zero reading belongs to the evaluator's
+incompatibility rather than to the text; a disagreement in sign on identical
+texts is one way that shows, and confirms it rather than establishing it.  The causal
+component of the same reading is the lower block of
+Table~\ref{tab:fbbetween}: a median of $\FbBetweenCausalLLaDA$ under
+\texttt{LLaDA} and $\FbBetweenCausalBertBase$ under \texttt{bert-base},
+negative in \FbBetweenNNegOfLLaDA\ and \FbBetweenNNegOfBertBase\ corpora
+respectively.  Both readings therefore give the causal group's median less
+the non-causal group's the same sign, as a median over corpora: the causally
+labelled texts sit lower.  The two are not in the same units: the
+within-text reading is a difference of midranks ($\FbCausalLLaDA$ and
+$\FbCausalBertBase$, or $\FbCausalStepsLLaDA$ and
+$\FbCausalStepsBertBase$ grid steps), the unrearranged reading a difference
+of raw $\sigma$.  The agreement is therefore one of direction and not of
+size, and neither reaches significance.
 
-\subsection{The mask rate this evaluator was trained at}
+\paragraph{Why this is not the argument made against $\Delta$.}
+The two negative results in this paper are not of the same kind, and the
+distinction decides what either of them licenses.  Under $\Delta$
+(Sections~\ref{sec:authored} and~\ref{sec:causal}) the two label groups do
+separate, in \ContrastNRejecting\ of \ContrastNCells\ cells.  What cannot be
+read off is the size of the part attributable to the causal label: it sits at
+the grid's resolution, and the groups have no criterion distinguishing them
+beyond the prompts that produced them.  Under $\sigma$
+(this section) what a non-zero reading reports is the masked evaluator's
+incompatibility, by the identity, and not causal order.  The $\Delta$
+result is empirical; the $\sigma$ one follows from the identity.  What $\sigma$ reports is
+a defect of the masked evaluator: Eq.~\eqref{eq:fbzero} makes it identically zero
+wherever the conditionals derive from a joint, so a reading of any size is
+a reading of incompatibility, and a contrast between text sets under
+$\sigma$ would be a contrast in how much of that incompatibility each set
+exposes.  This is an argument about the quantity and it holds before any
+measurement.  The direction differs between the two: under $\Delta$ the
+causal group scores higher, under $\sigma$ lower.  We do not account for
+that difference, and no claim in this paper needs to --- by Eq.~\eqref{eq:fbzero} a
+reading of $\sigma$ of any size, in either direction, is a reading of the
+masked evaluator's incompatibility and not of the text's causal structure.
+
+Nor does the sweep of Appendix~\ref{sec:toy} show $\sigma$ heading towards
+zero as the transformer width $d$ grows from $\CtrlDMin$ to $\CtrlDMax$.
+The appendix reports two quantities on that one sweep, $\sigEP$ and
+$\sigma$, which is why both are in view here; the statement that bears on
+this section has to be the one about $\sigma$.  They are separate
+quantities, each computed from the evaluator's own conditionals, and what
+makes each of them non-zero is the same incompatibility.  The behaviour of
+one does not follow from the behaviour of the other, and the sweep does not
+show them moving together: ranked against each other they give
+$\rho = \CtrlRhoXS$ at $p = \CtrlPXS$, which establishes nothing either way
+at $n = \CtrlNWidths$.  What $\sigma$ does over the sweep is
+not approach zero: $\langle|\sigma|\rangle$ runs between $\CtrlSigAbsMin$
+and $\CtrlSigAbsMax$ across all $\CtrlNWidths$ widths.  By the
+standard of Section~\ref{sec:window} that is as far as it goes --- a sweep
+of $\CtrlNWidths$ points cannot establish that a quantity is constant, and
+we do not claim the incompatibility is permanent.  What we claim is that
+nothing measured here is approaching the compatible limit.
+
+None of this transfers to $\Delta$.  On a fixed text there is no limit in
+which $\Delta$ becomes zero and no identity to appeal to: it is a
+log-ratio between a text
+and its reversal, and nothing makes that ratio vanish as the autoregressive
+evaluator's parameter count grows along the AR ladder.  Measured, its magnitude grows rather than shrinks along the AR ladder
+(Section~\ref{sec:capacity}).  The grounds for declining to read $\Delta$ as
+a measurement of causal order are the ones given there, in
+Section~\ref{sec:resolution} and in Section~\ref{sec:construct}, and they
+are empirical: they would stand even if everything this section says about
+$\sigma$ were wrong.
+
+The within-text reading and the unrearranged reading are computed by
+separate programs, \fn{block_sigma_fb.py} and
+\fn{order_intervention.py}.  They are not independent implementations: the
+first imports the text loader and the masked-model provider from the second,
+so what they share is the input path and the model interface, and what
+differs is the construction of $\sigma$ itself.  On the authored
+arrangement the median $\sigma$ they return agrees to the printed precision
+in all \FbNCorpora\ corpora, which is the check that the rank construction
+measures what the direct one does (\fn{check_two_constructions.py}).  That
+check covers \texttt{LLaDA} only: no direct run exists for
+\texttt{bert-base}.
+
+\subsection{The mask rate \texttt{bert-base} was trained at}
 \label{sec:maskrate}
 
 One objection applies to \texttt{bert-base} and not to \texttt{LLaDA}.
@@ -208,18 +365,24 @@ Eq.~\eqref{eq:aoar} ask it for a conditional at a rate it never saw.  A
 natural worry is that the chain rule simply collapses there, and that
 anything computed from it is noise.
 
-It does not collapse.  Across all \FbNTexts\ texts and both evaluators,
-\FbDegenTotal\ produced $n!$ values that coincided: the chain rule returns a
-distinct, ordered value for every arrangement of every text, at every mask
-rate it is asked for.  The reading is also not degenerate in the weaker
-sense: \texttt{bert-base}'s $\sigma$ has the same sign as \texttt{LLaDA}'s in
-the between-set construction, and its within-text displacement, though small,
-is in the same direction in \FbSignNegBertBase\ corpora.
+It does not collapse.  Across all \FbNTexts\ texts and both masked evaluators ---
+\FbNScorings\ scorings --- \FbDegenTotal\ produced $n!$ values that were
+all equal.  That is what the column detects and all that it detects: a text
+whose arrangements the masked evaluator cannot separate at all would have no
+midrank, and none occurred, at any mask rate asked for.  It is not a claim
+that the $n!$ values are distinct from one another, which this test does not
+examine.  The reading is also not degenerate in the weaker
+sense: within texts \texttt{bert-base}'s causally labelled group
+sits below the null in $\FbCausalBelowBertBase$ of
+$\FbNCorporaOfBertBase$ corpora, as \texttt{LLaDA}'s does in
+$\FbCausalBelowLLaDA$ of $\FbNCorporaOfLLaDA$.  What differs between the two
+masked evaluators within texts is the level the groups sit at, not the order
+they sit in.
 
-What differs between the two evaluators is how far the authored arrangement
-sits from the null, and that is the quantity Eq.~\eqref{eq:fbzero} predicts
-should carry the evaluator rather than the text.  We do not claim
+How far the authored arrangement sits from the null under $\sigma$ is the
+quantity Section~\ref{sec:fbresult} measured, and what it found was that
+its value tracks the masked evaluator and not the label.  We do not claim
 \textsc{bert}'s out-of-distribution conditionals are accurate.  We claim only
 that they are usable, that the collapse the objection anticipates does not
 occur, and that the conclusion of Section~\ref{sec:fbdef} rests on an
-identity rather than on either evaluator.
+identity rather than on either masked evaluator.

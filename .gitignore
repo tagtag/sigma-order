@@ -12,6 +12,15 @@ __pycache__/
 # copied into the tree and then ignored, so check_readme.py found them and
 # a reader who cloned the repository did not.
 paper/*.log
+# ...except the one measurement log that lives in paper/.  It records
+# whether the ceiling fraction Section 5.4 rests on is clear of its own
+# 1/n resolution, which is the question that decides whether that section
+# has evidence at all; check_readme.py names it and would fail if it were
+# ignored.
+!paper/ceiling_resolution.log
+# ...and the one beside it, which records what the rise in the
+# ceiling-fraction gap is made of.  README.md names both.
+!paper/ceiling_gap.log
 paper/main.pdf
 # the preview of the arXiv build, kept by make_arxiv.sh for checking
 paper/arxiv_main.pdf

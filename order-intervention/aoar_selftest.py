@@ -185,6 +185,40 @@ def main():
               f"|1 - sum| = {abs(1-tot):.2e}")
     print("  (oracle is consistent, so each order reproduces pi exactly)")
 
+    # ---------- 3b. normalisation WITHOUT consistency ------------------
+    # The case above is the uninteresting one.  Section 3.2 of the paper
+    # argues that a masked model supplies one joint PER unmasking order,
+    # and the model it argues about is inconsistent -- that is the whole
+    # point of the section.  Normalisation under a CONSISTENT oracle says
+    # nothing about that case, and the paper cited it as though it did.
+    #
+    # It holds anyway, and for a reason that has nothing to do with
+    # consistency: for a fixed order the product telescopes over the tree
+    # of prefixes, so sum_x P_pi(x) = 1 whenever each conditional is a
+    # distribution over the vocabulary.  Consistency decides whether the
+    # DIFFERENT orders agree, not whether each one normalises.  Measuring
+    # it on the perturbed provider is what the paper should be quoting.
+    print()
+    print("=" * 94)
+    print("3b) The same, with INCONSISTENT conditionals: each fixed order "
+          "must still normalise")
+    print("=" * 94)
+    worst_norm_pert = 0.0
+    for eps in (0.1, 0.5):
+        pert = PerturbedProvider(states, pi, eps)
+        for o in ("l2r", "r2l", "random:3"):
+            order = make_order(o, L)
+            tot = 0.0
+            for s in states:
+                tot += np.exp(aoar_logprob(list(s), order, pert))
+            worst_norm_pert = max(worst_norm_pert, abs(1 - tot))
+            print(f"  eps={eps:<5} order={o:<12} sum_x P_pi(x) = "
+                  f"{tot:.12f}   |1 - sum| = {abs(1-tot):.2e}")
+    print("  (these conditionals belong to no joint, and each order still "
+          "normalises)")
+    ok3 = worst_norm_pert < 1e-10
+    print(f"  -> {'PASS' if ok3 else 'FAIL'} (threshold 1e-10)")
+
     # The paper quotes these two tolerances.  They were typed in from a run
     # and nothing tied them to a run afterwards, so write them down where
     # make_tables.py can read them.
@@ -193,6 +227,11 @@ def main():
     with open(out, "w") as fh:
         json.dump({"max_abs_order_dev": float(worst),
                    "max_abs_norm_dev": float(worst_norm),
+                   "max_abs_norm_dev_inconsistent": float(worst_norm_pert),
+                   # the system this test is run ON.  It is NOT the toy
+                   # system of the appendix, and the paper reached for that
+                   # one's state count when it first described this test.
+                   "L": int(L), "V": int(V), "n_states": len(states),
                    "n_texts": len(test_x), "n_orders": len(orders)}, fh,
                   indent=1)
     print(f"\n# wrote {out}")

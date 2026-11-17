@@ -70,6 +70,42 @@ $PY -I ../order-intervention/block_split_selftest.py >/dev/null || exit 1
 $PY -I make_tables.py --pll "$PLL" --blkord "$BLKORD" --toy "$TOY" \
     --outdir tables
 
+# Section 5.4 withdrew the authored component's rise across the ladder
+# because it is one step of the 1/n! grid, and rests instead on the fraction
+# of texts at the ceiling.  That fraction has a grid of its own, 1/n over
+# the texts it counts, and the same objection applies to it unless n is
+# large.  This measures it rather than letting the paper assert an
+# exemption, and the log is the record of the answer.
+$PY -I ceiling_resolution.py --selftest || exit 1
+# Kept for the record, not as a gate.  Section 5.4 used to rest on this
+# fraction rising; measured on the set Eq. (8) is defined on it does not,
+# the claim was withdrawn, and a gate on a claim the paper no longer makes
+# would only block the build.  What Section 5.4 rests on now is the gate
+# below.
+$PY -I ceiling_resolution.py "$BLKORD" | tee ceiling_resolution.log
+# Section 5.4's one positive claim: the ceiling-free tail contrast rises
+# with capacity, at a p the ladder can actually deliver.  If a future
+# measurement takes that above 0.05 the sentence is false and the section
+# has to be rewritten rather than rebuilt.
+$PY - <<'GATE' || exit 1
+import re, sys
+src = open("tables/macros.tex", encoding="utf-8").read()
+m = re.search(r"\\newcommand\{\\TailZTrendP\}\{([^}]*)\}", src)
+if not m:
+    print("  TailZTrendP is not defined; skipping the tail gate")
+    sys.exit(0)
+try:
+    p = float(m.group(1))
+except ValueError:
+    print("  TailZTrendP is still TODO; skipping the tail gate")
+    sys.exit(0)
+if p >= 0.05:
+    print(f"  ERROR: the ceiling-free tail trend is p = {p}, not below 0.05.")
+    print("  Section 5.4 states that trend; it has to be rewritten.")
+    sys.exit(1)
+print(f"  tail gate: the ceiling-free tail trend holds at p = {p}")
+GATE
+
 echo
 echo "=== 2. figures ==="
 $PY -I make_figures.py --pll "$PLL" --blkord "$BLKORD" --toy "$TOY" \
@@ -83,7 +119,10 @@ if command -v latexmk >/dev/null 2>&1; then
         echo "LaTeX produced no PDF; the errors were:"
         grep -A3 "^! " build.log | head -40; exit 1
     fi
-    grep -c "^! " build.log | sed "s/^/  latex errors: /" || true
+    texerr=$(grep -c "^! " build.log || true)
+    echo "  latex errors: $texerr"
+    [ "$texerr" -eq 0 ] || grep "^! " build.log | sort | uniq -c | sort -rn \
+        | sed "s/^/    /"
     latexmk -c >/dev/null 2>&1 || true
 else
     # Three passes -- the same number make_arxiv.sh uses, and the same number
@@ -97,7 +136,10 @@ else
         pdflatex -interaction=nonstopmode main.tex >>build.log 2>&1 || true
     done
     [ -f main.pdf ] || { grep -A3 "^! " build.log | head -40; exit 1; }
-    grep -c "^! " build.log | sed "s/^/  latex errors: /" || true
+    texerr=$(grep -c "^! " build.log || true)
+    echo "  latex errors: $texerr"
+    [ "$texerr" -eq 0 ] || grep "^! " build.log | sort | uniq -c | sort -rn \
+        | sed "s/^/    /"
 fi
 
 echo
@@ -133,3 +175,15 @@ $PY -I check_paper.py --tex main.tex --tables tables || \
 echo
 ls -la main.pdf
 echo "done."
+
+# A "! " line means TeX REFUSED something and carried on, so the PDF exists
+# and does not contain what was asked for.  This was printed as a bare count
+# for weeks while 17 table cells typeset wrongly on every pass.  It is a
+# failure now, and non-zero here stops a `&& make_arxiv.sh`.
+if [ "${texerr:-0}" -gt 0 ]; then
+    echo
+    echo "FAIL: $texerr LaTeX error(s) -- see \"=== 3. PDF ===\" above."
+    echo "A refused construct is still in the PDF as whatever TeX recovered"
+    echo "to, so this is a typesetting defect and not a warning."
+    exit 1
+fi

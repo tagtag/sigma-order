@@ -1,6 +1,10 @@
 {
  "max_abs_order_dev": 1.7763568394002505e-15,
  "max_abs_norm_dev": 4.440892098500626e-16,
+ "max_abs_norm_dev_inconsistent": 3.552713678800501e-15,
+ "L": 6,
+ "V": 4,
+ "n_states": 4096,
  "n_texts": 5,
  "n_orders": 7
 }

@@ -1,9 +1,10 @@
 % Replacement for Sections 5.2 and 5.3 (main.tex l.732--901).
-% Draft 2026-11-11, written against the measured autoregressive ladder.
+% Draft 2026-11-11, written against the measured AR ladder.
 %
 % The section this replaces argued that the causal contribution falls as the
 % evaluator saturates.  Measured across \TrendNEval\ autoregressive
-% evaluators spanning \TrendCapSpan$\times$ in parameters, it does not.  What
+% evaluators spanning \TrendCapSpan-fold in parameters -- of which the
+% within-family capacity span is \TrendCapSpanFamily-fold -- it does not.  What
 % rises is the fraction of texts already at the ceiling.  The two are easy to
 % confuse and the earlier draft confused them; the rank correlations below
 % are reported precisely so the text cannot.
@@ -13,77 +14,432 @@
 
 Section~\ref{sec:blkord} supplies the origin that Eq.~\eqref{eq:delta}
 lacks: the distribution of $\Delta$ over the $n!$ arrangements of a text's
-own sentences, against which its authored arrangement has a position.
-Section~\ref{sec:decomp} splits the median position's distance from the
+own sentences, against which its authored arrangement has a midrank.
+Section~\ref{sec:decomp} decomposes the median midrank's distance from the
 $0.50$ null into the part a non-causal --- but still authored --- order
 earns, and the part causal order earns beyond it.
 
 Table~\ref{tab:decomposition}, introduced with the rule in Section~\ref{sec:decomp}, gives both for every evaluator.  The authored
 component is $\AuthoredGPTtwo$ at $\ParamsGPTtwo$ and $\AuthoredQwen$ at
-$\ParamsQwen$; the causal component is $\CausalGPTtwo$ and $\CausalQwen$.
-Between a tenth and a fifth of the measured distance is attributable to the
-labelled contrast, and the rest to the arrangement simply being the one a
-writer chose.
+$\ParamsQwen$; the causal component is $\CausalGPTtwo$ at both ends; it is not monotone
+between them (Table~\ref{tab:decomposition}).
+Between $\ShareEvalMin\%$ and $\ShareEvalMax\%$ of the measured distance is
+attributable to the labelled contrast, and the rest to the arrangement
+simply being the order the passage was produced in.  Those are midrank
+units, which is what
+this table reports; Section~\ref{sec:resolution} is why the paper quotes the
+ceiling-free figure of $\ShareZMin\%$ to $\ShareZMax\%$ when it needs a size.
 
-\subsection{The causal component is one step of the statistic}
+That figure is conditional and the condition is worth stating plainly, since
+everything from here to the end of this section depends on it.  It is what
+the decomposition returns \emph{if the labels are taken at face value}: the
+decomposition is defined against the non-causal group, exchanging the two
+groups
+turns the share negative (Section~\ref{sec:decomp}), and the number has no
+meaning apart from the contrast it is computed from.
+Section~\ref{sec:construct} then asks what that contrast records, and
+answers that it records which prompt produced the text and nothing further.
+The two are separate objections and we offer them as such: the share is
+small and unresolved even granting the labelling, and the labelling has no
+construct behind it in any case.  Neither rests on the other, and a reader
+who accepts the labels entirely is still left with
+Section~\ref{sec:resolution}.
+
+\subsection{Where the contrast lives}
 \label{sec:resolution}
 
 Before reading those numbers as magnitudes, note what the statistic can
 express.  The midrank over $n!$ arrangements lives on a grid of width
 $1/n! = \GridStep$.  A causal component of $\CausalGPTtwo$ is one grid step.
-Across the \CausalCompNEval\ autoregressive evaluators the component takes
-\CausalCompNDistinct\ distinct values, between \CausalCompStepsMin\ and
-\CausalCompStepsMax\ steps, while the authored component spans several.
+Across the \CausalCompNEval\ autoregressive evaluators the component lands
+on \CausalCompNDistinct\ distinct multiples of that grid, between
+\CausalCompStepsMin\ and \CausalCompStepsMax\ steps.  The authored component is a different size
+entirely: it sits \AuthoredCompStepsMin\ to \AuthoredCompStepsMax\ steps
+from the null, against the \CausalCompStepsMin--\CausalCompStepsMax\ steps
+of the causal component.  The distance this paper decomposes is thus a
+measured size; the part of it attributable to the labels is not.
+
+Its \emph{movement} across the AR ladder is another matter, and the same ruler
+applies to it.  Across the \TrendNEval\ evaluators the whole range of the authored
+component is $\AuthoredCompSpan$, which is \AuthoredCompSpanSteps\ grid
+steps --- the same grid step this section has just called the smallest
+non-zero reading available.  Section~\ref{sec:window} returns to that where
+it reports the change, because a rise of one step is not evidence of a
+different kind from a component of one step.
 
 The causal contribution is therefore at the instrument's resolution.  Its
 value is not a measured size but the smallest non-zero reading available,
-and a difference between two evaluators of one step is a difference between
+and a difference between any two evaluators of one step is a difference between
 adjacent representable numbers.  This is why Section~\ref{sec:decomp}
-reports the same split on
-$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$, which has neither a
-ceiling nor a grid: there the share runs $\ShareZMin\%$ to $\ShareZMax\%$.
+reports the same decomposition on
+$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$, which lives on no
+grid at all, so that a component this small is representable in it: there
+the share runs $\ShareZMin\%$ to $\ShareZMax\%$, the same order of
+magnitude.  Per evaluator the midrank form and the $z$ form are not
+interchangeable: one evaluator's share differs between them by a factor of
+$\ShareFormWorst$.  Whether the two forms track each other across the
+$\ShareFormNEval$ evaluators is not a question $\ShareFormNEval$ points can
+settle either way ($\rho = \ShareFormRho$, $p = \ShareFormP$), and we rest
+nothing on it; the factor is the measured part, and it is the same statement again: a component one grid
+step wide does not have a share that survives being renormalised.
 
 Nothing here says the causal contribution is absent.  The rank test of
-Section~\ref{sec:blkord} separates the two label groups at
-$p < \BlkPMaxCausal$ in every corpus and evaluator.  What is at resolution
-is the \emph{size} of that separation once it is expressed as a share of the
-authored distance, and only the $z$ form can carry it.
+Section~\ref{sec:blkord} separates the two label groups in
+\ContrastNRejecting\ of the \ContrastNCells\ (evaluator, corpus) cells at a
+Bonferroni threshold of $\ContrastBonferroni$.  A total of \ContrastNRejecting\ does not say how those cells fall across
+the AR ladder, so the breakdown is given: \ContrastRejectByEval, and
+Table~\ref{tab:blkcells} prints every cell.  The separation is not
+everywhere: the worst cell gives $p = \ContrastPWorst$, and the
+rank-biserial correlation of Eq.~\eqref{eq:rb} runs from $\ContrastRMin$ to
+$\ContrastRMax$ across the cells, which is the reservation; its median is
+$\ContrastRMedian$, which is not one.  What is consistent is the direction,
+which is the same in \ContrastNPositive\ of the \ContrastNCells\ cells.
+What is at resolution is the \emph{size} of that separation once it is
+expressed as a share of the authored distance.
 
-\subsection{The room runs out; the contribution does not fall}
+% check_paper float distance: three call sites spanning 13 pages
+% (Sections 2.1, 4.2, 5.3).  Printed next to the densest of them, 5.3,
+% where the table is read row by row; the first-citation distance grew
+% when 2.1's missing reference was ADDED, which this metric scores as a
+% regression.  Accepted as a WARN rather than moved.
+\begin{table}[tbp]
+\centering
+{\small\input{tables/tab_blkcells}}
+\caption{Every (evaluator, corpus) cell of the AR ladder.  Columns from the
+left: the evaluator; the corpus; the median over that cell's texts of
+$\Dblock$, the raw value of Eq.~\eqref{eq:delta} for the authored
+arrangement, per token; the rank-biserial correlation $r$ of
+Eq.~\eqref{eq:rb} between the two label groups, positive when the causal
+group ranks higher; and its two-sided Mann--Whitney $p$.  A star
+marks the cells that clear the Bonferroni threshold of
+$\ContrastBonferroni$, so the counts this section quotes can be read off
+rather than recomputed from a $p$ printed at the threshold.  Those counts,
+and the ones in Section~\ref{sec:capacity}, are taken over these rows; the
+$\Dblock$ column is the quantity Section~\ref{sec:capacity} reports a range
+of, and the denominators of the factor quoted in
+Section~\ref{sec:fixedtext}.}
+\label{tab:blkcells}
+\end{table}
+
+\paragraph{The median is one statistic of the contrast, and not a
+representative one.}
+Everything above is computed from a difference of medians, and a median
+says nothing about where in the range a difference sits.  Recomputing the
+same contrast as ``how many texts have a midrank above $t$'' at
+\TailSweepNThr\ thresholds shows that it sits in one place only.  Below
+$t = \TailOnsetThr$ the worst evaluator shows no difference worth a point,
+and $\TailOnsetThr$ is where the worst of them first passes one.  Single
+evaluators reach $\TailBelowOnsetMax$ points below it: Table~\ref{tab:sweep}
+shows those cells.  The threshold $\TailOnsetThr$ does not show them,
+because it is the threshold at which the \emph{worst} evaluator first
+passes a point.  From
+$\TailOnsetThr$ up, the difference between the two label groups is more
+than a point for every evaluator.  Table~\ref{tab:sweep} gives every threshold and every evaluator, and
+no test is run on the sweep: it locates the contrast, and the cell-level
+tests below measure it.  The cut is not chosen to suit the argument.  The separation is
+widest at $t = 0.90$, not at the cut this section goes on to use, which is
+the strict maximum: the authored arrangement scoring above every one of the
+other $n! - 1$ arrangements of its own text.  The whole sweep is printed
+rather than the threshold that maximises it.
+
+\paragraph{In the tail it is not at the grid floor.}
+Table~\ref{tab:tail} gives the contrast in the tail --- the top of the
+midrank range --- cell by cell: the fraction of texts whose authored arrangement is the strict
+maximum of its own permutation set, causal against non-causal, for each of
+the \TailNCells\ (evaluator, corpus) cells.  The difference is positive in
+\TailNPositive\ of them, and it runs from $\TailDiffMin$ to $\TailDiffMax$
+points on a grid no coarser than $\CeilResolution$.  We quote no pooled test
+on that count: the \TailNCells\ cells are \TrendNEval\ evaluators read on the
+same \NCorp\ corpora, so they are not \TailNCells\ independent draws: the
+independent unit here is the corpus, not the cell.  Individually \TailNRejecting\ cells clear a
+Bonferroni threshold of $\TailBonferroni$, against $0.05$ cells expected by
+chance; the worst cell gives $p = \TailPMax$.  The direction is therefore
+the strong part of this evidence and the magnitude is not, and we report
+both rather than the one that reads better.
+
+That statistic is read on the midrank, which is bounded above by
+$1 - 0.5/n!$, so an objection is available: the strict maximum sits on that
+bound and a contrast measured there might be an artefact of it.  The lower
+block of Table~\ref{tab:tail} answers it in units with no bound.  It is
+the fraction of causal texts whose $z$ exceeds the
+\emph{non-causal} group's own $\TailZQ$th percentile, so its null value is
+$\TailZNull\%$ by construction, it lives on no grid, and nothing about it
+saturates.  It runs from $\TailZMin\%$ to $\TailZMax\%$ across the cells
+and \TailZNRejecting\ of them clear the same Bonferroni threshold --- more
+than the bounded form, not fewer.
+
+\paragraph{What this changes.}
+``The causal contrast is at the instrument's resolution'' is a statement
+about the median difference and we keep it as one.  It is not a statement
+about the contrast.  Read in the tail the same labels on the
+same texts separate the groups by $\TailDiffGPTtwo$ to $\TailDiffQwen$
+points, on a grid no coarser than $\CeilResolution$, which is not a floor.
+That grid is the fraction's own: it is taken over at least $\CeilNTexts$
+causal texts in every cell, so one text moves it by no more than
+$\CeilResolution$.
+Table~\ref{tab:sweep} gives the separation at every intermediate cut.  The
+decomposition of Section~\ref{sec:decomp}, and the share it yields, remain
+median quantities and are reported as such throughout.
+
+\begin{table}[tbp]
+\centering
+\small
+\input{tables/tab_sweep}
+\caption{The causal/non-causal contrast at each midrank threshold: the
+points by which more causal than non-causal texts have a midrank above
+$t$, median over the \NCorp\ corpora.  $\TailOnsetThr$ is the first
+threshold at which \emph{every} evaluator separates the groups by more than
+a point; below it single evaluators reach $\TailBelowOnsetMax$.  The
+$>\TailSweepDupThr$ column is the strict-maximum column: the only midrank
+above $\TailSweepDupThr$ that $n!$ arrangements admit is the largest one, so
+the two cuts coincide by construction and not by measurement.  The last
+column is the strict-maximum contrast of
+Table~\ref{tab:tail}, which is the cut Section~\ref{sec:window} follows;
+it is not the widest, and this table is printed so that choice can be
+seen.}
+\label{tab:sweep}
+\end{table}
+
+\begin{table}[tbp]
+\centering
+\small
+\input{tables/tab_tail}
+\caption{The causal/non-causal contrast in the tail, for every
+(evaluator, corpus) cell.  \emph{Upper block}: the points by which more
+causal than non-causal texts have an authored arrangement that is the
+strict maximum of the $n!$ arrangements of its own text, on a grid of
+$\CeilResolution$ or finer: $\CeilNTexts$ is the smallest number of
+causally labelled texts in any cell, so $\CeilResolution$ bounds the
+coarsest grid rather than naming one.
+\emph{Lower block}: the same contrast with no upper bound to sit on --- the
+percentage of causal texts whose
+$z = \Delta(\mathrm{id})/\mathrm{sd}\{\Delta(\pi)\}$ exceeds the
+non-causal group's own $\TailZQ$th percentile in that cell, whose null
+value is $\TailZNull\%$ by construction.  A star marks a cell below
+$0.05/\TailNCells = \TailBonferroni$ on a two-sided Fisher exact test ---
+of the two groups' counts against each other in the upper block, and of the
+causal count against the $\TailZNull\%$ the cut defines in the lower, which
+is a one-sample question and not the same test; \TailNRejecting\ cells do in the
+upper block and \TailZNRejecting\ in the lower, against $0.05$ expected by
+chance.  The per-cell $p$ values themselves are summarised rather than
+printed, because what the section uses from them is the count.}
+\label{tab:tail}
+\end{table}
+
+\subsection{Along the AR ladder the tail moves and the median does not}
 \label{sec:window}
 
-A strong evaluator pushes an arbitrary authored order towards the top of its
-own permutation range, and once the authored order \emph{is} the extreme
-arrangement no normalisation can express a further increase.  That ceiling
-is real and it is approaching.  Over the \TrendCapSpan$\times$ span of
-parameters covered here, the fraction of causally labelled texts whose
-authored order is already the extreme arrangement rises with capacity at
-$\rho = \TrendCeilRho$ ($p = \TrendCeilP$, Spearman, $n = \TrendNEval$) ---
-the only component with a significant trend.
+Throughout this paper a \emph{stronger} evaluator means one thing: one that
+ranks a text's own arrangement further above the rearrangements of the same
+sentences.  The quantity that measures it is the authored component of
+Eq.~\eqref{eq:auth}.  It does not mean more sensitive to causal order.  That
+is the causal component of Eq.~\eqref{eq:caus}, measured below, and it stays
+at \CausalCompStepsMin--\CausalCompStepsMax\ steps of the $1/n!$ grid.  Every correlation below is taken against
+\emph{position on the AR ladder}, which is the evaluators in order of parameter
+count (the evaluator table of Section~\ref{sec:methods}).  That is not the
+same variable as parameter count: the AR ladder's top rung,
+\texttt{Qwen3-4B-Base}, is a different family from the four \textsc{gpt-2}
+rungs below it and was pretrained on different data, so the AR ladder orders
+parameter count and evaluator provenance together
+(Section~\ref{sec:limitations} says what that costs).  Every $\rho$ in this
+paper is Spearman's rank correlation.  Because it uses only ranks and the
+\TrendNEval\ evaluators are already in that order, each $\rho$ reports
+whether a component is monotone along the AR ladder and says nothing about
+the spacing between its rungs.  An evaluator higher up the AR ladder pushes an arbitrary authored
+arrangement towards the top of its own permutation set, and once the
+authored arrangement \emph{is} the strict maximum no normalisation can
+express a further increase.  Whether that ceiling is being approached is a
+measurement, and the measurement does not show it being approached:
+counted on the group the component is defined on, the fraction at the
+maximum is no higher at the top of the AR ladder than at the bottom.
 
-The causal component itself does not fall.  Against capacity it gives
-$\rho = \TrendCausalRho$ ($p = \TrendCausalP$), and the ceiling-free $z$
-share gives $\rho = \TrendShareZRho$ ($p = \TrendShareZP$).  Both
+The fraction of texts whose authored arrangement is already the strict
+maximum of its own permutation set is the natural statistic for it, and the
+group it is counted on decides what it is evidence about: the component in
+question --- Eq.~\eqref{eq:auth} --- is defined on the non-causal texts.  Counted there, from \texttt{gpt2} at $\ParamsGPTtwo$ to
+\texttt{Qwen3-4B-Base} at $\ParamsQwen$, it goes from $\CeilNGPTtwo\%$ to
+$\CeilNQwen\%$ --- not up but down, at the levels measured --- and
+establishes no trend, $\rho = \TrendCeilNRho$ ($p = \TrendCeilNP$, exact
+rank null, $n = \TrendNEval$).  Dropping the smallest evaluator leaves
+$\rho = \TrendCeilNDropRho$ on the remaining \TrendCeilNDropNEval\ rungs
+($p = \TrendCeilNDropP$), so what ordering there is rests on that one rung.  On the causal texts the same fraction runs from $\CeilGPTtwo\%$ to
+$\CeilQwen\%$ at $\rho = \TrendCeilRho$ ($p = \TrendCeilP$).  That is a
+level read on the causal group alone, which references no other group.  It
+is neither the contrast of Section~\ref{sec:resolution}, which is a
+difference between the two groups, nor the saturation of a component
+defined on the non-causal group.  \textbf{Nothing measured here shows the gap between an authored
+arrangement's midrank and the ceiling of $1.00$ narrowing as parameter
+count grows}: it goes from $\RoomGPTtwo$ to $\RoomQwen$, which is
+\AuthoredCompSpanSteps\ step of the grid.  One step is the grid's own
+resolution, so a movement of that size puts no lower bound on how much
+the gap changed, and we read no size off it.  Table~\ref{tab:saturation} gives, for every evaluator, the fraction of
+causal texts and the fraction of non-causal texts whose authored
+arrangement is the strict maximum, so both series can be checked
+directly.  Throughout, the \emph{exact rank null} means the distribution of the
+Spearman statistic over the $\TrendNEval!$ relabellings of the evaluators,
+which is not the $n!$ arrangements of a text that Section~\ref{sec:blkord}
+uses.  The $p$ is taken from it rather than from the usual asymptotic
+approximation because at $n = \TrendNEval$ the exact $p$ and the asymptotic
+one differ by close to an order of magnitude.  The exact one is also bounded
+below: only $2$ of the $\TrendNEval! = 120$ relabellings are as extreme as a
+perfect ordering, so the smallest two-sided $p$ it can return is
+$\TrendPFloor$.  A $p$ at or near that bound therefore says that the
+ordering is as monotone as \TrendNEval\ points allow, and says nothing about
+how large the underlying change is.  The $p$ is two-sided throughout: this
+section argues about one direction, but the test is not told which, so
+nothing here is bought by assuming it.  An AR ladder of \TrendNEval\ rungs
+is what this paper measured, not the full range of published parameter
+counts, and any trend on it is offered as a trend over those
+\TrendNEval\ points.  An AR ladder of \TrendNEval\ is also why the one trend this section does
+report is reported carefully, below.
+
+\begin{table}[tbp]
+\centering
+\input{tables/tab_saturation}
+\caption{How far each evaluator has already driven an authored arrangement
+towards the top of its own permutation set, and what is left above it.  The
+two percentage columns are the fraction of texts whose authored arrangement is the
+\emph{strict} maximum of the $n!$ arrangements, counted separately on the
+causal and the non-causal texts.  Eq.~\eqref{eq:auth} is defined on the
+latter, and it is the non-causal column that bears on saturation: it does
+not rise, which is why this section withdraws that claim.  The causal column
+rises; that is a level read on the causal group alone, which
+Section~\ref{sec:window} separates from the contrast of
+Section~\ref{sec:resolution}, and it is not a property of the component.  \emph{gap} is
+the causal component of Eq.~\eqref{eq:caus}, which
+Figure~\ref{fig:blkord} shows as the vertical separation between the two
+series; the last column is that gap as a fraction of the distance remaining
+between the non-causal median and the ceiling of $1.00$, with a $95\%$ interval from resampling texts
+within each corpus and taking the median across the \NCorp\ corpora.  That
+median is one of \NCorp\ per-corpus ratios, so this column has a grid of its
+own: it takes \RatioNDistinct\ distinct values over \RatioNEval\ evaluators
+and its intervals have \RatioNDistinctEnds\ distinct endpoints, with
+\RatioNAtEnd\ of the point estimates sitting on one.  We read its level and
+not its width, for the reason Section~\ref{sec:resolution} gives about the
+midrank.  It is also not the ratio of the two medians printed beside it;
+those are medians of different per-corpus quantities.  }
+\label{tab:saturation}
+\end{table}
+
+That exact floor also fixes what the other correlations in this section can
+be asked to say, and we state the rule once and keep to it.  A null with
+$\TrendNEval!$ relabellings can only reject for a near-perfect monotone
+relation, so this AR ladder can establish a trend.  It cannot establish that
+there is none: failing to reject a null is not evidence that the null is
+true, and at this $n$ it is barely evidence at all.  Every $\rho$ below that does not reach $0.05$ is therefore
+reported as no trend established, in either direction, and nothing in this
+paper rests on one of them.  Where a component is said not to grow, the
+evidence is its measured level at each of the \TrendNEval\ rungs and not a
+failure to reject.
+
+The causal component is at the grid floor at every rung.  It is
+\CausalCompStepsMin\ to \CausalCompStepsMax\ steps across the
+\TrendNEval\ evaluators (Section~\ref{sec:resolution}), so across
+a \TrendCapSpan-fold range of parameters it never leaves the smallest
+non-zero
+reading the statistic can return.  That is a statement about \TrendNEval\
+measured levels, and the corresponding correlations establish no trend in
+either direction: along the AR ladder the component gives $\rho =
+\TrendCausalRho$ ($p = \TrendCausalP$) and the ceiling-free $z$ share gives
+$\rho = \TrendShareZRho$ ($p = \TrendShareZP$).  Both
 correlations are taken after rounding the components to $10^{-\TrendQuantum}$,
 because at this resolution they are differences of medians on the same grid:
 the causal component takes \TrendCausalNDistinct\ distinct values across the
 \TrendNEval\ evaluators, and without rounding, differences of order
-$10^{-16}$ between values that are mathematically equal would be ranked as
-an ordering.  The authored
-component rises, $\rho = \TrendAuthoredRho$ ($p = \TrendAuthoredP$), which
-is the saturation showing up directly.
+$10^{-16}$ between values that are mathematically equal would be ranked as though ordered.  All $p$ here are exact.  The authored component establishes no trend
+either, in either of its two units: $\rho = \TrendAuthoredRho$ ($p =
+\TrendAuthoredP$) in midrank units and $\rho = \TrendAuthoredZRho$ ($p =
+\TrendAuthoredZP$) in the ceiling-free $z$ units.  Neither is offered as
+saturation appearing in the component: the $p$ does not reach $0.05$, and
+the whole span is $\AuthoredCompSpan$, or
+\AuthoredCompSpanSteps\ grid steps, which Section~\ref{sec:resolution}
+declines to read as a size anywhere else in this paper.  Either alone would
+disqualify it, and the statistic it is read through has a top besides.
+
+\paragraph{The tail contrast does vary along the AR ladder.}
+Section~\ref{sec:resolution} measured the same label contrast at the top of
+the midrank range, where it is not at the grid floor.  Read there it is not
+flat
+along the AR ladder either.  In the ceiling-free form --- the percentage of
+causal texts above the non-causal group's own $\TailZQ$th percentile,
+against a null of $\TailZNull\%$ --- it runs $\TailZGPTtwo$,
+$\TailZGPTtwoMedium$, $\TailZGPTtwoLarge$, $\TailZGPTtwoXL$,
+$\TailZQwen$ per cent across the AR ladder, giving $\rho = \TailZTrendRho$ at
+$p = \TailZTrendP$.  That $p$ is $\TrendPFloor$ to within rounding: it is
+the smallest value \TrendNEval\ points admit, so the relation is as
+monotone as this AR ladder can show.  The AR ladder's top rung differs from the
+rest in more than size (Section~\ref{sec:limitations}), so we also read the
+same quantity on the \TailZFamNEval\ \textsc{gpt-2} rungs, which differ in
+parameter count alone: there too each rung is larger than the one below it, $\rho =
+\TailZFamRho$ at $p = \TailZFamP$.  By the rule above that establishes no
+trend --- with $n = \TailZFamNEval$ no two-sided $p$ below
+$\TailZFamFloor$ is attainable, so nothing measured on those four rungs could
+reach $0.05$ --- and we do not report it as one.  What the
+\TailZFamNEval\ values show --- again as an ordering, and not as a $p$ ---
+is that the ordering is not produced by the single rung that differs in more
+than size.  It is also a narrower range, $\TrendCapSpanFamily$-fold rather
+than $\TrendCapSpan$, which is what the check costs.  It is the same correlation on a subset of the same points rather than
+an additional test, and it does not enter the count below.  In the bounded form the same contrast
+runs $\TailDiffGPTtwo$ to $\TailDiffQwen$ points across the AR ladder, a level
+at each rung and not a trend across them: it reaches only $\rho =
+\TailTrendRho$ ($p = \TailTrendP$), which by the rule above establishes
+nothing either way.  We lead with the ceiling-free form because its null
+is fixed by construction and it has no bound to saturate against, not
+because it gives the smaller $p$.
+
+Of the \TrendNTested\ components this section correlates against
+position on the AR ladder, \TrendNSignificant\ reach $0.05$, and both are read on the
+\emph{causal} group rather than on the authored distance: the fraction of
+causal texts at the strict maximum, which references no other group,
+and the ceiling-free tail contrast above, which is measured against the
+non-causal group's own $\TailZQ$th percentile.  No component of the authored distance reaches it.  The
+count is generated rather than asserted, so a sentence calling one of them
+the only one cannot outlive the measurement.
+
+Neither of the two is corrected for the \TrendNTested\ correlations this
+section runs, and we say so rather than leave it implicit: the cell tests of
+Section~\ref{sec:resolution} are corrected over \TailNCells\ and the
+distance-from-null tests of Section~\ref{sec:fbresult} over
+\FbNTestsDisp, and this family is not.  It cannot be.  A Bonferroni
+threshold here would be $0.05/\TrendNTested = \TrendBonferroni$, and the
+smallest two-sided $p$ that \TrendNEval\ points admit at all is
+$\TrendPFloor$, so no correlation measured on this AR ladder could clear it
+whatever the data did.  Both correlations are therefore reported
+uncorrected, and the direction rather than the threshold is what we lean
+on: the ceiling-free tail fraction is larger at every rung than at the one
+below, which is a statement about the ordering of \TrendNEval\ numbers and
+not about a $p$.  An AR ladder with more rungs is what would settle it, and
+Section~\ref{sec:limitations} says so.
+
+So the two statistics of one contrast answer the AR ladder question
+differently, and the section's title is the summary: between
+$\ParamsGPTtwo$ and $\ParamsQwen$ the median separation between the label
+groups does not move and the separation in the tail roughly doubles.  A
+bigger evaluator does not rank the median causal text further above its own
+rearrangements than the median non-causal one; it puts more causal texts at
+the very top.  ``The causal contribution does not vary along the AR ladder''
+is therefore true of the median and false of the tail, and we say which
+each time it is said.
 
 The distinction matters because the two readings make different predictions.
-``The causal contribution shrinks with capacity'' would say the quantity
+``The causal contribution shrinks along the AR ladder'' would say the quantity
 responds less and less to causal order, and extrapolates to a measurement
 that eventually sees nothing.  What is measured is the opposite in kind: the
-causal contribution is constant to within one grid step across
-\TrendCapSpan$\times$ in capacity, while the space above an authored order
-closes.  The instrument loses headroom, not signal --- and the signal was at
-the resolution floor from the smallest evaluator onwards.
+causal contribution read on the median is constant to within one grid step
+over a \TrendCapSpan-fold range of parameters, while the same contrast
+read in
+the tail grows.  The median reading was at the resolution floor from the
+smallest evaluator onwards and stays there; what moves along the AR ladder is
+where in the range the two groups differ, not how much the median of one
+exceeds the median of the other.
 
 We therefore do not extrapolate past $\ParamsQwen$, and we claim only what
-the ladder supports: a tenth to a fifth of what $\Delta$ measures is
-attributable to causal order, that share does not vary systematically with
-capacity, and the margin within which it could be measured at all is
-narrowing.
+the AR ladder supports.  $\ShareZMin\%$ to $\ShareZMax\%$ of what $\Delta$
+measures is attributable to causal order in ceiling-free units
+($\ShareEvalMin\%$ to $\ShareEvalMax\%$ on the midrank).  The midrank
+component sits at \CausalCompStepsMin--\CausalCompStepsMax\ steps of the
+grid at every size we measured.  The gap between an authored arrangement's midrank
+and the ceiling of $1.00$ does not measurably narrow ($\RoomGPTtwo$ to
+$\RoomQwen$, \AuthoredCompSpanSteps\ step of the same grid).  And the same contrast read
+in the tail both clears its floor and grows along the AR ladder, an ordering
+that does not depend on the one rung differing in more than size.

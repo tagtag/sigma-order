@@ -32,6 +32,18 @@ x                         log pi(x)          l2r          r2l     random:1     r
   order=random:3     sum_x P_pi(x) = 1.000000000000   |1 - sum| = 2.22e-16
   (oracle is consistent, so each order reproduces pi exactly)
 
+==============================================================================================
+3b) The same, with INCONSISTENT conditionals: each fixed order must still normalise
+==============================================================================================
+  eps=0.1   order=l2r          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 1.55e-15
+  eps=0.1   order=r2l          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 1.11e-16
+  eps=0.1   order=random:3     sum_x P_pi(x) = 1.000000000000   |1 - sum| = 2.22e-16
+  eps=0.5   order=l2r          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 3.55e-15
+  eps=0.5   order=r2l          sum_x P_pi(x) = 1.000000000000   |1 - sum| = 1.22e-15
+  eps=0.5   order=random:3     sum_x P_pi(x) = 1.000000000000   |1 - sum| = 1.33e-15
+  (these conditionals belong to no joint, and each order still normalises)
+  -> PASS (threshold 1e-10)
+
 # wrote /mnt/attach/outputs/order-intervention/aoar_selftest.json
 
 ALL TESTS PASS

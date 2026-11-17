@@ -31,6 +31,11 @@
 set -e
 cd "$(dirname "$0")"
 
+# The same PY as build_paper.sh, and for the same reason: on this project's
+# machine the bare python3 has no numpy, so every call below that ran as
+# python3 failed after a full rebuild had already been done.
+: "${PY:=python3}"
+
 OUT=arxiv_submission
 TGZ=arxiv_submission.tar.gz
 STRIP=0
@@ -65,19 +70,34 @@ echo "=== 0a2. do the parts of the document point at each other? ==="
 # whether or not a sentence points at it, and a sentence can promise that a
 # quantity is reported with no table reporting it.  All three shipped in this
 # project, in PDFs that looked correct.  Refuse to package on any of them.
-python3 -I check_paper_selftest.py >/dev/null || {
+$PY -I check_paper_selftest.py >/dev/null || {
     echo "  ERROR: check_paper.py no longer catches what it claims to;"
-    echo "  run  python3 -I check_paper_selftest.py  to see which case."
+    echo "  run  $PY -I check_paper_selftest.py  to see which case."
     exit 1
 }
-python3 -I check_paper.py --tex main.tex --tables tables || exit 1
+$PY -I check_paper.py --tex main.tex --tables tables || exit 1
+
+echo
+echo "=== 0a3. is the draft dressing off? ==="
+# \draftlinestrue prints line numbers in the margin so that a reader can
+# say "line 412" instead of hunting for a sentence.  They are for the
+# read-through and not for the archive, and nothing else would notice:
+# the document compiles, every number is right, and the margin is full of
+# numbers.  Refuse here, where the refusal costs one line to clear.
+if grep -q '^[^%]*\\draftlinestrue' main.tex; then
+    echo "  ERROR: main.tex still has \\draftlinestrue, so the submission"
+    echo "  would carry draft line numbers in the margin."
+    echo "  Set  \\draftlinesfalse  in the preamble and rebuild."
+    exit 1
+fi
+echo "  draft line numbers are off"
 
 echo
 echo "=== 0b. do the numbers come from real measurements? ==="
 # A table built from no input still produces a file, with every quoted number
 # replaced by a visible TODO.  Count those, and count the measurement files
 # the tables were built from, so an empty or partial run cannot pass silently.
-python3 - <<'PY2' || exit 1
+$PY - <<'PY2' || exit 1
 import glob, os, sys, re
 pll = os.environ.get("PLL", "../order-intervention/results_pll")
 blk = os.environ.get("BLKORD", "../order-intervention/results_blkord")
@@ -193,6 +213,7 @@ for f in ../order-intervention/block_order_pll.py \
          ../bert-affinity/bayes_route_control.py \
          ../bert-affinity/reproduce_sagawa_stats.py \
          ../bert-affinity/compare_repro.py \
+         ceiling_resolution.py \
          ../order-intervention/README.md; do
     [ -f "$f" ] && cp "$f" "$OUT/anc/"
 done
@@ -200,7 +221,7 @@ echo "  main.tex, $(ls "$OUT/tables" | wc -l) table file(s), "\
 "$(ls "$OUT/figures" | wc -l) figure(s), $(ls "$OUT/anc" | wc -l) ancillary file(s)"
 
 if [ "$STRIP" = "1" ]; then
-    python3 - "$OUT/main.tex" <<'PY'
+    $PY - "$OUT/main.tex" <<'PY'
 import re, sys
 p = sys.argv[1]
 s = open(p).read()
@@ -224,7 +245,7 @@ fi
 
 echo
 echo "=== 2. what the source asks for, and whether it is here ==="
-python3 - "$OUT" <<'PY'
+$PY - "$OUT" <<'PY'
 import os, re, sys
 root = sys.argv[1]
 src = open(os.path.join(root, "main.tex")).read()
@@ -252,7 +273,7 @@ PY
 # text with no file beside it is a claim the bundle does not keep.  The list
 # above is hand-written and had drifted: the text named six scripts and the
 # bundle shipped four.
-python3 - "$OUT" <<'ANCPY' || exit 1
+$PY - "$OUT" <<'ANCPY' || exit 1
 import glob, os, re, sys
 out = sys.argv[1]
 named = set()
@@ -315,7 +336,7 @@ echo "  built: $(cd "$OUT" && pdfinfo main.pdf | awk '/Pages/{print $2}') pages,
 # numbers in it, so it is the only place a table's true width can be measured;
 # a table that overflows here overflows in the submitted PDF.  Small ones are
 # normal in justified text, so only the ones worth looking at are listed.
-python3 - "$OUT/arxiv_build.log" <<'PY'
+$PY - "$OUT/arxiv_build.log" <<'PY'
 import re, sys
 log = open(sys.argv[1], errors="replace").read()
 w = sorted({float(x) for x in

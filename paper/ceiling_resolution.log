@@ -1,0 +1,20 @@
+INFO:    underlay of /etc/localtime required more than 50 (79) bind mounts
+INFO:    underlay of /usr/bin/nvidia-cuda-mps-server required more than 50 (291) bind mounts
+evaluator            texts/corpus  ceiling% (nc)  ceiling% (c)
+----------------------------------------------------------------
+gpt2                        [100]          20.0%         32.0%
+gpt2-medium                 [100]          15.0%         32.0%
+gpt2-large                  [100]          16.0%         33.0%
+gpt2-xl                     [100]          16.0%         36.0%
+Qwen3-4B-Base               [100]          15.0%         40.0%
+----------------------------------------------------------------
+the causal-labelled fraction, for comparison : 32.0% -> 40.0% (+8.0 points)
+denominator (smallest n of texts per corpus) : 100
+resolution of the fraction, 1/n              : 1.00 percentage points
+measured rise, gpt2 -> Qwen3-4B-Base    : -5.0 points
+the rise in units of that resolution         : -5.00
+
+FALLS by 5.0 of its own steps across the ladder: resolved, and in
+the opposite direction to saturation.  Section 5.4 withdraws the
+saturation claim, and this is the measurement it withdraws on.  Expected;
+what would be news is this line not saying FALLS.
