@@ -1,0 +1,19 @@
+direct   forward_backward_sigma.json  (GSAI-ML/LLaDA-8B-Base)
+         from /mnt/attach/outputs/order-intervention/results_llada_20261109
+rank     ../../../user-data/outputs/icr2/tables/tab_fbbetween.tex  column 'LLaDA-8B-Base'
+agreement tested at 4 decimals, the precision the table prints
+==============================================================
+corpus            direct        rank        |diff|  verdict
+--------------------------------------------------------------
+Fable5         +0.055215     +0.0552      1.52e-05  agree
+GPT54          +0.075284     +0.0753      1.61e-05  agree
+GPT56          +0.108815     +0.1088      1.48e-05  agree
+Gemini31       +0.016051     +0.0161      4.92e-05  agree
+Opus46         +0.057417     +0.0574      1.67e-05  agree
+==============================================================
+PASS  all 5 corpora agree to 4 decimals.  The rank construction and the direct one
+      return the same sigma on the authored arrangement.
+
+Note: the two are not independent implementations.  block_sigma_fb.py imports
+      load_texts and HFMaskedProvider from order_intervention.py; what they share
+      is the text loader and the masked-model provider, not only the chain rule.

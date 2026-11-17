@@ -122,7 +122,8 @@ EDITS = [
      "which is the same in \\ContrastNPositive\\ of the \\ContrastNCells\\ cells.\n"
      "What is at resolution is the \\emph{size} of that separation once it is\n"
      "expressed as a share of the authored distance.",
-     "107+108+109+111+112 decomp:83"),
+     "107+108+109+111+112 decomp:83",
+     "batch 44 (#268)"),
 
     # ---- #115 + #116 ------------------------------------------------------
     ("sec_decomp.tex",

@@ -1,0 +1,13 @@
+cells            40
+n!               24
+claimed grid     1/48 = 0.020833
+previous claim   1/24 = 0.041667
+
+[1] midranks on the 1/48 grid        8000/8000
+[2] midranks NOT on the 1/24 grid      8000/8000   <- the old claim was false
+[3] medians + components on 1/96      160/160
+    of those, also on 1/48          160/160   (reported, not required)
+[4] smallest non-zero |pct - 0.50|     0.020833   (1/48 = 0.020833)
+
+PASS  the midrank lives on the 1/48 grid, and 8000 of 8000 midranks
+      are off the 1/24 grid the paper used to claim.

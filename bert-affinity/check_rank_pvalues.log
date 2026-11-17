@@ -1,0 +1,19 @@
+bayes_route_control.json  n = 5 widths  d = 32, 64, 96, 128, 160
+exact rank null: 5! = 120 equally likely pairings
+==========================================================================
+pair                         rho   paper         p   paper     hits/n!  verdict
+--------------------------------------------------------------------------
+sigma_EP vs d              +0.90   +0.90     0.083   0.083      10/120  agree
+<|sigma|> vs d             +0.10   +0.10     0.950   0.950     114/120  agree
+sigma_EP vs <|sigma|>      +0.30   +0.30     0.683   0.683      82/120  agree
+--------------------------------------------------------------------------
+smallest attainable p                        0.017   0.017       2/120  agree
+==========================================================================
+PASS  all three rho, all three p, and the null floor reproduce.
+
+On 0.083: it is not too small.  At n = 5 the exact null puts 2 of
+120 pairings at |rho| = 1.00 and 8 more at |rho| = 0.90, so the two
+smallest two-sided p it can return are 2/120 = 0.017 and
+10/120 = 0.083.  The observed rho = +0.90 lands on the second of
+them.  It is the closest to significance the sweep could come
+without being a perfect ordering, and it still does not reach 0.05.

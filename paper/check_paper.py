@@ -1037,7 +1037,7 @@ def check_cell_product(tables_dir):
 def check_bare_floor(src):
     """"the floor", with nothing attached to say which floor.
 
-    This paper calls three things a floor: the resolution of the $1/n!$
+    This paper calls three things a floor: the resolution of the $1/2n!$
     grid, the attainable minimum of an exact $p$, and the part of $\\sigma$
     that no ordering explains.  Banning the word would fail four true
     sentences -- "its floor", "a floor", "that floor", "the floor of that

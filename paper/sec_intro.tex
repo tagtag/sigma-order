@@ -114,20 +114,25 @@ any-order chain rule
 \end{equation}
 is a genuine log-probability, normalised over sequences.  Taking $\pi$ to be
 the left-to-right and then the right-to-left order of one text gives the
-forward path and its reverse under a single model:
+two assembly orders of that text under a single model:
 \begin{equation}
 \sigma(x) \;=\; \frac{1}{L}
    \bigl[ \log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x) \bigr].
 \label{eq:fb}
 \end{equation}
-This is an entropy production in the sense
-of~\cite{jarzynski1997, crooks1999, seifert2012}: one trajectory
-weighed against its own reversal under the dynamics that produced it.
+This is not a trajectory weighed against its own reversal in the sense
+of~\cite{jarzynski1997, crooks1999, seifert2012}.  Both orders run from
+the empty sequence to the same completed text, so neither is the time
+reverse of the other, and we do not claim Eq.~\eqref{eq:fb} as an entropy
+production.  Nothing below needs it to be one: Eq.~\eqref{eq:fbzero}
+follows from the any-order chain rule alone.  The quantity here that is an
+entropy production is $\sigEP$ of Appendix~\ref{sec:toy}, whose chain has
+a time reversal.
 
-Equation~\eqref{eq:fb} is that comparison, constructed for a fixed text:
-one text assembled under a schedule and under its reverse, with a zero
-that holds on that text,
-which is what a masked evaluator makes possible and an autoregressive one
+Equation~\eqref{eq:fb} is the comparison this paper does make,
+constructed for a fixed text: one text assembled under a schedule and
+under the opposite schedule, with a zero that holds on that text.
+That is what a masked evaluator makes possible and an autoregressive one
 does not (Section~\ref{sec:notareversal}).  Measuring it answers the first
 question, though not in the direction the question anticipates, and on the
 way it determines what Eq.~\eqref{eq:delta} was measuring.

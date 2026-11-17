@@ -219,6 +219,9 @@ qwen3/Gemini31 の +0.1938 まで分布し、新しめのコーパスでは**負
 | `reproduce_sagawa_stats.py` | 沙川(2026)固定テキスト解析の独立再現(モデル不要) |
 | `sagawa_repro.log` / `sagawa_repro.json` | 上の実行ログと全数値 |
 | `cycle_affinity.py` | 実 BERT/GPT-2 用アフィニティ計算(未実行、HF 遮断のため) |
+| `bayes_route_control.py` / `bayes_route_control.log` / `.json` | 経路対照(emitted と、pll / l2r / r2l の三つの同時分布から復元した recovered)。付録A 表11 の根拠 |
+| `check_rank_pvalues.py` | 付録A の三つの順位相関と厳密 p 値を `bayes_route_control.json` から 5! = 120 通り全列挙で再計算し、本文が印字する ρ・p・帰無の下限 0.017 と照合する |
+| `check_rank_pvalues.log` | 上の実行ログ(PASS)。p = 0.083 が n = 5 の帰無で二番目に小さい到達可能値(10/120)であることの確認を含む |
 
 ## 再現手順
 

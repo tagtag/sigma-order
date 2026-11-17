@@ -66,7 +66,8 @@ EDITS = [
      "separates the labelled groups by more than\n"
      "$\\TailBelowOnsetMax$ points below a midrank of $\\TailOnsetThr$, and every\n"
      "one of them does above it.",
-     "188a main:1281"),
+     "188a main:1281",
+     "batch 44 (#268)"),
 
     # ---- #190 -------------------------------------------------------------
     ("main.tex",

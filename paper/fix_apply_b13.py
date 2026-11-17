@@ -55,7 +55,8 @@ EDITS = [
      "Eq.~\\eqref{eq:auth}.  It does not mean more sensitive to causal order.  That\n"
      "is the causal component of Eq.~\\eqref{eq:caus}, measured below, and it stays\n"
      "at \\CausalCompStepsMin--\\CausalCompStepsMax\\ steps of the $1/n!$ grid.",
-     "132+120 decomp:228"),
+     "132+120 decomp:228",
+     "batch 42 (#265)"),
 
     # ---- #124 -------------------------------------------------------------
     ("sec_decomp.tex",

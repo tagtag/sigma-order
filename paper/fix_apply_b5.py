@@ -118,7 +118,8 @@ EDITS = [
     ("sec_decomp.tex",
      "and a difference between two evaluators of one step is a difference between",
      "and a difference between any two evaluators of one step is a difference between",
-     "148 decomp:70"),
+     "148 decomp:70",
+     "batch 42 (#265)"),
 ]
 
 FILES = sorted({e[0] for e in EDITS})

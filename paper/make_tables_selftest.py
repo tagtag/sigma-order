@@ -523,11 +523,14 @@ def check_step_gap():
     """\\FbStepGap is a difference of displacements, not a ratio of them.
 
     The prose said the two evaluators' readings differ "by about thirteen
-    grid steps".  The displacements were -6.5 and +0.5 steps, whose
-    difference is 7.0; thirteen is 0.2708/0.0208, one displacement over the
-    other.  Written as a word, the number was outside everything that checks
-    numbers.  Here two evaluators are given displacements of -0.25 and +0.05
-    on a grid of 1/20, which is -5.0 and +1.0 steps and a gap of 6.0.
+    grid steps".  Read on the 1/n! grid the displacements were -6.5 and
+    +0.5 steps, whose difference is 7.0; thirteen was 0.2708/0.0208, one
+    displacement over the other.  Written as a word, the number was outside
+    everything that checks numbers.  (#253 and #264 made the grid 1/2n!, so
+    the displacements are now -13 and +1 and their difference is 14; the
+    ratio is unchanged, which is the point this test keeps.)  Here two
+    evaluators are given displacements of -0.25 and +0.05 with n! = 20,
+    which on the 1/2n! grid is -10.0 and +2.0 steps and a gap of 12.0.
     """
     import json, os, shutil, sys, tempfile
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -555,7 +558,7 @@ def check_step_gap():
         M.table_fbrank(d, out)
         g = M.MACROS
         assert "FbStepGap" in g, "no gap emitted for two evaluators"
-        assert g["FbStepGap"] == "6.0", g["FbStepGap"]
+        assert g["FbStepGap"] == "12.0", g["FbStepGap"]
         # and it is not the ratio, which would be 5.0
         assert g["FbStepGap"] != "5.0"
         print("  step gap: a difference of displacements, not a ratio")
@@ -864,10 +867,10 @@ check_exact_p()
 def check_grid_steps():
     """One grid step must read the same way everywhere it appears.
 
-    Section 5.3 reads a causal component of one step as the resolution floor
-    and declines to treat its size as measured.  Section 5.4 reported the
-    authored component as rising across the ladder, and that rise is
-    0.396 - 0.354 = 0.042, which is one step of the same grid.  The same
+    Section 5.3 reads a causal component of two steps as the resolution
+    floor and declines to treat its size as measured.  Section 5.4 reported
+    the authored component as rising across the ladder, and that rise is
+    0.396 - 0.354 = 0.042, which is two steps of the same grid.  The same
     magnitude was a floor in one place and a result in the other.
 
     The 5.3 sentence was also wrong: "the authored component spans several"
@@ -879,8 +882,9 @@ def check_grid_steps():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import make_tables as M
 
-    # authored component 0.354 -> 0.396 across the ladder: one step of 1/24.
-    # causal component held at exactly one step throughout.
+    # authored component 0.354 -> 0.396 across the ladder: 0.042, which is
+    # two steps of the 1/48 grid (#253).  causal component held at the same
+    # two steps throughout, so the span and the floor stay comparable.
     blk, kinds = {}, {}
     ladder = [("gpt2", 0.354), ("gpt2-medium", 0.354), ("gpt2-large", 0.354),
               ("gpt2-xl", 0.396), ("Qwen/Qwen3-4B-Base", 0.396)]
@@ -898,11 +902,11 @@ def check_grid_steps():
     M.grid_macros(blk, kinds)
     g = M.MACROS
 
-    assert g["GridK"] == "24", g["GridK"]
-    assert g["CausalCompStepsMax"] == "1", g["CausalCompStepsMax"]
+    assert g["GridK"] == "48", g["GridK"]
+    assert g["CausalCompStepsMax"] == "2", g["CausalCompStepsMax"]
     # the two readings of the authored component must not be one number
     assert float(g["AuthoredCompStepsMin"]) > 5, g["AuthoredCompStepsMin"]
-    assert abs(float(g["AuthoredCompSpanSteps"]) - 1.0) < 0.05, \
+    assert abs(float(g["AuthoredCompSpanSteps"]) - 2.0) < 0.05, \
         g["AuthoredCompSpanSteps"]
     # and the span must be on the same ruler as the causal component, so a
     # sentence calling one a floor cannot call the other a size

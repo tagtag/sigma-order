@@ -207,12 +207,15 @@ for f in ../order-intervention/block_order_pll.py \
          ../order-intervention/merge_sigfb.py \
          ../order-intervention/forward_backward_sigma.py \
          ../order-intervention/forward_backward_decomposition.py \
+         ../order-intervention/check_two_constructions.py \
+         ../order-intervention/check_grid_resolution.py \
          ../bert-affinity/mlm_entropy_production.py \
          ../bert-affinity/cycle_affinity.py \
          ../bert-affinity/capacity_sweep.py \
          ../bert-affinity/bayes_route_control.py \
          ../bert-affinity/reproduce_sagawa_stats.py \
          ../bert-affinity/compare_repro.py \
+         ../bert-affinity/check_rank_pvalues.py \
          ceiling_resolution.py \
          ../order-intervention/README.md; do
     [ -f "$f" ] && cp "$f" "$OUT/anc/"

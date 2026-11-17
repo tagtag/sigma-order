@@ -67,7 +67,8 @@ EDITS = [
      "\\AuthoredCompSpanSteps\\ step of the grid.  One step is the grid's own\n"
      "resolution, so a movement of that size puts no lower bound on how much\n"
      "the gap changed, and we read no size off it.",
-     "130d+131+134+135 decomp:252"),
+     "130d+131+134+135 decomp:252",
+     "batch 42 (#265)"),
 
     # ---- #136 + #137 ------------------------------------------------------
     ("sec_decomp.tex",
@@ -93,7 +94,8 @@ EDITS = [
      "\\AuthoredCompSpanSteps\\ step of the same grid).",
      "The gap between an authored arrangement's midrank\nand the ceiling of $1.00$ does not measurably narrow "
      "($\\RoomGPTtwo$ to\n$\\RoomQwen$, \\AuthoredCompSpanSteps\\ step of the same grid).",
-     "130f decomp:414"),
+     "130f decomp:414",
+     "batch 42 (#265)"),
 ]
 
 FILES = sorted({e[0] for e in EDITS})

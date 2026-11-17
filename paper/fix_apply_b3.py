@@ -43,7 +43,8 @@ EDITS = [
     ("main.tex",
      "Read in the upper tail it leaves the\ngrid floor and moves along the AR ladder.",
      "Read in the tail it leaves the\ngrid floor and moves along the AR ladder.",
-     "187 sec7 upper tail"),
+     "187 sec7 upper tail",
+     "batch 44 (#268)"),
 ]
 
 FILES = sorted({e[0] for e in EDITS})

@@ -161,7 +161,8 @@ EDITS = [
      "component of a single evaluator spans \\AuthoredCorpSpreadSteps\\ steps of\n"
      "the $1/n!$ grid for the median evaluator and \\AuthoredCorpSpreadMax\\ for\n"
      "the worst.",
-     "233 main:1038 (mine, #95)"),
+     "233 main:1038 (mine, #95)",
+     "batch 42 (#265)"),
 
     ("main.tex",
      "the median midrank is\n"

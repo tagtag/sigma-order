@@ -1,5 +1,3 @@
-INFO:    underlay of /etc/localtime required more than 50 (79) bind mounts
-INFO:    underlay of /usr/bin/nvidia-cuda-mps-server required more than 50 (291) bind mounts
 evaluator            texts/corpus  ceiling% (nc)  ceiling% (c)
 ----------------------------------------------------------------
 gpt2                        [100]          20.0%         32.0%

@@ -39,7 +39,8 @@ EDITS = [
      "cannot be interpreted, and these corpora cannot decide whether what it\n"
      "separates is causal structure; under $\\sigma$ a non-zero reading reports\n"
      "the masked evaluator's incompatibility and not the text.",
-     "248 sec7 opening"),
+     "248 sec7 opening",
+     "batch 32 (#251)"),
 
     # ---- #249 -------------------------------------------------------------
     ("main.tex",

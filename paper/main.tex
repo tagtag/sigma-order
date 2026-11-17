@@ -25,7 +25,7 @@
 % reading the PDF.  \draftlinesfalse before submission; make_arxiv.sh
 % refuses to package while this is true.  The amsmath environments are
 % patched because lineno otherwise loses their numbering.
-\newif\ifdraftlines \draftlinestrue
+\newif\ifdraftlines \draftlinesfalse
 \ifdraftlines
   \usepackage[mathlines]{lineno}
   \linenumbers
@@ -118,10 +118,12 @@
 %                 it has no origin (Section~\ref{sec:notareversal}), and
 %                 this paper never writes it as sigma.  \Dtok and \Dblock are its two
 %                 coarse-grainings.
-%   \sigma        Eq.~(5): the SAME text assembled in two directions.  This
-%                 is the entropy production, it is identically zero for any
-%                 model with a joint, and only a masked model can evaluate
-%                 it (Section~\ref{sec:fbdef}).
+%   \sigma        Eq.~(5): the SAME text assembled in two directions.  Both
+%                 orders run from the empty sequence to the same text, so it
+%                 is NOT a path against its reverse and the paper does not
+%                 call it an entropy production.  It is identically zero for
+%                 any model with a joint, and only a masked model can
+%                 evaluate it (Section~\ref{sec:fbdef}).
 %   \sigEP       the entropy production RATE of the Glauber chain induced
 %                 by a model's conditionals (Appendix~\ref{sec:toy}): a
 %                 third quantity again, on the toy system.
@@ -140,9 +142,16 @@
 % and not between a path and its reverse -- and the subtitle carries what
 % each of the two quantities lacks.  Section 1's own note explains why that
 % section still builds to the claim rather than opening with it.
+%
+% The subtitle read "an entropy production that is identically zero" until
+% a reader objected that both orders of Eq.(fb) run from the empty sequence
+% to the same text, so neither is the time reverse of the other.  The
+% objection is right.  The identity does not depend on the reading, and the
+% quantity here that is an entropy production is Appendix A's sigma_EP.
+% The main title is a claim about Delta and is unaffected.
 \title{Reversing the text is not reversing the path:\\
-\large a fixed-text measure without a zero, and an entropy production
-that is identically zero}
+\large a fixed-text measure without a zero, and an assembly-order
+comparison that vanishes identically}
 \author{Y.-H. Taguchi\\
 \small Bioinformatics Center, Institute for Chemical Research, Kyoto
 University, Gokasho, Uji, Kyoto 611-0011, Japan\\
@@ -219,9 +228,9 @@ part separates the two label groups in \ContrastNRejecting\ of the
 \ContrastNCorpora\ corpora --- at
 $0.05/\ContrastNCells = \ContrastBonferroni$, worst cell
 $p = \ContrastPWorst$, and is
-\CausalCompStepsMin\ to \CausalCompStepsMax\ steps of the $1/n!$ grid the
-statistic lives on, where one step
-is the smallest non-zero reading it can return, so what the median
+\CausalCompStepsMin\ to \CausalCompStepsMax\ steps of the $1/2n!$ grid the
+statistic lives on, measured on a midrank that is bounded above and
+already near its ceiling, so what the median
 establishes is that the two label groups differ and not by how much.  That part stays
 there at every rung of the AR ladder,
 over a \TrendCapSpan-fold range of parameters.  Nothing we measure shows
@@ -249,11 +258,12 @@ produced; Section~\ref{sec:authoredspecial} says
 what that provenance leaves open about the authored component, and what it
 leaves untouched.
 
-The thermodynamic reading names a quantity of a different kind, and for a
-fixed text it can be constructed and measured.
+The question the thermodynamic reading poses needs a comparison whose zero
+holds on the text being read, and for a fixed text one can be constructed
+and measured.
 For a masked model the any-order chain rule gives a genuine log-probability,
 and taking its left-to-right and right-to-left orders for \emph{the same}
-text gives the forward path against its reverse,
+text gives two assembly orders of one text,
 $\sigma = [\log P_{\mathrm{l2r}}(x) - \log P_{\mathrm{r2l}}(x)]/L$.  That
 defines $\sigma$ for the class; what this paper measures is $\sigma$ on two
 masked evaluators.  It vanishes identically whenever the model's
@@ -282,8 +292,8 @@ of the same law and leaves a fixed text without an origin.  That much
 follows from the structure of the theorems and needs no measurement.  What
 the measurement adds is that what $\Delta$ does separate is mostly the order
 the passage was produced in.  $\sigma$ reverses
-the path --- the order in which the model assembles the text, with the text
-held fixed --- and Eq.~\eqref{eq:fbzero} gives that an origin, so its value
+the order in which the model assembles the text, with the text
+held fixed, and Eq.~\eqref{eq:fbzero} gives that an origin, so its value
 reports the evaluator's incompatibility rather than the text; that too
 follows from the identity, before anything is measured.  What survives is the permutation set --- a reference configuration
 supplied by an \emph{antisymmetry} rather than by a theorem --- and the
@@ -498,8 +508,8 @@ the $n!$ values come in pairs and the set is centred at zero.  That holds on
 an autoregressive evaluator and for any score whatever, and it comes from
 the antisymmetry rather than from reversing anything --- an origin, and not
 an entropy production.  What the masked quantity then
-reports is a separate question, and the answer is not what the name
-\emph{entropy production} promises: Section~\ref{sec:fbresult} measures it
+reports is a separate question, and the answer is not what a thermodynamic
+reading would promise: Section~\ref{sec:fbresult} measures it
 and finds it reporting a property of the evaluator rather than of the text.
 
 Each statement above about Ref.~\cite{sagawa2026} is its own, and we take
@@ -554,19 +564,20 @@ measured in language before~\cite{arrow}.  Equation~\eqref{eq:delta} is a
 reasonable instrument for that expectation, and
 Section~\ref{sec:resolution} reports what it finds: the direction is
 supported in \ContrastNPositive\ of \ContrastNCells\ cells, and the size
-sits at the resolution of the
-statistic.
+is measured in the room a saturating midrank
+leaves.
 
 None of this makes the framework the wrong one.  What the theorems ask for
 is an ensemble of trajectories drawn from the model's own distribution, not
 one fixed text prepared outside it.  Applied where its
 hypotheses hold --- to the dynamics a model's own conditionals induce, and to
 an actual forward path against its reverse --- the same framework is what
-Appendix~\ref{sec:toy} and Section~\ref{sec:fbdef} use, and what turns the
-question into an identity.
+Appendix~\ref{sec:toy} uses.  Section~\ref{sec:fbdef} does something
+weaker and sufficient: it compares two assembly orders of one text, which
+turns the question into an identity without a time reversal.
 
 This is why the two quantities are written differently throughout.  We
-reserve $\sigma$ for the entropy production of Eq.~\eqref{eq:fb} --- the
+reserve $\sigma$ for the assembly-order quantity of Eq.~\eqref{eq:fb} --- the
 same sequence read under two assembly orders, both terms scoring the same
 $x$
 --- and write $\Delta$ for Eq.~\eqref{eq:delta}, whose two terms score two
@@ -830,9 +841,12 @@ Eq.~\eqref{eq:delta} had none, and Eq.~\eqref{eq:antisym} fixes its centre at
 $\Delta = 0$.  That is an origin and it is only an origin: within the set,
 $\Delta$ is still measured in whatever units the evaluator's
 log-probabilities carry.  The \emph{midrank} of
-Eq.~\eqref{eq:midrank} below is the second stage: where $\Delta(\mathrm{id})$ falls within that set, and it is the stage that disposes of the unit, because a rank is unchanged by any strictly monotone rescaling of
-the score.  Stopping after the first stage would leave the scale exactly
-where it was.
+Eq.~\eqref{eq:midrank} below is the second stage: where $\Delta(\mathrm{id})$ falls within that set, and it is the stage that disposes of the unit, because a rank is unchanged by any positive affine rescaling of
+the score.  Affine and not merely monotone: $\Delta_S$ is a
+\emph{difference} of scores, and a non-linear monotone map of $S$
+reorders those differences.  A change of unit is affine, which is what
+this stage has to absorb.  Stopping after the first stage would leave the
+scale exactly where it was.
 
 Equation~\eqref{eq:antisym} also disqualifies the obvious control, which is
 to compare the authored arrangement against a shuffled one.  That compares
@@ -954,7 +968,7 @@ differ by exactly Eq.~\eqref{eq:caus}, which
 Section~\ref{sec:resolution} measures at \CausalCompStepsMin\ to
 \CausalCompStepsMax\ steps of the grid.
 
-Because the midrank is confined to a grid of width $1/n!$ and bounded above,
+Because the midrank is confined to a grid of width $1/2n!$ and bounded above,
 an evaluator that ranks authored arrangements highly can saturate it
 (Section~\ref{sec:window} fixes what ``highly'' is measured by).  We therefore report the same decomposition
 on $z = \Delta(\mathrm{id})\,/\,\mathrm{sd}\{\Delta(\pi)\}$, whose null is
@@ -999,7 +1013,7 @@ take if its authored arrangement were the strict maximum in every text of
 the group.  At $\ParamsGPTtwo$ it already stands at $\AuthoredGPTtwo$, and
 over a $\TrendCapSpan$-fold span of parameter count it ends at
 $\AuthoredQwen$: the whole range of the component is $\AuthoredCompSpan$,
-which is \AuthoredCompSpanSteps\ step of the $1/n! = 1/\NPerms$ grid.  Ranked against parameter count, the component
+which is \AuthoredCompSpanSteps\ steps of the $1/2n! = 1/\GridK$ grid.  Ranked against parameter count, the component
 establishes no trend ($\rho = \TrendAuthoredRho$, $p = \TrendAuthoredP$,
 exact rank null over \TrendNEval\ evaluators).  At that $n$ the smallest
 attainable two-sided $p$ is $\TrendPFloor$, so the only $p$ this AR ladder
@@ -1040,7 +1054,7 @@ across corpora varies the generator and nothing else; the spread
 read this way is across corpora, where Table~\ref{tab:decomposition} reports
 movement along the AR ladder.  Taken over the corpora, the authored
 component of a single evaluator spans \AuthoredCorpSpreadSteps\ steps of
-the $1/n!$ grid for the median evaluator and \AuthoredCorpSpreadMax\ for
+the $1/2n!$ grid for the median evaluator and \AuthoredCorpSpreadMax\ for
 the worst.  A component that is much the
 same whichever model produced the text is what the sampling account
 predicts, so the spread just reported is not evidence against that
@@ -1074,8 +1088,8 @@ evaluator by evaluator: one differs between the forms by a factor of
 $\ShareFormWorst$.  Across the $\ShareFormNEval$ of them the two columns
 rank-correlate at $\rho = \ShareFormRho$ ($p = \ShareFormP$), which settles
 nothing either way at that $n$.  Section~\ref{sec:resolution} is where that
-belongs: a quantity sitting at the resolution of its statistic does not have
-a share that survives renormalisation.}
+belongs: a quantity measured in the room a bounded statistic leaves does not
+have a share that survives renormalisation.}
 \label{tab:decomposition}
 \end{table}
 
@@ -1090,12 +1104,12 @@ The dashed line at $0.50$ is the null: a score that cannot distinguish the
 arrangements of a text lands there exactly.  The non-causal series is the one
 Section~\ref{sec:authored} reads: it is already near the ceiling at
 $\ParamsGPTtwo$, and over the whole AR ladder its range is
-\AuthoredCompSpanSteps\ step of the $1/n!$ grid.  The vertical separation
+\AuthoredCompSpanSteps\ steps of the $1/2n!$ grid.  The vertical separation
 between the two series is the causal component of Eq.~\eqref{eq:caus}, and
 it does not close as the AR ladder is climbed --- it is $\CausalGPTtwo$ at
 \texttt{gpt2} and $\CausalQwen$ at \texttt{Qwen3-4B-Base},
 \CausalCompStepsMin--\CausalCompStepsMax\ steps
-of that same grid at every evaluator (Section~\ref{sec:resolution}).  The gap between the non-causal series and the ceiling of $1.00$ goes from $\RoomGPTtwo$ to $\RoomQwen$, which is \AuthoredCompSpanSteps\ step of the same grid, so it does not measurably close either (Section~\ref{sec:window}).  Bars are bootstrap $95\%$ intervals of the median.}
+of that same grid at every evaluator (Section~\ref{sec:resolution}).  The gap between the non-causal series and the ceiling of $1.00$ goes from $\RoomGPTtwo$ to $\RoomQwen$, which is \AuthoredCompSpanSteps\ steps of the same grid, so it does not measurably close either (Section~\ref{sec:window}).  Bars are bootstrap $95\%$ intervals of the median.}
 \label{fig:blkord}
 \end{figure}
 
@@ -1244,10 +1258,13 @@ regard that as the experiment this one points to.
 \section{Discussion}
 
 This paper's conclusion is negative in two ways, one for each quantity
-(Section~\ref{sec:fbresult}).  Under $\Delta$ a reading on a fixed text
+(Section~\ref{sec:fbresult}).  Under $\Delta$ the comparison reverses the
+text and not the path, so no theorem places a zero on the text being read.
+A reading on a fixed text has neither a stable scale nor an origin and so
 cannot be interpreted, and these corpora cannot decide whether what it
-separates is causal structure; under $\sigma$ a non-zero reading reports
-the masked evaluator's incompatibility and not the text.  The first of the two has three parts, and the rest of
+separates is causal structure.  Under $\sigma$ a
+non-zero reading reports the masked evaluator's incompatibility and not
+the text.  The first of the two has three parts, and the rest of
 this section takes them in turn.  These are three readings of $\Delta$: as a
 reversal, as a quantity, and as a test.  They are not a restatement of the
 three consequences of
@@ -1292,8 +1309,8 @@ of Eq.~\eqref{eq:auth} --- the bare fact that the passage came in some
 order.  Read on the median, the causal component of Eq.~\eqref{eq:caus}
 sits at \CausalCompStepsMin--\CausalCompStepsMax\ steps of the grid at
 every rung of the AR ladder and does not move along it
-(Section~\ref{sec:window}).  Read in the tail it leaves the
-grid floor and moves along the AR ladder.  No autoregressive evaluator
+(Section~\ref{sec:window}).  Read in the tail it is no longer compressed
+and moves along the AR ladder.  No autoregressive evaluator
 separates the labelled groups by more than
 $\TailBelowOnsetMax$ points below a midrank of $\TailOnsetThr$, and every
 one of them does above it.
@@ -1320,12 +1337,12 @@ much for its own corpora: the labels are fixed by the generation prompt
 rather than by a formal criterion, and a prompt-independent definition of
 causal ordering would be needed to do better~\cite[Sec.~V~B]{sagawa2026}.  Nor is its size resolved: the component is
 \CausalCompStepsMin--\CausalCompStepsMax\ steps of the
-$1/n!$ grid in every evaluator (Section~\ref{sec:resolution}), which is the
-smallest non-zero value the statistic can return, so a difference between
-two evaluators is a difference between adjacent representable numbers.  What
+$1/2n!$ grid in every evaluator (Section~\ref{sec:resolution}), taking
+\CausalCompNDistinct\ distinct values across the ladder, and it is
+measured in the room a saturating midrank leaves.  What
 the median establishes is that the sets differ and not by how much.  The
 tail is a different statistic of the same contrast and does give a size,
-which is why Section~\ref{sec:window} reports it; the resolution argument is
+which is why Section~\ref{sec:window} reports it; that argument is
 about the median and we do not extend it past that.  What neither statistic
 supplies is an answer to what the difference is a difference in: whether
 what it separates is causal structure at all.  This is not a weakness of the
@@ -1481,8 +1498,9 @@ of $\TailZGPTtwo$ at \texttt{gpt2} and $\TailZQwen$ at the top of the
 AR ladder) --- and we state it as that and nothing more.  Every other component establishes no trend, which with \TrendNEval\
 rungs and an exact floor of $\TrendPFloor$ is a statement about what this
 AR ladder can resolve and not about the world: we make no claim either way
-about how the median share behaves beyond this range, only that it is one
-or two grid steps at each size we measured
+about how the median share behaves beyond this range, only that it is
+\CausalCompStepsMin\ to \CausalCompStepsMax\ grid steps at each size we
+measured
 (Section~\ref{sec:window}).  Nor do we extrapolate the one trend we do
 report: five points establish a direction over the range covered and
 nothing about where it goes.
@@ -1556,6 +1574,21 @@ Table~\ref{tab:capacity} and \fn{bayes_route_control.py} produces
 Table~\ref{tab:bayesroute}, the latter rebuilding the masked models of
 \fn{capacity_sweep.py} from the same seed and reproducing its $\sigEP$
 column exactly before giving each of them the second route.
+
+\section*{Acknowledgments}
+
+The author used two AI assistants in preparing this paper and records
+their use here.  Claude (Anthropic, claude-opus-5) assisted in
+drafting and revising the text, in a sentence-by-sentence review of the
+manuscript that produced most of the corrections it went through, and in
+writing several of the verification scripts distributed with it.
+ChatGPT (OpenAI, GPT-6) gave a critical reading of a late draft.
+Neither was used to produce any measurement or any figure.
+
+Every number in this paper comes from the author's own code, run on the
+author's machines, and every quoted value was checked against the script
+that generates it.  The author directed the work, accepted or rejected
+each suggestion, and is responsible for the content.
 
 % =====================================================================
 % The toy system was Section 4.3 of the main text.  It is evidence, not

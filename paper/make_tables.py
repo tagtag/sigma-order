@@ -1485,7 +1485,12 @@ def table_fbrank(dirpath, outdir, k=None):
     if k is None:
         kk = {r.get("n_perms") for recs in cells.values() for r in recs
               if r.get("n_perms")}
-        k = max(kk) if kk else 0
+        # The grid is 1/2n!, not 1/n!: Eq.(midrank) counts the authored
+        # arrangement's tie with itself as a half, so 2 n! pct is an
+        # integer and a midrank falls halfway between the multiples of
+        # 1/n!.  grid_macros does the same thing for Section 5; this is
+        # the copy Section 6 reads its steps from, and #253 missed it.
+        k = 2 * max(kk) if kk else 0
     models = order_m({m for m, _ in cells})
     corpora = order_c({c for _, c in cells})
     lines = [
@@ -1793,12 +1798,27 @@ def fb_between_macros(dirpath):
                 mac("FbBetweenNNeg", str(d.get("n_causal_component_negative", 0)))
 
 
+def trim_step(v):
+    """A step count to a tenth, without a trailing '.0'.
+
+    The components are medians and are not always whole steps, so they
+    cannot be printed as integers; printing 2.0 where 2 is meant reads
+    as a measured tenth that is not there.
+    """
+    s = f"{v:.1f}"
+    return s[:-2] if s.endswith(".0") else s
+
+
 def grid_macros(blk, kinds):
     """What resolution the midrank has, and whether the reading is at it.
 
-    The midrank over n! arrangements lives on a grid of width 1/n!.  With
-    n = 4 that is 1/24 = 0.0417, and a causal component of +0.042 is exactly
-    one grid step: the smallest non-zero value the statistic can take.  If
+    Eq.(midrank) counts ties as halves and the authored arrangement is
+    always tied with itself, so 2 n! pct = 2a + t is an integer and the
+    grid one reading lives on is 1/2n!, not 1/n!.  With n = 4 that is
+    1/48 = 0.0208, the smallest non-zero value a midrank can take, and a
+    causal component of +0.042 is two grid steps.  The components are
+    medians over texts and need not land on the grid, so they are printed
+    to a tenth of a step rather than rounded to whole ones.  If
     every evaluator returns one or two steps, the measurement is at its
     resolution floor and its magnitude is not informative -- which is what
     the unbounded z decomposition is for.  These macros let the paper state
@@ -1810,8 +1830,33 @@ def grid_macros(blk, kinds):
              if "n_perms" in r}
     if not nperm:
         return
-    k = max(nperm)
+    # The grid is 1/2n!, not 1/n!: see this function's docstring and
+    # Eq.(midrank).  \NPerms stays n!; \GridK is the grid denominator.
+    k = 2 * max(nperm)
     step = 1.0 / k
+    # What the argument establishes is that a midrank is on this grid.
+    # Section 5.3 says so, so the build stops rather than printing it
+    # when it is false.
+    #
+    # The failure this is for is a half-step offset -- the midrank
+    # carrying Eq.(midrank)'s tie half while the code divides by n! --
+    # so the test is whether a value is nearer a half-step point than a
+    # grid point, not whether it is on the grid to machine precision.
+    # make_tables_selftest.py's fixture is written to three decimals
+    # and is off by 0.008 of a step; an exact test stops it for no
+    # reason.  check_grid_resolution.py runs the exact test where the
+    # data is exact, on the measurements, and is what Section 5.3 cites.
+    loose = [float(r["percentile_written"])
+             for recs in blk.values() for r in recs.values()
+             if np.isfinite(r.get("percentile_written", float("nan")))
+             and 0.25 <= abs(float(r["percentile_written"]) * k) % 1.0
+                       <= 0.75]
+    if loose:
+        raise SystemExit(
+            "grid_macros: %d midranks sit nearer a half-step than a "
+            "point of the 1/%d grid (%s); Section 5.3 states that grid "
+            "as the resolution of one reading" % (len(loose), k,
+                          ", ".join(f"{v:.6f}" for v in loose[:4])))
     mac("GridStep", f"{step:.4f}")
     mac("GridK", str(k))
 
@@ -1832,7 +1877,7 @@ def grid_macros(blk, kinds):
             continue
         v = float(np.median(c_))
         comps.append(v)
-        steps.append(round(v / step))
+        steps.append(v / step)
         auth.append(float(np.median(a_)))
         if PARAMS.get(model):
             params.append(PARAMS[model])
@@ -1841,9 +1886,9 @@ def grid_macros(blk, kinds):
     mac("CausalCompMin", f"{min(comps):+.3f}")
     mac("CausalCompMax", f"{max(comps):+.3f}")
     mac("CausalCompNEval", str(len(comps)))
-    mac("CausalCompStepsMin", str(min(steps)))
-    mac("CausalCompStepsMax", str(max(steps)))
-    mac("CausalCompNDistinct", str(len(set(steps))))
+    mac("CausalCompStepsMin", trim_step(min(steps)))
+    mac("CausalCompStepsMax", trim_step(max(steps)))
+    mac("CausalCompNDistinct", str(len({trim_step(s) for s in steps})))
     # The authored component read on the SAME grid, because the paper quotes
     # one grid step as a resolution floor in this section and, two
     # subsections later, quotes a rise of one grid step as a measurement.
@@ -1875,9 +1920,9 @@ def grid_macros(blk, kinds):
         mac("AuthoredCorpSpreadSteps", f"{float(np.median(spread)):.1f}")
         mac("AuthoredCorpSpreadMax", f"{max(spread):.1f}")
         mac("AuthoredCorpNGen", str(len(order_c({c for _, c in blk}))))
-    mac("AuthoredCompStepsMin", f"{min(auth) / step:.1f}")
-    mac("AuthoredCompStepsMax", f"{max(auth) / step:.1f}")
-    mac("AuthoredCompSpanSteps", f"{(max(auth) - min(auth)) / step:.1f}")
+    mac("AuthoredCompStepsMin", trim_step(min(auth) / step))
+    mac("AuthoredCompStepsMax", trim_step(max(auth) / step))
+    mac("AuthoredCompSpanSteps", trim_step((max(auth) - min(auth)) / step))
     mac("AuthoredCompSpan", f"{max(auth) - min(auth):.3f}")
     # how far the capacity range reaches, so "no trend" has a span attached
     if len(params) >= 2:
@@ -1925,7 +1970,7 @@ def tail_macros(blk, kinds, outdir):
     no bound, and it answers the obvious objection that the midrank tail is
     an artefact of the midrank's upper limit.
     """
-    from scipy.stats import fisher_exact
+    from scipy.stats import binomtest, fisher_exact
 
     if not blk:
         return
@@ -2024,8 +2069,14 @@ def tail_macros(blk, kinds, outdir):
                 cut = float(np.quantile(zn, TAIL_Q))
                 k = int(sum(1 for v in zc if v > cut))
                 zt = 100.0 * k / len(zc)
-                exp = int(round((1 - TAIL_Q) * len(zc)))
-                _, pz = fisher_exact([[k, len(zc) - k], [exp, len(zc) - exp]])
+                # One-sample: is the share of causal texts above the
+                # non-causal group's own TAIL_Q percentile greater than
+                # the 1 - TAIL_Q that cut defines?  Fisher against a
+                # synthetic row of the same size answers a two-sample
+                # question that was never asked, and treats a constructed
+                # expectation as a draw.
+                pz = binomtest(k, len(zc), 1 - TAIL_Q,
+                               alternative="two-sided").pvalue
                 ps_z.append(pz)
                 ztail.append(zt)
                 zm.append(zt)
