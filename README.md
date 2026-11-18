@@ -1,8 +1,9 @@
-# Authored order dominates fixed-text entropy production
+# Reversing the text is not reversing the path
 
-Code and measurements for the paper *Authored order dominates fixed-text
-entropy production: a measure without a zero, and a contrast without a
-criterion*.
+Code and measurements for the paper *Reversing the text is not reversing
+the path: a fixed-text measure without a zero, and an assembly-order
+comparison that vanishes identically*
+([arXiv:2611.23049](https://arxiv.org/abs/2611.23049)).
 
 The paper re-examines a quantity that has been read as an entropy production
 for a fixed text,
@@ -27,11 +28,14 @@ directions, so the separation is stated once and then kept:
 | symbol | what it compares | is it an entropy production? |
 |---|---|---|
 | `Delta` | a text with a **different** text | no |
-| `sigma` | the **same** text, assembled in two directions | yes |
+| `sigma` | the **same** text, assembled in two orders | no |
 | `sigma_EP` | a Glauber chain with its reverse (toy system) | yes, of that chain |
 
-`Delta` is the published quantity. `sigma` is the one the thermodynamic
-reading names.
+`Delta` is the published quantity.  `sigma` is the comparison a fixed
+text does admit whose zero holds on the text being read.  It is not a
+path against its time reverse: both orders run from the empty sequence
+to the same completed text, so neither is the time reverse of the other.
+What makes it worth measuring is the identity below, not a theorem.
 
 ## The identity
 
@@ -42,7 +46,7 @@ log P_pi(x) = sum_t log p_theta( x_{pi(t)} | positions revealed before t )
 ```
 
 is a genuine log-probability. Taking `pi` to be left-to-right and then
-right-to-left **for the same text** gives the forward path against its reverse:
+right-to-left **for the same text** gives two assembly orders of one text:
 
 ```
 sigma(x) = [ log P_l2r(x) - log P_r2l(x) ] / L
@@ -293,7 +297,7 @@ python3 order-intervention/block_order_pll.py \
     --texts Paper2026/gpt2/text_sets2/fixed_text_Opus46.json \
     --max-perms 24 --out results_blkord/blkord_gpt2__Opus46__0-1.json
 
-# sigma: the same rank under the forward/backward entropy production
+# sigma: the same rank under the assembly-order quantity
 python3 order-intervention/block_sigma_fb.py \
     --model bert-base-uncased \
     --texts Paper2026/gpt2/text_sets2/fixed_text_Opus46.json \
@@ -387,7 +391,7 @@ paper/
   main.tex                  the paper
   sec_intro.tex             Section 1
   sec_decomp.tex            Sections 5.2-5.4
-  sec_truesigma.tex         Section 6, the entropy production itself
+  sec_truesigma.tex         Section 6, the assembly-order quantity
   make_tables.py            every table and every quoted number
   make_tables_selftest.py   its checks, no measurements required
   check_paper.py            the relations a built PDF cannot show
@@ -663,15 +667,16 @@ these is a mistake a reader might repeat:
 ## References
 
 * T. Sagawa, *Stochastic Thermodynamics for Autoregressive Generative Models:
-  A Non-Markovian Perspective*, arXiv:2604.07867 — the work re-examined here.
+  A Non-Markovian Perspective*, PRX Intelligence **1**, 023013 (2026);
+  arXiv:2604.07867 — the work re-examined here.
   Its corpora and released per-text values are at
   <https://github.com/taksagawa/Paper2026>.
 * C. Jarzynski, *Nonequilibrium equality for free energy differences*,
   Phys. Rev. Lett. 78, 2690 (1997); arXiv:cond-mat/9610209.
 * G. E. Crooks, *Entropy production fluctuation theorem and the nonequilibrium
   work relation for free energy differences*, Phys. Rev. E 60, 2721 (1999);
-  arXiv:cond-mat/9901352 — the path-against-reverse-path form the identity
-  above is read against.
+  arXiv:cond-mat/9901352 — the path-against-reverse-path form, which the
+  comparison above does not instantiate.
 * U. Seifert, *Stochastic thermodynamics, fluctuation theorems and molecular
   machines*, Rep. Prog. Phys. 75, 126001 (2012); arXiv:1205.4176.
 * S. Sana et al., *Mixing Times of Glauber Dynamics on Masked Language
